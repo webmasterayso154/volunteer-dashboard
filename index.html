@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AYSO Region 154 | Volunteer Points</title>
+  <title>AYSO 154 | Spring Volunteer Tracker</title>
   <style>
     :root {
       --ayso-blue: #0033a0;
-      --ayso-red: #e31837;
       --bg-color: #f4f7f6;
     }
     body {
@@ -18,72 +17,85 @@
       padding: 20px;
     }
     .container {
-      max-width: 800px;
-      margin: 20px auto;
+      max-width: 700px;
+      margin: 0 auto;
       background: #ffffff;
       padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-      border-top: 6px solid var(--ayso-blue);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      border-top: 8px solid var(--ayso-blue);
     }
     .header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
     .header h1 {
       color: var(--ayso-blue);
-      margin: 0 0 10px 0;
+      margin: 0 0 5px 0;
+      font-size: 2em;
     }
     .header p {
       color: #666;
       margin: 0;
       font-size: 1.1em;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
+    .tracker-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      margin-bottom: 12px;
+      background: #fff;
+      border: 1px solid #eaeaea;
+      border-radius: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    th, td {
-      padding: 12px 15px;
-      text-align: center;
-      border-bottom: 1px solid #ddd;
+    .tracker-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
     }
-    th {
-      background-color: var(--ayso-blue);
-      color: white;
-      font-weight: 600;
-      position: sticky;
-      top: 0;
-    }
-    td:first-child, th:first-child {
-      text-align: left;
-    }
-    tr:hover {
-      background-color: #f1f5f9;
+    .team-info {
+      display: flex;
+      flex-direction: column;
     }
     .team-name {
       font-weight: bold;
-      color: #333;
+      font-size: 1.2em;
+      color: #222;
     }
-    .total-col {
+    .fm-status {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 4px;
+    }
+    .status-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
       font-weight: bold;
-      color: var(--ayso-blue);
-      font-size: 1.1em;
+      font-size: 0.95em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
-    .pizza {
-      font-size: 1.5em;
+    .earned {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .pending {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
     }
     .loader {
       text-align: center;
-      padding: 40px;
-      font-style: italic;
+      padding: 30px;
       color: #777;
+      font-style: italic;
     }
-    /* Mobile Responsive */
-    @media (max-width: 600px) {
-      th, td { padding: 10px 5px; font-size: 0.9em; }
-      .container { padding: 15px; margin: 10px auto; }
+    @media (max-width: 500px) {
+      .tracker-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .status-badge { align-self: flex-start; }
     }
   </style>
 </head>
@@ -91,36 +103,22 @@
 
   <div class="container">
     <div class="header">
-      <h1>🏆 Volunteer Points Standings</h1>
-      <p>Official Spring 2026 Dashboard for AYSO Region 154</p>
+      <h1>🍕 Spring Pizza Tracker</h1>
+      <p>Complete your Field Marshal shift to earn the end-of-season party!</p>
     </div>
     
-    <div id="loader" class="loader">⚽ Fetching the latest standings from the field...</div>
+    <div id="loader" class="loader">Fetching the latest field reports...</div>
     
-    <div style="overflow-x: auto;">
-      <table id="standingsTable" style="display: none;">
-        <thead>
-          <tr>
-            <th>Team Name</th>
-            <th>FM Points</th>
-            <th>Ref Points</th>
-            <th>Total</th>
-            <th>Pizza?</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody">
-          </tbody>
-      </table>
-    </div>
+    <div id="trackerList" style="display: none;">
+      </div>
   </div>
 
   <script>
     // ⚠️ IMPORTANT: Paste your published Google Apps Script Web App URL here!
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwSh1phXhKfvfRY9-1dq2BHeIw9kFSzEhwltj4bk-WgiwWYZB4T6bLTfyiXus3J14NE/exec';
+    const WEB_APP_URL = 'YOUR_GOOGLE_WEB_APP_URL_HERE';
 
     window.onload = async function() {
       try {
-        // Fetching without the '?action=getSettings' parameter defaults to pulling Standings
         const response = await fetch(WEB_APP_URL);
         const data = await response.json();
 
@@ -129,29 +127,38 @@
           return;
         }
 
-        const tbody = document.getElementById('tableBody');
+        const trackerList = document.getElementById('trackerList');
         
         data.forEach(row => {
-          // Ensure we don't pull empty rows
           if (row['Team Name']) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td class="team-name">${row['Team Name']}</td>
-              <td>${row['FM Points (2 per shift)'] || 0}</td>
-              <td>${row['Ref Points (Max 10)'] || 0}</td>
-              <td class="total-col">${row['Total Points'] || 0}</td>
-              <td class="pizza">${row['Pizza Eligible'] || ''}</td>
+            const fmPoints = Number(row['FM Points (2 per shift)']) || 0;
+            const hasPizza = row['Pizza Eligible'] ? true : false;
+            
+            // Visual logic: If they have Pizza Eligible, or if FM points are high enough
+            let statusHTML = '';
+            if (hasPizza || fmPoints > 0) {
+              statusHTML = `<div class="status-badge earned">🍕 Party Earned!</div>`;
+            } else {
+              statusHTML = `<div class="status-badge pending">⏳ Shift Pending</div>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'tracker-card';
+            card.innerHTML = `
+              <div class="team-info">
+                <span class="team-name">${row['Team Name']}</span>
+              </div>
+              ${statusHTML}
             `;
-            tbody.appendChild(tr);
+            trackerList.appendChild(card);
           }
         });
 
         document.getElementById('loader').style.display = 'none';
-        document.getElementById('standingsTable').style.display = 'table';
+        trackerList.style.display = 'block';
 
       } catch (error) {
-        document.getElementById('loader').innerText = "❌ Failed to load standings. Please try again later.";
-        console.error("Fetch error:", error);
+        document.getElementById('loader').innerText = "❌ Failed to load. Please try again later.";
       }
     };
   </script>
