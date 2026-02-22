@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AYSO Region 154 | Volunteer Points</title>
+  <style>
+    :root {
+      --ayso-blue: #0033a0;
+      --ayso-red: #e31837;
+      --bg-color: #f4f7f6;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      border-top: 6px solid var(--ayso-blue);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: var(--ayso-blue);
+      margin: 0 0 10px 0;
+    }
+    .header p {
+      color: #666;
+      margin: 0;
+      font-size: 1.1em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: var(--ayso-blue);
+      color: white;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    td:first-child, th:first-child {
+      text-align: left;
+    }
+    tr:hover {
+      background-color: #f1f5f9;
+    }
+    .team-name {
+      font-weight: bold;
+      color: #333;
+    }
+    .total-col {
+      font-weight: bold;
+      color: var(--ayso-blue);
+      font-size: 1.1em;
+    }
+    .pizza {
+      font-size: 1.5em;
+    }
+    .loader {
+      text-align: center;
+      padding: 40px;
+      font-style: italic;
+      color: #777;
+    }
+    /* Mobile Responsive */
+    @media (max-width: 600px) {
+      th, td { padding: 10px 5px; font-size: 0.9em; }
+      .container { padding: 15px; margin: 10px auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>🏆 Volunteer Points Standings</h1>
+      <p>Official Spring 2026 Dashboard for AYSO Region 154</p>
+    </div>
+    
+    <div id="loader" class="loader">⚽ Fetching the latest standings from the field...</div>
+    
+    <div style="overflow-x: auto;">
+      <table id="standingsTable" style="display: none;">
+        <thead>
+          <tr>
+            <th>Team Name</th>
+            <th>FM Points</th>
+            <th>Ref Points</th>
+            <th>Total</th>
+            <th>Pizza?</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ IMPORTANT: Paste your published Google Apps Script Web App URL here!
+    const WEB_APP_URL = 'YOUR_GOOGLE_WEB_APP_URL_HERE';
+
+    window.onload = async function() {
+      try {
+        // Fetching without the '?action=getSettings' parameter defaults to pulling Standings
+        const response = await fetch(WEB_APP_URL);
+        const data = await response.json();
+
+        if (data.error) {
+          document.getElementById('loader').innerText = "❌ " + data.error;
+          return;
+        }
+
+        const tbody = document.getElementById('tableBody');
+        
+        data.forEach(row => {
+          // Ensure we don't pull empty rows
+          if (row['Team Name']) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="team-name">${row['Team Name']}</td>
+              <td>${row['FM Points (2 per shift)'] || 0}</td>
+              <td>${row['Ref Points (Max 10)'] || 0}</td>
+              <td class="total-col">${row['Total Points'] || 0}</td>
+              <td class="pizza">${row['Pizza Eligible'] || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          }
+        });
+
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('standingsTable').style.display = 'table';
+
+      } catch (error) {
+        document.getElementById('loader').innerText = "❌ Failed to load standings. Please try again later.";
+        console.error("Fetch error:", error);
+      }
+    };
+  </script>
+</body>
+</html>
