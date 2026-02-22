@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AYSO 154 | Control Panel</title>
+  <style>
+    :root {
+      --ayso-blue: #0033a0;
+      --ayso-red: #e31837;
+      --bg-color: #f4f7f6;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      border-top: 6px solid var(--ayso-blue);
+    }
+    h2 {
+      color: var(--ayso-blue);
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 15px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #555;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      border-color: var(--ayso-blue);
+      outline: none;
+    }
+    .btn {
+      background-color: var(--ayso-blue);
+      color: white;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      width: 100%;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background-color: #002266;
+    }
+    .btn:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: bold;
+      display: none;
+    }
+    .status.success { background-color: #d4edda; color: #155724; display: block; }
+    .status.error { background-color: #f8d7da; color: #721c24; display: block; }
+    .loader {
+      text-align: center;
+      color: #777;
+      font-style: italic;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>⚙️ Board Control Panel</h2>
+    <div id="loading" class="loader">Loading current settings from the backend...</div>
+    
+    <form id="configForm" style="display: none;">
+      <div class="form-group">
+        <label for="BoardEmail">🚨 Board Alert Email (Major Incidents)</label>
+        <input type="email" id="BoardEmail" name="BoardEmail" required>
+      </div>
+
+      <div class="form-group">
+        <label for="RCEmail">⚠️ RC Email (Missing Referee Alerts)</label>
+        <input type="email" id="RCEmail" name="RCEmail" required>
+      </div>
+
+      <div class="form-group">
+        <label for="RefMaxCap">🛑 Referee Point Cap (Max points per team)</label>
+        <input type="number" id="RefMaxCap" name="RefMaxCap" required>
+      </div>
+
+      <div class="form-group">
+        <label for="PizzaThreshold">🍕 Pizza Party Point Threshold</label>
+        <input type="number" id="PizzaThreshold" name="PizzaThreshold" required>
+      </div>
+
+      <button type="submit" id="saveBtn" class="btn">💾 Save Configuration</button>
+      <div id="statusMessage" class="status"></div>
+    </form>
+  </div>
+
+  <script>
+    // ⚠️ IMPORTANT: Paste your published Google Apps Script Web App URL here!
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwSh1phXhKfvfRY9-1dq2BHeIw9kFSzEhwltj4bk-WgiwWYZB4T6bLTfyiXus3J14NE/exec';
+
+    // 1. Fetch current settings when page loads
+    window.onload = async function() {
+      try {
+        const response = await fetch(WEB_APP_URL + '?action=getSettings');
+        const data = await response.json();
+        
+        document.getElementById('BoardEmail').value = data.BoardEmail || '';
+        document.getElementById('RCEmail').value = data.RCEmail || '';
+        document.getElementById('RefMaxCap').value = data.RefMaxCap || '';
+        document.getElementById('PizzaThreshold').value = data.PizzaThreshold || '';
+        
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('configForm').style.display = 'block';
+      } catch (error) {
+        showStatus('Error loading settings. Check your Web App URL.', 'error');
+      }
+    };
+
+    // 2. Handle the save button
+    document.getElementById('configForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      btn.innerText = 'Saving...';
+
+      const updatedData = {
+        BoardEmail: document.getElementById('BoardEmail').value,
+        RCEmail: document.getElementById('RCEmail').value,
+        RefMaxCap: document.getElementById('RefMaxCap').value,
+        PizzaThreshold: document.getElementById('PizzaThreshold').value
+      };
+
+      try {
+        const response = await fetch(WEB_APP_URL, {
+          method: 'POST',
+          body: JSON.stringify(updatedData)
+        });
+        
+        const result = await response.json();
+        if(result.status === 'success') {
+          showStatus('✅ Settings saved successfully to the Google Sheet!', 'success');
+        } else {
+          showStatus('❌ Failed to save. Check script permissions.', 'error');
+        }
+      } catch (error) {
+        showStatus('❌ Network error while saving.', 'error');
+      }
+
+      btn.disabled = false;
+      btn.innerText = '💾 Save Configuration';
+      
+      // Clear status after 4 seconds
+      setTimeout(() => { document.getElementById('statusMessage').className = 'status'; }, 4000);
+    });
+
+    function showStatus(message, type) {
+      const statusDiv = document.getElementById('statusMessage');
+      statusDiv.innerText = message;
+      statusDiv.className = `status ${type}`;
+    }
+  </script>
+</body>
+</html>
