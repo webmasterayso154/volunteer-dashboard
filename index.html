@@ -533,8 +533,25 @@
     let teamDirectory = {};
 
     function callBackend(endpoint, callback) {
-      const cbName = 'ayso_cb_' + Math.floor(Math.random() * 10000000);
+      const cbName = 'ayso_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+      let executed = false;
+
+      // Timeout watchdog (6 seconds for mobile networks)
+      const timeoutId = setTimeout(function() {
+        if (!executed) {
+          executed = true;
+          delete window[cbName];
+          const syncElem = document.getElementById('syncTime');
+          if (syncElem && syncElem.textContent.indexOf('Last Synced') === -1) {
+            syncElem.innerHTML = '<span style="color:#FCA5A5;">Network slow. <a href="javascript:initTracker()" style="color:#fff; text-decoration:underline;">Tap to Retry</a></span>';
+          }
+        }
+      }, 6000);
+
       window[cbName] = function(data) {
+        if (executed) return;
+        executed = true;
+        clearTimeout(timeoutId);
         try {
           callback(data);
         } finally {
@@ -543,20 +560,40 @@
           if (elem && elem.parentNode) elem.parentNode.removeChild(elem);
         }
       };
+
       const script = document.createElement('script');
       script.id = cbName;
-      script.src = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
-      document.body.appendChild(script);
+      // Force mobile cache-busting with _ts parameter
+      const joinChar = endpoint.indexOf('?') >= 0 ? '&' : '?';
+      script.src = endpoint + joinChar + 'callback=' + cbName + '&_ts=' + Date.now();
+      
+      script.onerror = function() {
+        if (executed) return;
+        executed = true;
+        clearTimeout(timeoutId);
+        delete window[cbName];
+        const syncElem = document.getElementById('syncTime');
+        if (syncElem) {
+          syncElem.innerHTML = '<span style="color:#FCA5A5;">Connection error. <a href="javascript:initTracker()" style="color:#fff; text-decoration:underline;">Tap to Retry</a></span>';
+        }
+      };
+
+      // Safely append to document head or body
+      const target = document.head || document.body || document.documentElement;
+      target.appendChild(script);
     }
 
     function initTracker() {
       const divSelect = document.getElementById('divisionSelect');
+      const syncElem = document.getElementById('syncTime');
       divSelect.disabled = true;
+      divSelect.innerHTML = '<option value="">Loading active divisions...</option>';
+      if (syncElem) syncElem.textContent = 'Connecting to ledger...';
 
       callBackend(API_URL + '?action=getDirectory', function(res) {
         teamDirectory = (res && res.directory) ? res.directory : {};
-        if (res && res.syncTimestamp) {
-          document.getElementById('syncTime').textContent = 'Last Synced: ' + res.syncTimestamp;
+        if (res && res.syncTimestamp && syncElem) {
+          syncElem.textContent = 'Last Synced: ' + res.syncTimestamp;
         }
 
         divSelect.innerHTML = '<option value="">Choose Division...</option>';
@@ -579,7 +616,12 @@
       });
     }
 
-    initTracker();
+    // Ensure DOM is ready before calling backend
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTracker);
+    } else {
+      initTracker();
+    }
 
     function onDivisionChange() {
       const div = document.getElementById('divisionSelect').value;
