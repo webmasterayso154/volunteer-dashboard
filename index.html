@@ -11,9 +11,8 @@
   <style>
     :root {
       --ayso-navy: #002D62;
-      --ayso-navy-dark: #001E42;
+      --ayso-navy-dark: #001A38;
       --ayso-red: #C8102E;
-      --ayso-red-hover: #A50D24;
       --bg-page: #F4F6F9;
       --card-bg: #FFFFFF;
       --text-main: #111827;
@@ -39,16 +38,16 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* TOP STICKY HEADER */
+    /* REFINED CLEAN HEADER */
     .top-nav {
       background-color: var(--ayso-navy-dark);
       border-bottom: 3px solid var(--ayso-red);
       color: #FFFFFF;
-      padding: 10px 16px;
+      padding: 12px 16px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
     }
     .nav-container {
       max-width: 860px;
@@ -62,39 +61,42 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      font-weight: 700;
-      font-size: 14px;
       text-decoration: none;
       color: #FFFFFF;
     }
     .brand-logo-nav {
-      height: 34px;
+      height: 36px;
       width: auto;
       object-fit: contain;
-      display: block;
-    }
-    .nav-badge {
-      background: var(--ayso-red);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 2px 7px;
       border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    }
+    .nav-title-block {
+      display: flex;
+      flex-direction: column;
+    }
+    .nav-title-main {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      line-height: 1.2;
+    }
+    .nav-title-sub {
+      font-size: 11px;
+      color: #93C5FD;
+      font-weight: 500;
     }
     .nav-back-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.1);
       color: #FFFFFF;
       text-decoration: none;
       font-size: 12px;
       font-weight: 600;
-      padding: 8px 12px;
+      padding: 8px 14px;
       border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       white-space: nowrap;
       transition: all 0.2s ease;
     }
@@ -120,8 +122,6 @@
       padding: 20px;
       margin-bottom: 16px;
       box-shadow: 0 4px 14px rgba(0, 45, 98, 0.15);
-      position: relative;
-      overflow: hidden;
     }
     .hero-layout {
       display: flex;
@@ -129,10 +129,10 @@
       gap: 16px;
     }
     .hero-logo-img {
-      height: 60px;
+      height: 64px;
       width: auto;
       object-fit: contain;
-      background: rgba(255, 255, 255, 0.08);
+      background: #FFFFFF;
       padding: 4px;
       border-radius: 8px;
     }
@@ -174,10 +174,7 @@
       animation: pulse 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
     }
     @keyframes pulse { to { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } }
-    .sync-time {
-      color: #CBD5E1;
-      font-weight: 500;
-    }
+    .sync-time { color: #CBD5E1; font-weight: 500; }
 
     /* CARD STRUCTURE */
     .tracker-card {
@@ -189,7 +186,7 @@
       margin-bottom: 16px;
     }
 
-    /* MOBILE-FIRST FORM ELEMENTS */
+    /* DROPDOWNS */
     .selector-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -212,7 +209,7 @@
       width: 100%;
       min-height: 48px;
       padding: 10px 14px;
-      font-size: 16px; /* Prevents iOS auto-zoom */
+      font-size: 16px;
       font-weight: 500;
       border: 1px solid var(--border-color);
       border-radius: 8px;
@@ -252,7 +249,7 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* RESULTS DASHBOARD */
+    /* RESULTS */
     #dashboardResult { display: none; }
     
     .points-scorecard {
@@ -326,7 +323,7 @@
       color: #9CA3AF;
     }
 
-    /* AUDIT TABLE */
+    /* PRIVACY-PROTECTED AUDIT TABLE */
     .audit-wrapper {
       border: 1px solid var(--border-color);
       border-radius: 8px;
@@ -351,7 +348,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 12px;
-      min-width: 480px;
+      min-width: 440px;
     }
     .audit-table th {
       text-align: left;
@@ -381,6 +378,16 @@
       text-align: center;
       font-size: 12px;
       color: var(--text-muted);
+    }
+    .privacy-notice-box {
+      background: #F9FAFB;
+      border-top: 1px solid var(--border-color);
+      padding: 10px 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     /* POLICY CARD */
@@ -429,13 +436,15 @@
 </head>
 <body>
 
-  <!-- NAVIGATION -->
+  <!-- CLEAN TYPOGRAPHIC NAVIGATION -->
   <nav class="top-nav">
     <div class="nav-container">
       <a href="https://www.ayso154.org" class="nav-brand">
         <img src="logo.png" alt="AYSO 154" class="brand-logo-nav" onerror="this.style.display='none'">
-        <span class="nav-badge">AYSO 154</span>
-        <span>Volunteer System</span>
+        <div class="nav-title-block">
+          <span class="nav-title-main">CYPRESS AYSO REGION 154</span>
+          <span class="nav-title-sub">Volunteer & Postseason Points Portal</span>
+        </div>
       </a>
       <a href="https://www.ayso154.org" class="nav-back-btn">&larr; Main Site</a>
     </div>
@@ -515,11 +524,14 @@
             <span id="auditCount" style="font-weight: 500; font-size: 11px; color: var(--text-muted);">0 Records</span>
           </div>
           <div id="auditTableContainer"></div>
+          <div class="privacy-notice-box">
+            <span>🔒 <strong>Privacy Note:</strong> Volunteer names are omitted from this public log. Itemized rosters are available to the Head Coach or Team Manager upon request.</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- REFINED VERIFICATION & POLICY SECTION -->
+    <!-- POLICY & VERIFICATION GUIDELINES -->
     <div class="policy-card">
       <div class="policy-title">
         &#9432; Volunteer Credit & Verification Guidelines
@@ -574,7 +586,7 @@
 
         const divSelect = document.getElementById('divisionSelect');
         divSelect.innerHTML = '<option value="">Choose Division...</option>';
-        const divisions = Object.keys(teamDirectory).sort();
+        const divisions = Object.keys(teamDirectory);
 
         if (divisions.length === 0) {
           divSelect.innerHTML = '<option value="">No active divisions found</option>';
@@ -608,7 +620,7 @@
       teamDirectory[div].forEach(function(t) {
         const opt = document.createElement('option');
         opt.value = t.teamCode;
-        opt.textContent = t.coach + ' (' + t.teamCode + ')';
+        opt.textContent = 'Coach ' + t.coach;
         coachSelect.appendChild(opt);
       });
       coachSelect.disabled = false;
@@ -657,20 +669,20 @@
           let rows = '';
           res.audit.forEach(function(item) {
             let badgeClass = 'badge-verified';
+            let badgeText = item.status;
             if (item.status.indexOf('Pending') !== -1) badgeClass = 'badge-pending';
             if (item.status.indexOf('Rejected') !== -1 || item.status.indexOf('Cap') !== -1) badgeClass = 'badge-rejected';
 
             rows += '<tr>' +
               '<td>' + item.date + '</td>' +
-              '<td><strong>' + item.volunteer + '</strong></td>' +
-              '<td>' + item.activity + '</td>' +
-              '<td><span class="badge ' + badgeClass + '">' + item.status + '</span></td>' +
-              '<td style="text-align:right;"><strong>' + item.points + '</strong></td>' +
+              '<td><strong>' + item.duty + '</strong></td>' +
+              '<td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td>' +
+              '<td style="text-align:right;"><strong>' + (item.points > 0 ? '+' + item.points : '0') + '</strong></td>' +
             '</tr>';
           });
 
           container.innerHTML = '<table class="audit-table">' +
-            '<thead><tr><th>Date</th><th>Volunteer</th><th>Activity</th><th>Status</th><th style="text-align:right;">Pts</th></tr></thead>' +
+            '<thead><tr><th>Date</th><th>Assignment / Duty</th><th>Check-In Status</th><th style="text-align:right;">Pts</th></tr></thead>' +
             '<tbody>' + rows + '</tbody>' +
             '</table>';
         } else {
