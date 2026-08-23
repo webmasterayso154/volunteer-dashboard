@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Volunteer Points Tracker | Cypress AYSO Region 154</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,6 @@
       --ayso-navy-dark: #001E42;
       --ayso-red: #C8102E;
       --ayso-red-hover: #A50D24;
-      --ayso-blue-light: #E8F0FE;
       --bg-page: #F4F6F9;
       --card-bg: #FFFFFF;
       --text-main: #111827;
@@ -37,42 +36,52 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* TOP NAVIGATION BAR */
+    /* TOP STICKY HEADER */
     .top-nav {
       background-color: var(--ayso-navy-dark);
       border-bottom: 3px solid var(--ayso-red);
       color: #FFFFFF;
-      padding: 12px 20px;
+      padding: 10px 16px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
     .nav-container {
-      max-width: 900px;
+      max-width: 860px;
       margin: 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
     }
     .nav-brand {
       display: flex;
       align-items: center;
       gap: 10px;
       font-weight: 700;
-      font-size: 15px;
-      letter-spacing: 0.3px;
+      font-size: 14px;
+      text-decoration: none;
+      color: #FFFFFF;
+    }
+    .brand-logo-nav {
+      height: 34px;
+      width: auto;
+      object-fit: contain;
+      display: block;
     }
     .nav-badge {
       background: var(--ayso-red);
       color: #fff;
       font-size: 11px;
       font-weight: 800;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 4px;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .nav-back-btn {
       display: inline-flex;
@@ -81,70 +90,80 @@
       background: rgba(255, 255, 255, 0.12);
       color: #FFFFFF;
       text-decoration: none;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      padding: 7px 14px;
+      padding: 8px 12px;
       border-radius: 6px;
       border: 1px solid rgba(255, 255, 255, 0.2);
+      white-space: nowrap;
       transition: all 0.2s ease;
     }
     .nav-back-btn:hover {
       background: #FFFFFF;
       color: var(--ayso-navy);
-      border-color: #FFFFFF;
     }
 
-    /* MAIN CONTENT WRAPPER */
+    /* MAIN CONTAINER */
     .main-wrapper {
-      max-width: 800px;
+      max-width: 860px;
       width: 100%;
-      margin: 24px auto 40px auto;
+      margin: 16px auto 32px auto;
       padding: 0 16px;
       flex: 1;
     }
 
-    /* HERO BANNER CARD */
+    /* HERO CARD */
     .hero-card {
       background: linear-gradient(135deg, var(--ayso-navy) 0%, #0A3D7A 100%);
       color: #FFFFFF;
       border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
       box-shadow: 0 4px 14px rgba(0, 45, 98, 0.15);
       position: relative;
       overflow: hidden;
     }
-    .hero-card::after {
-      content: "";
-      position: absolute;
-      top: -30px;
-      right: -30px;
-      width: 140px;
-      height: 140px;
-      background: rgba(200, 16, 46, 0.18);
-      border-radius: 50%;
-      pointer-events: none;
+    .hero-layout {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .hero-logo-img {
+      height: 60px;
+      width: auto;
+      object-fit: contain;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 4px;
+      border-radius: 8px;
     }
     .hero-title {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 800;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       letter-spacing: -0.3px;
     }
     .hero-desc {
       font-size: 13px;
       color: #E2E8F0;
-      max-width: 600px;
+    }
+    .sync-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 11px;
     }
     .live-tag {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 11px;
       font-weight: 700;
       color: #A7F3D0;
       text-transform: uppercase;
-      margin-top: 12px;
     }
     .pulse-dot {
       width: 8px;
@@ -154,28 +173,31 @@
       box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
       animation: pulse 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
     }
-    @keyframes pulse {
-      to { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    @keyframes pulse { to { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } }
+    .sync-time {
+      color: #CBD5E1;
+      font-weight: 500;
     }
 
-    /* TRACKER CARD */
+    /* CARD STRUCTURE */
     .tracker-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 12px;
-      padding: 24px;
+      padding: 20px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
+    /* MOBILE-FIRST FORM ELEMENTS */
     .selector-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 20px;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
     }
-    @media (max-width: 600px) {
-      .selector-grid { grid-template-columns: 1fr; }
+    @media (min-width: 600px) {
+      .selector-grid { grid-template-columns: 1fr 1fr; }
     }
     .form-group { display: flex; flex-direction: column; }
     .form-label {
@@ -188,8 +210,9 @@
     }
     .ayso-select {
       width: 100%;
-      padding: 12px 14px;
-      font-size: 14px;
+      min-height: 48px;
+      padding: 10px 14px;
+      font-size: 16px; /* Prevents iOS auto-zoom */
       font-weight: 500;
       border: 1px solid var(--border-color);
       border-radius: 8px;
@@ -197,7 +220,7 @@
       color: var(--text-main);
       cursor: pointer;
       outline: none;
-      transition: all 0.2s ease;
+      appearance: auto;
     }
     .ayso-select:focus {
       border-color: var(--ayso-navy);
@@ -222,8 +245,8 @@
       border: 3px solid #E5E7EB;
       border-top: 3px solid var(--ayso-navy);
       border-radius: 50%;
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       animation: spin 0.8s linear infinite;
       margin: 0 auto 10px auto;
     }
@@ -235,10 +258,10 @@
     .points-scorecard {
       border: 1px solid var(--border-color);
       border-radius: 10px;
-      padding: 24px;
+      padding: 20px;
       text-align: center;
       background: #FAFBFC;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .goal-pill {
       display: inline-block;
@@ -248,7 +271,7 @@
       letter-spacing: 0.6px;
       padding: 4px 12px;
       border-radius: 20px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       background: var(--warning-bg);
       color: var(--warning-amber);
     }
@@ -257,14 +280,14 @@
       color: var(--success-green);
     }
     .points-number {
-      font-size: 56px;
+      font-size: 52px;
       font-weight: 800;
       color: var(--ayso-navy);
       line-height: 1;
-      margin: 4px 0 8px 0;
+      margin: 4px 0 6px 0;
     }
     .points-caption {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
       font-weight: 500;
     }
@@ -272,21 +295,21 @@
     /* STATS GRID */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
-    @media (max-width: 640px) {
-      .stats-grid { grid-template-columns: 1fr 1fr; }
+    @media (min-width: 640px) {
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
     }
     .stat-card {
       border: 1px solid var(--border-color);
       border-radius: 8px;
-      padding: 12px 14px;
+      padding: 12px;
       background: #FFFFFF;
     }
     .stat-title {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-muted);
@@ -307,12 +330,13 @@
     .audit-wrapper {
       border: 1px solid var(--border-color);
       border-radius: 8px;
-      overflow: hidden;
+      overflow-x: auto;
       background: #FFFFFF;
+      -webkit-overflow-scrolling: touch;
     }
     .audit-header {
       background: #F9FAFB;
-      padding: 12px 16px;
+      padding: 12px 14px;
       font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
@@ -326,37 +350,36 @@
     .audit-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12px;
+      min-width: 480px;
     }
     .audit-table th {
       text-align: left;
-      padding: 10px 14px;
+      padding: 10px 12px;
       background: #F3F4F6;
       color: var(--text-muted);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
     }
     .audit-table td {
-      padding: 10px 14px;
+      padding: 10px 12px;
       border-bottom: 1px solid #F3F4F6;
     }
-    .audit-table tr:last-child td { border-bottom: none; }
-    
     .badge {
       display: inline-block;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 4px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
     }
     .badge-verified { background: var(--success-bg); color: var(--success-green); }
     .badge-pending { background: var(--warning-bg); color: var(--warning-amber); }
     .badge-rejected { background: var(--danger-bg); color: var(--danger-red); }
     .empty-state {
-      padding: 24px;
+      padding: 20px;
       text-align: center;
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
     }
 
@@ -365,33 +388,30 @@
       background: #FFFFFF;
       border: 1px solid var(--border-color);
       border-radius: 12px;
-      padding: 20px 24px;
-      margin-top: 20px;
+      padding: 18px 20px;
     }
     .policy-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--ayso-navy);
       margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
     .policy-list {
       list-style-type: disc;
-      padding-left: 20px;
+      padding-left: 18px;
       font-size: 12px;
       color: var(--text-muted);
       line-height: 1.6;
     }
+    .policy-list li { margin-bottom: 6px; }
 
     /* FOOTER */
     .page-footer {
       background: #FFFFFF;
       border-top: 1px solid var(--border-color);
-      padding: 20px;
+      padding: 20px 16px;
       text-align: center;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-muted);
     }
     .footer-links {
@@ -405,63 +425,65 @@
       text-decoration: none;
       font-weight: 600;
     }
-    .footer-links a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 
-  <!-- TOP STICKY NAVIGATION (Never leaves the user stranded) -->
+  <!-- NAVIGATION -->
   <nav class="top-nav">
     <div class="nav-container">
-      <div class="nav-brand">
+      <a href="https://www.ayso154.org" class="nav-brand">
+        <img src="logo.png" alt="AYSO 154" class="brand-logo-nav" onerror="this.style.display='none'">
         <span class="nav-badge">AYSO 154</span>
-        <span>Cypress Volunteer System</span>
-      </div>
-      <a href="https://www.ayso154.org" class="nav-back-btn" id="navReturnBtn">
-        &larr; Return to Main Site
+        <span>Volunteer System</span>
       </a>
+      <a href="https://www.ayso154.org" class="nav-back-btn">&larr; Main Site</a>
     </div>
   </nav>
 
-  <!-- MAIN CONTAINER -->
+  <!-- MAIN BODY -->
   <div class="main-wrapper">
     
-    <!-- BRANDED HERO BANNER -->
+    <!-- HERO HEADER -->
     <div class="hero-card">
-      <h1 class="hero-title">Fall 2026 Volunteer Standings</h1>
-      <p class="hero-desc">Select your division and team below to verify earned referee and volunteer credits in real time.</p>
-      <div class="live-tag">
-        <span class="pulse-dot"></span> Real-Time Database Connected
+      <div class="hero-layout">
+        <img src="logo.png" alt="AYSO 154 Logo" class="hero-logo-img" onerror="this.style.display='none'">
+        <div>
+          <h1 class="hero-title">Fall 2026 Volunteer Standings</h1>
+          <p class="hero-desc">Select your division and head coach below to verify postseason credits.</p>
+        </div>
+      </div>
+      <div class="sync-bar">
+        <div class="live-tag"><span class="pulse-dot"></span> Live Database Connected</div>
+        <div id="syncTime" class="sync-time">Checking ledger...</div>
       </div>
     </div>
 
-    <!-- SELECTION & RESULTS CARD -->
+    <!-- TRACKER CARD -->
     <div class="tracker-card">
       <div class="selector-grid">
         <div class="form-group">
           <label class="form-label" for="divisionSelect">1. Select Division</label>
           <select id="divisionSelect" class="ayso-select" onchange="onDivisionChange()">
-            <option value="">Loading active divisions...</option>
+            <option value="">Loading divisions...</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="coachSelect">2. Select Head Coach / Team Manager</label>
+          <label class="form-label" for="coachSelect">2. Select Head Coach</label>
           <select id="coachSelect" class="ayso-select" disabled onchange="onCoachChange()">
             <option value="">Choose Head Coach...</option>
           </select>
         </div>
       </div>
 
-      <!-- LOADER -->
       <div id="loaderBox" class="loader-box">
         <div class="spinner"></div>
         Fetching live volunteer audit ledger...
       </div>
 
-      <!-- AUDIT RESULTS -->
+      <!-- RESULTS -->
       <div id="dashboardResult">
-        
         <div class="points-scorecard">
           <div id="goalPill" class="goal-pill">17 Points Needed</div>
           <div id="totalPointsVal" class="points-number">0</div>
@@ -494,20 +516,19 @@
           </div>
           <div id="auditTableContainer"></div>
         </div>
-
       </div>
     </div>
 
-    <!-- POSTSEASON POLICY SUMMARY -->
+    <!-- REFINED VERIFICATION & POLICY SECTION -->
     <div class="policy-card">
       <div class="policy-title">
-        &#9432; Playoff Qualification & Point Policy Guidelines
+        &#9432; Volunteer Credit & Verification Guidelines
       </div>
       <ul class="policy-list">
-        <li><strong>Playoff Requirement:</strong> Teams must earn 17 total volunteer points during the regular season to qualify for postseason play.</li>
-        <li><strong>Referee Assignments:</strong> Up to 17 points may be earned via Center or Assistant Referee assignments. (Club linespersons earn 0 points).</li>
-        <li><strong>Category Maximums:</strong> Field Marshal duties are capped at <strong>2 points</strong>. Friday Night Setup duties are capped at <strong>5 points</strong>.</li>
-        <li><strong>Verification:</strong> Points display as <em>Pending</em> until volunteer Live Scan and Safe Haven compliance checks are fully reconciled by tech ops.</li>
+        <li><strong>Verification & Corrections:</strong> We are all volunteers and mistakes happen! If an assignment or check-in is missing, duplicate, or appears incorrect, please notify your <strong>Head Coach or Team Manager</strong> so they can submit a verification request.</li>
+        <li><strong>Board Authority:</strong> The AYSO Region 154 Board of Directors retains full authority to review, correct, or manually adjust team volunteer points at any time for administrative accuracy or extenuating circumstances.</li>
+        <li><strong>Playoff Requirement:</strong> Teams must earn <strong>17 total verified points</strong> during the regular season to qualify for postseason play.</li>
+        <li><strong>Category Maximums:</strong> Referee assignments earn 1 pt each (up to 17 pts). Field Marshal duties are capped at <strong>2 pts</strong>. Friday Night Setup is capped at <strong>5 pts</strong>. Picture Day & Silent Weekend are capped at <strong>2 pts</strong>.</li>
       </ul>
     </div>
 
@@ -516,7 +537,7 @@
   <!-- FOOTER -->
   <footer class="page-footer">
     <div class="footer-links">
-      <a href="https://www.ayso154.org">&larr; Back to AYSO 154 Homepage</a>
+      <a href="https://www.ayso154.org">&larr; AYSO 154 Homepage</a>
       <span>&bull;</span>
       <a href="#top" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">Back to Top</a>
     </div>
@@ -527,7 +548,6 @@
     const API_URL = 'https://script.google.com/macros/s/AKfycbyYbmTmR_goZXEwEO-No2-fqGXUhdpAefVsYLmm499ncIb8dCqXF3rcUIgdQ3SZOgD5/exec';
     let teamDirectory = {};
 
-    // Dynamic JSONP Handler (Bypasses all CORS & Redirect Blocks)
     function callBackend(endpoint, callback) {
       const cbName = 'ayso_cb_' + Math.floor(Math.random() * 10000000);
       window[cbName] = function(data) {
@@ -545,10 +565,13 @@
       document.body.appendChild(script);
     }
 
-    // Initialize Directory Dropdown
     function initTracker() {
-      callBackend(API_URL + '?action=getDirectory', function(data) {
-        teamDirectory = data || {};
+      callBackend(API_URL + '?action=getDirectory', function(res) {
+        teamDirectory = (res && res.directory) ? res.directory : {};
+        if (res && res.syncTimestamp) {
+          document.getElementById('syncTime').textContent = 'Last Synced: ' + res.syncTimestamp;
+        }
+
         const divSelect = document.getElementById('divisionSelect');
         divSelect.innerHTML = '<option value="">Choose Division...</option>';
         const divisions = Object.keys(teamDirectory).sort();
@@ -569,7 +592,6 @@
 
     initTracker();
 
-    // Cascading Division Selection
     function onDivisionChange() {
       const div = document.getElementById('divisionSelect').value;
       const coachSelect = document.getElementById('coachSelect');
@@ -592,7 +614,6 @@
       coachSelect.disabled = false;
     }
 
-    // Live Stats & Audit Query
     function onCoachChange() {
       const teamCode = document.getElementById('coachSelect').value;
       if (!teamCode) return;
@@ -606,7 +627,10 @@
         loader.style.display = 'none';
         if (!res) return;
 
-        // Calculate Goal Requirements
+        if (res.syncTimestamp) {
+          document.getElementById('syncTime').textContent = 'Last Synced: ' + res.syncTimestamp;
+        }
+
         const total = res.totalPoints || 0;
         const needed = Math.max(0, 17 - total);
         const goalPill = document.getElementById('goalPill');
@@ -619,14 +643,12 @@
           goalPill.className = 'goal-pill';
         }
 
-        // Render Values
         document.getElementById('totalPointsVal').textContent = total;
         document.getElementById('statRef').innerHTML = (res.categories['Referee Assignment'] || 0) + ' <small>/ 17</small>';
         document.getElementById('statFm').innerHTML = (res.categories['Field Marshal Shift'] || 0) + ' <small>/ 2</small>';
         document.getElementById('statSetup').innerHTML = (res.categories['Friday Night Field Setup'] || 0) + ' <small>/ 5</small>';
         document.getElementById('statPic').innerHTML = (res.categories['Picture Day'] || 0) + ' <small>/ 2</small>';
 
-        // Render Audit Table
         const container = document.getElementById('auditTableContainer');
         const countLabel = document.getElementById('auditCount');
 
