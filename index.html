@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Volunteer Points Tracker | Cypress AYSO Region 154</title>
+  <title>Volunteer Standings | Cypress AYSO Region 154</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -31,16 +31,16 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg-page);
       color: var(--text-main);
-      line-height: 1.5;
+      line-height: 1.4;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* REFINED CLEAN HEADER */
-    .top-nav {
-      background-color: var(--ayso-navy-dark);
+    /* UNIFIED SINGLE HEADER BAR */
+    .unified-header {
+      background: linear-gradient(135deg, var(--ayso-navy-dark) 0%, var(--ayso-navy) 100%);
       border-bottom: 3px solid var(--ayso-red);
       color: #FFFFFF;
       padding: 12px 16px;
@@ -49,7 +49,7 @@
       z-index: 100;
       box-shadow: 0 2px 10px rgba(0,0,0,0.15);
     }
-    .nav-container {
+    .header-container {
       max-width: 860px;
       margin: 0 auto;
       display: flex;
@@ -57,47 +57,59 @@
       align-items: center;
       gap: 12px;
     }
-    .nav-brand {
+    .brand-block {
       display: flex;
       align-items: center;
       gap: 10px;
       text-decoration: none;
       color: #FFFFFF;
+      min-width: 0;
     }
-    .brand-logo-nav {
-      height: 36px;
+    .brand-logo {
+      height: 40px;
       width: auto;
       object-fit: contain;
-      border-radius: 4px;
+      background: #FFFFFF;
+      border-radius: 6px;
+      padding: 2px;
+      flex-shrink: 0;
     }
-    .nav-title-block {
+    .title-block {
       display: flex;
       flex-direction: column;
+      min-width: 0;
     }
-    .nav-title-main {
+    .title-main {
       font-size: 15px;
       font-weight: 800;
-      letter-spacing: 0.2px;
+      letter-spacing: -0.2px;
       line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .nav-title-sub {
+    .title-sub {
       font-size: 11px;
       color: #93C5FD;
       font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .nav-back-btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.1);
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.12);
       color: #FFFFFF;
       text-decoration: none;
       font-size: 12px;
       font-weight: 600;
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       white-space: nowrap;
+      flex-shrink: 0;
       transition: all 0.2s ease;
     }
     .nav-back-btn:hover {
@@ -105,93 +117,67 @@
       color: var(--ayso-navy);
     }
 
-    /* MAIN CONTAINER */
-    .main-wrapper {
-      max-width: 860px;
-      width: 100%;
-      margin: 16px auto 32px auto;
-      padding: 0 16px;
-      flex: 1;
-    }
-
-    /* HERO CARD */
-    .hero-card {
-      background: linear-gradient(135deg, var(--ayso-navy) 0%, #0A3D7A 100%);
-      color: #FFFFFF;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 14px rgba(0, 45, 98, 0.15);
-    }
-    .hero-layout {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .hero-logo-img {
-      height: 64px;
-      width: auto;
-      object-fit: contain;
-      background: #FFFFFF;
-      padding: 4px;
-      border-radius: 8px;
-    }
-    .hero-title {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 4px;
-      letter-spacing: -0.3px;
-    }
-    .hero-desc {
-      font-size: 13px;
-      color: #E2E8F0;
-    }
-    .sync-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.15);
+    /* LIVE SYNC STATUS STRIP */
+    .status-strip {
+      background-color: #00224A;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 6px 16px;
       font-size: 11px;
+      color: #CBD5E1;
+    }
+    .status-container {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
     }
     .live-tag {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       font-weight: 700;
       color: #A7F3D0;
       text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.5px;
     }
     .pulse-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       background-color: #10B981;
       border-radius: 50%;
       box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
       animation: pulse 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
     }
-    @keyframes pulse { to { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } }
-    .sync-time { color: #CBD5E1; font-weight: 500; }
+    @keyframes pulse { to { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } }
 
-    /* CARD STRUCTURE */
-    .tracker-card {
+    /* MAIN BODY WRAPPER */
+    .main-wrapper {
+      max-width: 860px;
+      width: 100%;
+      margin: 12px auto 24px auto;
+      padding: 0 12px;
+      flex: 1;
+    }
+
+    /* CARDS */
+    .card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-      margin-bottom: 16px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      margin-bottom: 12px;
     }
 
-    /* DROPDOWNS */
+    /* SELECTION FORM */
     .selector-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 14px;
-      margin-bottom: 16px;
+      gap: 12px;
     }
     @media (min-width: 600px) {
       .selector-grid { grid-template-columns: 1fr 1fr; }
@@ -209,7 +195,7 @@
       width: 100%;
       min-height: 48px;
       padding: 10px 14px;
-      font-size: 16px;
+      font-size: 16px; /* Prevents mobile iOS auto-zoom */
       font-weight: 500;
       border: 1px solid var(--border-color);
       border-radius: 8px;
@@ -242,33 +228,33 @@
       border: 3px solid #E5E7EB;
       border-top: 3px solid var(--ayso-navy);
       border-radius: 50%;
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       animation: spin 0.8s linear infinite;
-      margin: 0 auto 10px auto;
+      margin: 0 auto 8px auto;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* RESULTS */
-    #dashboardResult { display: none; }
+    /* RESULTS DASHBOARD */
+    #dashboardResult { display: none; margin-top: 14px; }
     
     .points-scorecard {
       border: 1px solid var(--border-color);
       border-radius: 10px;
-      padding: 20px;
+      padding: 16px;
       text-align: center;
       background: #FAFBFC;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
     .goal-pill {
       display: inline-block;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.6px;
-      padding: 4px 12px;
+      letter-spacing: 0.5px;
+      padding: 4px 10px;
       border-radius: 20px;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       background: var(--warning-bg);
       color: var(--warning-amber);
     }
@@ -277,14 +263,14 @@
       color: var(--success-green);
     }
     .points-number {
-      font-size: 52px;
+      font-size: 46px;
       font-weight: 800;
       color: var(--ayso-navy);
       line-height: 1;
-      margin: 4px 0 6px 0;
+      margin: 2px 0 4px 0;
     }
     .points-caption {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-muted);
       font-weight: 500;
     }
@@ -293,8 +279,8 @@
     .stats-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 14px;
     }
     @media (min-width: 640px) {
       .stats-grid { grid-template-columns: repeat(4, 1fr); }
@@ -302,7 +288,7 @@
     .stat-card {
       border: 1px solid var(--border-color);
       border-radius: 8px;
-      padding: 12px;
+      padding: 10px 12px;
       background: #FFFFFF;
     }
     .stat-title {
@@ -310,20 +296,20 @@
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .stat-value {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 800;
       color: var(--ayso-navy);
     }
     .stat-value small {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       color: #9CA3AF;
     }
 
-    /* PRIVACY-PROTECTED AUDIT TABLE */
+    /* AUDIT TABLE */
     .audit-wrapper {
       border: 1px solid var(--border-color);
       border-radius: 8px;
@@ -333,8 +319,8 @@
     }
     .audit-header {
       background: #F9FAFB;
-      padding: 12px 14px;
-      font-size: 12px;
+      padding: 10px 12px;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -348,11 +334,11 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 12px;
-      min-width: 440px;
+      min-width: 380px;
     }
     .audit-table th {
       text-align: left;
-      padding: 10px 12px;
+      padding: 8px 10px;
       background: #F3F4F6;
       color: var(--text-muted);
       font-size: 10px;
@@ -360,12 +346,12 @@
       text-transform: uppercase;
     }
     .audit-table td {
-      padding: 10px 12px;
+      padding: 8px 10px;
       border-bottom: 1px solid #F3F4F6;
     }
     .badge {
       display: inline-block;
-      padding: 2px 7px;
+      padding: 2px 6px;
       border-radius: 4px;
       font-size: 10px;
       font-weight: 700;
@@ -379,53 +365,45 @@
       font-size: 12px;
       color: var(--text-muted);
     }
-    .privacy-notice-box {
+    .privacy-notice {
       background: #F9FAFB;
       border-top: 1px solid var(--border-color);
-      padding: 10px 14px;
+      padding: 8px 12px;
       font-size: 11px;
       color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
 
-    /* POLICY CARD */
-    .policy-card {
-      background: #FFFFFF;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 18px 20px;
-    }
+    /* POLICY SECTION */
     .policy-title {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       color: var(--ayso-navy);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .policy-list {
       list-style-type: disc;
-      padding-left: 18px;
-      font-size: 12px;
+      padding-left: 16px;
+      font-size: 11px;
       color: var(--text-muted);
-      line-height: 1.6;
+      line-height: 1.5;
     }
-    .policy-list li { margin-bottom: 6px; }
+    .policy-list li { margin-bottom: 4px; }
 
     /* FOOTER */
     .page-footer {
       background: #FFFFFF;
       border-top: 1px solid var(--border-color);
-      padding: 20px 16px;
+      padding: 16px;
       text-align: center;
       font-size: 11px;
       color: var(--text-muted);
+      margin-top: auto;
     }
     .footer-links {
       display: flex;
       justify-content: center;
-      gap: 16px;
-      margin-bottom: 8px;
+      gap: 12px;
+      margin-bottom: 4px;
     }
     .footer-links a {
       color: var(--ayso-navy);
@@ -436,45 +414,38 @@
 </head>
 <body>
 
-  <!-- CLEAN TYPOGRAPHIC NAVIGATION -->
-  <nav class="top-nav">
-    <div class="nav-container">
-      <a href="https://www.ayso154.org" class="nav-brand">
-        <img src="logo.png" alt="AYSO 154" class="brand-logo-nav" onerror="this.style.display='none'">
-        <div class="nav-title-block">
-          <span class="nav-title-main">CYPRESS AYSO REGION 154</span>
-          <span class="nav-title-sub">Volunteer & Postseason Points Portal</span>
+  <!-- UNIFIED NAVIGATION HEADER -->
+  <header class="unified-header">
+    <div class="header-container">
+      <a href="https://www.ayso154cypress.org/" class="brand-block">
+        <img src="logo.png" alt="AYSO 154" class="brand-logo" onerror="this.style.display='none'">
+        <div class="title-block">
+          <span class="title-main">Fall 2026 Volunteer Standings</span>
+          <span class="title-sub">Cypress AYSO Region 154</span>
         </div>
       </a>
-      <a href="https://www.ayso154.org" class="nav-back-btn">&larr; Main Site</a>
+      <a href="https://www.ayso154cypress.org/" class="nav-back-btn">&larr; Main Site</a>
     </div>
-  </nav>
+  </header>
 
-  <!-- MAIN BODY -->
-  <div class="main-wrapper">
+  <!-- LIVE STATUS BAR -->
+  <div class="status-strip">
+    <div class="status-container">
+      <div class="live-tag"><span class="pulse-dot"></span> Live Database Connected</div>
+      <div id="syncTime">Connecting to ledger...</div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-wrapper">
     
-    <!-- HERO HEADER -->
-    <div class="hero-card">
-      <div class="hero-layout">
-        <img src="logo.png" alt="AYSO 154 Logo" class="hero-logo-img" onerror="this.style.display='none'">
-        <div>
-          <h1 class="hero-title">Fall 2026 Volunteer Standings</h1>
-          <p class="hero-desc">Select your division and head coach below to verify postseason credits.</p>
-        </div>
-      </div>
-      <div class="sync-bar">
-        <div class="live-tag"><span class="pulse-dot"></span> Live Database Connected</div>
-        <div id="syncTime" class="sync-time">Checking ledger...</div>
-      </div>
-    </div>
-
-    <!-- TRACKER CARD -->
-    <div class="tracker-card">
+    <!-- SELECTOR & TRACKER CARD -->
+    <div class="card">
       <div class="selector-grid">
         <div class="form-group">
           <label class="form-label" for="divisionSelect">1. Select Division</label>
-          <select id="divisionSelect" class="ayso-select" onchange="onDivisionChange()">
-            <option value="">Loading divisions...</option>
+          <select id="divisionSelect" class="ayso-select" disabled onchange="onDivisionChange()">
+            <option value="">Loading active divisions...</option>
           </select>
         </div>
 
@@ -486,12 +457,13 @@
         </div>
       </div>
 
+      <!-- LOADER -->
       <div id="loaderBox" class="loader-box">
         <div class="spinner"></div>
         Fetching live volunteer audit ledger...
       </div>
 
-      <!-- RESULTS -->
+      <!-- RESULTS DASHBOARD -->
       <div id="dashboardResult">
         <div class="points-scorecard">
           <div id="goalPill" class="goal-pill">17 Points Needed</div>
@@ -524,15 +496,15 @@
             <span id="auditCount" style="font-weight: 500; font-size: 11px; color: var(--text-muted);">0 Records</span>
           </div>
           <div id="auditTableContainer"></div>
-          <div class="privacy-notice-box">
-            <span>🔒 <strong>Privacy Note:</strong> Volunteer names are omitted from this public log. Itemized rosters are available to the Head Coach or Team Manager upon request.</span>
+          <div class="privacy-notice">
+            🔒 <strong>Privacy Note:</strong> Volunteer names are omitted from this public log. Itemized rosters are available to the Head Coach or Team Manager upon request.
           </div>
         </div>
       </div>
     </div>
 
     <!-- POLICY & VERIFICATION GUIDELINES -->
-    <div class="policy-card">
+    <div class="card">
       <div class="policy-title">
         &#9432; Volunteer Credit & Verification Guidelines
       </div>
@@ -544,12 +516,12 @@
       </ul>
     </div>
 
-  </div>
+  </main>
 
   <!-- FOOTER -->
   <footer class="page-footer">
     <div class="footer-links">
-      <a href="https://www.ayso154.org">&larr; AYSO 154 Homepage</a>
+      <a href="https://www.ayso154cypress.org/">&larr; AYSO 154 Homepage</a>
       <span>&bull;</span>
       <a href="#top" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">Back to Top</a>
     </div>
@@ -578,18 +550,21 @@
     }
 
     function initTracker() {
+      const divSelect = document.getElementById('divisionSelect');
+      divSelect.disabled = true;
+
       callBackend(API_URL + '?action=getDirectory', function(res) {
         teamDirectory = (res && res.directory) ? res.directory : {};
         if (res && res.syncTimestamp) {
           document.getElementById('syncTime').textContent = 'Last Synced: ' + res.syncTimestamp;
         }
 
-        const divSelect = document.getElementById('divisionSelect');
         divSelect.innerHTML = '<option value="">Choose Division...</option>';
         const divisions = Object.keys(teamDirectory);
 
         if (divisions.length === 0) {
           divSelect.innerHTML = '<option value="">No active divisions found</option>';
+          divSelect.disabled = true;
           return;
         }
 
@@ -599,6 +574,8 @@
           opt.textContent = div;
           divSelect.appendChild(opt);
         });
+
+        divSelect.disabled = false;
       });
     }
 
