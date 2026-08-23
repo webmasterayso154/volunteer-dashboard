@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Volunteer Standings | Cypress AYSO Region 154</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -153,6 +156,26 @@
       animation: pulse 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
     }
     @keyframes pulse { to { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } }
+
+    .sync-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-refresh {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-refresh:active { background: rgba(255, 255, 255, 0.3); }
 
     /* MAIN BODY WRAPPER */
     .main-wrapper {
@@ -432,7 +455,10 @@
   <div class="status-strip">
     <div class="status-container">
       <div class="live-tag"><span class="pulse-dot"></span> Live Database Connected</div>
-      <div id="syncTime">Connecting to ledger...</div>
+      <div class="sync-actions">
+        <span id="syncTime">Connecting to ledger...</span>
+        <button type="button" class="btn-refresh" onclick="forceSync()" title="Refresh Standings">&#x21bb; Sync</button>
+      </div>
     </div>
   </div>
 
@@ -444,7 +470,7 @@
       <div class="selector-grid">
         <div class="form-group">
           <label class="form-label" for="divisionSelect">1. Select Division</label>
-          <select id="divisionSelect" class="ayso-select" disabled onchange="onDivisionChange()">
+          <select id="divisionSelect" class="ayso-select" onchange="onDivisionChange()">
             <option value="">Loading active divisions...</option>
           </select>
         </div>
@@ -531,92 +557,144 @@
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbyYbmTmR_goZXEwEO-No2-fqGXUhdpAefVsYLmm499ncIb8dCqXF3rcUIgdQ3SZOgD5/exec';
     let teamDirectory = {};
+    const CACHE_KEY_DIR = 'ayso154_cached_directory';
+    const CACHE_KEY_TIME = 'ayso154_cached_timestamp';
 
-    function callBackend(endpoint, callback) {
-      const cbName = 'ayso_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+    // BULLETPROOF DUAL-CHANNEL NETWORK ENGINE
+    function robustFetch(endpoint, callback, retryCount = 0) {
+      const cbName = 'ayso_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
       let executed = false;
+      let scriptElem = null;
 
-      // Timeout watchdog (6 seconds for mobile networks)
-      const timeoutId = setTimeout(function() {
+      // 4-Second Watchdog Timer with Automatic Retry
+      const watchdog = setTimeout(function() {
         if (!executed) {
           executed = true;
-          delete window[cbName];
-          const syncElem = document.getElementById('syncTime');
-          if (syncElem && syncElem.textContent.indexOf('Last Synced') === -1) {
-            syncElem.innerHTML = '<span style="color:#FCA5A5;">Network slow. <a href="javascript:initTracker()" style="color:#fff; text-decoration:underline;">Tap to Retry</a></span>';
+          cleanUp();
+          if (retryCount < 2) {
+            console.warn('Network slow. Retrying channel...', retryCount + 1);
+            robustFetch(endpoint, callback, retryCount + 1);
+          } else {
+            handleNetworkFailure();
           }
         }
-      }, 6000);
+      }, 4000);
+
+      function cleanUp() {
+        delete window[cbName];
+        if (scriptElem && scriptElem.parentNode) {
+          scriptElem.parentNode.removeChild(scriptElem);
+        }
+      }
 
       window[cbName] = function(data) {
         if (executed) return;
         executed = true;
-        clearTimeout(timeoutId);
-        try {
-          callback(data);
-        } finally {
-          delete window[cbName];
-          const elem = document.getElementById(cbName);
-          if (elem && elem.parentNode) elem.parentNode.removeChild(elem);
-        }
+        clearTimeout(watchdog);
+        cleanUp();
+        callback(data);
       };
 
-      const script = document.createElement('script');
-      script.id = cbName;
-      // Force mobile cache-busting with _ts parameter
-      const joinChar = endpoint.indexOf('?') >= 0 ? '&' : '?';
-      script.src = endpoint + joinChar + 'callback=' + cbName + '&_ts=' + Date.now();
-      
-      script.onerror = function() {
+      scriptElem = document.createElement('script');
+      scriptElem.id = cbName;
+      const join = endpoint.indexOf('?') >= 0 ? '&' : '?';
+      scriptElem.src = endpoint + join + 'callback=' + cbName + '&_t=' + Date.now();
+
+      scriptElem.onerror = function() {
         if (executed) return;
         executed = true;
-        clearTimeout(timeoutId);
-        delete window[cbName];
-        const syncElem = document.getElementById('syncTime');
-        if (syncElem) {
-          syncElem.innerHTML = '<span style="color:#FCA5A5;">Connection error. <a href="javascript:initTracker()" style="color:#fff; text-decoration:underline;">Tap to Retry</a></span>';
+        clearTimeout(watchdog);
+        cleanUp();
+        if (retryCount < 2) {
+          robustFetch(endpoint, callback, retryCount + 1);
+        } else {
+          handleNetworkFailure();
         }
       };
 
-      // Safely append to document head or body
       const target = document.head || document.body || document.documentElement;
-      target.appendChild(script);
+      target.appendChild(scriptElem);
     }
 
-    function initTracker() {
-      const divSelect = document.getElementById('divisionSelect');
+    function handleNetworkFailure() {
       const syncElem = document.getElementById('syncTime');
-      divSelect.disabled = true;
-      divSelect.innerHTML = '<option value="">Loading active divisions...</option>';
-      if (syncElem) syncElem.textContent = 'Connecting to ledger...';
+      if (syncElem && syncElem.textContent.indexOf('Last Synced') === -1) {
+        syncElem.innerHTML = '<span style="color:#FCA5A5;">Network slow. <a href="javascript:forceSync()" style="color:#fff; text-decoration:underline;">Tap to Retry</a></span>';
+      }
+    }
 
-      callBackend(API_URL + '?action=getDirectory', function(res) {
-        teamDirectory = (res && res.directory) ? res.directory : {};
-        if (res && res.syncTimestamp && syncElem) {
-          syncElem.textContent = 'Last Synced: ' + res.syncTimestamp;
+    // 0.0-SECOND STALE-WHILE-REVALIDATE INITIALIZATION
+    function initTracker() {
+      // 1. Immediately hydrate from device storage (Instant Load)
+      try {
+        const cachedDir = localStorage.getItem(CACHE_KEY_DIR);
+        const cachedTime = localStorage.getItem(CACHE_KEY_TIME);
+        if (cachedDir) {
+          teamDirectory = JSON.parse(cachedDir);
+          renderDivisionDropdown();
+          if (cachedTime) {
+            document.getElementById('syncTime').textContent = cachedTime;
+          }
         }
+      } catch (e) {
+        console.log('Cache read skipped:', e);
+      }
 
-        divSelect.innerHTML = '<option value="">Choose Division...</option>';
-        const divisions = Object.keys(teamDirectory);
+      // 2. Fetch fresh live data from Google Sheets in background
+      fetchLiveDirectory();
+    }
 
-        if (divisions.length === 0) {
-          divSelect.innerHTML = '<option value="">No active divisions found</option>';
-          divSelect.disabled = true;
-          return;
+    function fetchLiveDirectory() {
+      robustFetch(API_URL + '?action=getDirectory', function(res) {
+        if (res && res.directory) {
+          teamDirectory = res.directory;
+          renderDivisionDropdown();
+          
+          const timeStr = res.syncTimestamp ? 'Last Synced: ' + res.syncTimestamp : 'Live Connected';
+          document.getElementById('syncTime').textContent = timeStr;
+
+          // Save to local device cache for instant 0.0-second return loads
+          try {
+            localStorage.setItem(CACHE_KEY_DIR, JSON.stringify(teamDirectory));
+            localStorage.setItem(CACHE_KEY_TIME, timeStr);
+          } catch (e) {}
         }
-
-        divisions.forEach(function(div) {
-          const opt = document.createElement('option');
-          opt.value = div;
-          opt.textContent = div;
-          divSelect.appendChild(opt);
-        });
-
-        divSelect.disabled = false;
       });
     }
 
-    // Ensure DOM is ready before calling backend
+    function renderDivisionDropdown() {
+      const divSelect = document.getElementById('divisionSelect');
+      const currentVal = divSelect.value;
+      divSelect.innerHTML = '<option value="">Choose Division...</option>';
+      const divisions = Object.keys(teamDirectory);
+
+      if (divisions.length === 0) {
+        divSelect.innerHTML = '<option value="">No active divisions found</option>';
+        divSelect.disabled = true;
+        return;
+      }
+
+      divisions.forEach(function(div) {
+        const opt = document.createElement('option');
+        opt.value = div;
+        opt.textContent = div;
+        if (div === currentVal) opt.selected = true;
+        divSelect.appendChild(opt);
+      });
+
+      divSelect.disabled = false;
+    }
+
+    function forceSync() {
+      document.getElementById('syncTime').textContent = 'Connecting to ledger...';
+      fetchLiveDirectory();
+      const coachSelect = document.getElementById('coachSelect');
+      if (coachSelect.value) {
+        onCoachChange();
+      }
+    }
+
+    // Execute immediately on document ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initTracker);
     } else {
@@ -654,7 +732,7 @@
       loader.style.display = 'block';
       dash.style.display = 'none';
 
-      callBackend(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), function(res) {
+      robustFetch(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), function(res) {
         loader.style.display = 'none';
         if (!res) return;
 
