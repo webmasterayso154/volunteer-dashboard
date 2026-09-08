@@ -103,7 +103,7 @@
         <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px;">
           <span style="display: flex; align-items: baseline; gap: 8px;">
             <span style="font-size: 52px; font-weight: 800; color: #002D62; line-height: 0.9; letter-spacing: -2px;">{{ total }}</span>
-            <span style="font-size: 15px; font-weight: 600; color: #6B7280;">of {{ goal }} points</span>
+            <span style="font-size: 15px; font-weight: 600; color: #6B7280;">{{ goalSubtitle }}</span>
           </span>
           <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 10px; border-radius: 20px; white-space: nowrap; background: {{ pillBg }}; color: {{ pillFg }};">{{ pillText }}</span>
         </div>
@@ -173,20 +173,16 @@
       <sc-if value="{{ guidelinesOpen }}" hint-placeholder-val="{{ false }}">
         <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Something missing or wrong?</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">We are all volunteers and mistakes happen. If an assignment or check-in is missing, duplicated, or looks incorrect, tell your head coach or team manager so they can submit a verification request.</p>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playoff qualification requirement</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">For U8 - U19 &amp; EXTRA: Teams must earn a minimum of 17 total verified points to be eligible for post-season play (Cypress Cup and/or Playoffs). Playground, U5 &amp; U6 are non-competitive divisions.</p>
           </div>
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playoff requirement</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn 17 total verified points during the regular season to qualify for postseason play.</p>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Category caps (26 points possible)</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">• Referee Assignments: Up to 10 points for completed on-field games (up to 17 total including pre-season certified refs and early MatchTrak sign-ups).<br>• Field Marshal: Capped at 2 points (2 shifts per team).<br>• Friday Night Setup: Capped at 5 points (1 point per Friday night attendance).<br>• Picture Day: Capped at 2 points (1 point per 1-hour shift).</p>
           </div>
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Category maximums</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Referee assignments earn 1 pt each, up to 17. Field Marshal is capped at 2 pts. Friday Night Setup is capped at 5 pts. Picture Day is capped at 2 pts.</p>
-          </div>
-          <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Board authority</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">The AYSO Region 154 Board of Directors retains full authority to review, correct, or manually adjust team volunteer points at any time for administrative accuracy or extenuating circumstances.</p>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Something missing or incorrect?</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Duplicate check-ins, time conflicts (same referee at two fields at once), or check-ins exceeding category limits are automatically flagged in red. If an assignment was misallocated, have your coach submit a review request to Cypress154RRA@gmail.com.</p>
           </div>
         </div>
       </sc-if>
@@ -209,8 +205,9 @@ const CACHE_DIR = 'ayso154_cached_directory';
 const CACHE_TIME = 'ayso154_cached_timestamp';
 const LAST_TEAM = 'ayso154_last_team';
 
+// Capped per 2026 rule flyer: On-field Ref = 10, FM = 2, Setup = 5, Pic = 2
 const CATS = [
-  { key: 'Referee Assignment', label: 'Referee', cap: 17 },
+  { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
   { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
   { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
   { key: 'Picture Day', label: 'Picture Day & Silent Weekend', cap: 2 }
@@ -291,17 +288,50 @@ class Component extends DCLogic {
     const dirTeams = s.directory[s.division] || [];
     const coaches = dirTeams.map(t => ({ teamCode: t.teamCode, label: 'Coach ' + t.coach }));
 
+    const isNonPlayoff = s.division.startsWith('05U') || s.division.startsWith('06U') || s.division.includes('Playground');
     const total = s.stats ? (s.stats.totalPoints || 0) : 0;
     const needed = Math.max(0, goal - total);
     const met = needed === 0;
     const cats = s.stats ? (s.stats.categories || {}) : {};
 
+    let pillText = met ? 'Qualified' : needed + ' to go';
+    let pillBg = met ? '#DEF7EC' : '#FEF3C7';
+    let pillFg = met ? '#059669' : '#B45309';
+    let goalSubtitle = 'of ' + goal + ' points';
+    let totalPct = Math.min(100, Math.round((total / goal) * 100)) + '%';
+    let barColor = met ? '#059669' : '#002D62';
+    let goalCaption = met
+      ? 'This team has met the ' + goal + '-point playoff requirement.'
+      : needed + ' more verified ' + (needed === 1 ? 'point' : 'points') + ' needed for playoff eligibility.';
+
+    if (isNonPlayoff) {
+      pillText = 'Non-Playoff';
+      pillBg = '#E0E7FF';
+      pillFg = '#3730A3';
+      goalSubtitle = 'points earned';
+      totalPct = total > 0 ? '100%' : '0%';
+      barColor = '#059669';
+      goalCaption = 'Playground, 05U & 06U are non-competitive divisions. Thank you for volunteering to support our kids!';
+    }
+
+    // Flag red badges for Cap, Conflict, or Duplicate entries
     const audit = ((s.stats && s.stats.audit) || []).map(it => {
       const st = String(it.status || '');
       let bg = '#DEF7EC', fg = '#059669';
-      if (st.indexOf('Pending') !== -1) { bg = '#FEF3C7'; fg = '#B45309'; }
-      if (st.indexOf('Rejected') !== -1 || st.indexOf('Cap') !== -1) { bg = '#FDE8E8'; fg = '#DC2626'; }
-      return { duty: it.duty, date: it.date, status: st, badgeBg: bg, badgeFg: fg, pts: it.points > 0 ? '+' + it.points : '0' };
+      if (st.indexOf('Pending') !== -1) { 
+        bg = '#FEF3C7'; fg = '#B45309'; 
+      }
+      if (st.indexOf('Rejected') !== -1 || st.indexOf('Cap') !== -1 || st.indexOf('Conflict') !== -1 || st.indexOf('Duplicate') !== -1) { 
+        bg = '#FDE8E8'; fg = '#DC2626'; 
+      }
+      return { 
+        duty: it.duty, 
+        date: it.date, 
+        status: st, 
+        badgeBg: bg, 
+        badgeFg: fg, 
+        pts: it.points > 0 ? '+' + it.points : '0' 
+      };
     });
 
     return {
@@ -320,14 +350,13 @@ class Component extends DCLogic {
       showIdle: !s.stats && !s.loading,
       goal,
       total,
-      totalPct: Math.min(100, Math.round((total / goal) * 100)) + '%',
-      barColor: met ? '#059669' : '#002D62',
-      pillText: met ? 'Qualified' : needed + ' to go',
-      pillBg: met ? '#DEF7EC' : '#FEF3C7',
-      pillFg: met ? '#059669' : '#B45309',
-      goalCaption: met
-        ? 'This team has met the ' + goal + '-point playoff requirement.'
-        : needed + ' more verified ' + (needed === 1 ? 'point' : 'points') + ' needed for playoff eligibility.',
+      goalSubtitle,
+      totalPct,
+      barColor,
+      pillText,
+      pillBg,
+      pillFg,
+      goalCaption,
       categories: CATS.map(c => {
         const v = cats[c.key] || 0;
         return { label: c.label, val: v, cap: c.cap, pct: Math.min(100, Math.round((v / c.cap) * 100)) + '%', color: v >= c.cap ? '#059669' : '#002D62' };
