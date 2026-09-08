@@ -48,7 +48,7 @@
 
   <main style="flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 12px 12px 28px 12px;">
 
-    <sc-if value="{{ showPicker }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ showPicker }}">
       <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
         <div style="font-size: 13px; font-weight: 700; color: #002D62; margin-bottom: 12px;">Find your team</div>
         <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
@@ -56,7 +56,7 @@
             <label for="divisionSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Division</label>
             <select id="divisionSelect" value="{{ division }}" onChange="{{ onDivisionChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
               <option value="">Choose division…</option>
-              <sc-for list="{{ divisions }}" as="d" hint-placeholder-count="0">
+              <sc-for list="{{ divisions }}" as="d">
                 <option value="{{ d }}">{{ d }}</option>
               </sc-for>
             </select>
@@ -65,7 +65,7 @@
             <label for="coachSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Head Coach</label>
             <select id="coachSelect" value="{{ teamCode }}" disabled="{{ coachDisabled }}" onChange="{{ onCoachChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
               <option value="">{{ coachPlaceholder }}</option>
-              <sc-for list="{{ coaches }}" as="c" hint-placeholder-count="0">
+              <sc-for list="{{ coaches }}" as="c">
                 <option value="{{ c.teamCode }}">{{ c.label }}</option>
               </sc-for>
             </select>
@@ -74,7 +74,7 @@
       </div>
     </sc-if>
 
-    <sc-if value="{{ showTeamChip }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ showTeamChip }}">
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid #E5E7EB; border-radius: 10px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
         <span style="display: flex; flex-direction: column; min-width: 0;">
           <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6B7280;">Your team</span>
@@ -84,21 +84,21 @@
       </div>
     </sc-if>
 
-    <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ loading }}">
       <div style="text-align: center; padding: 40px 0; color: #002D62; font-weight: 600; font-size: 13px;">
         <div style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;"></div>
         Loading team standings…
       </div>
     </sc-if>
 
-    <sc-if value="{{ showIdle }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ showIdle }}">
       <div style="background: #fff; border: 1px dashed #D1D5DB; border-radius: 12px; padding: 28px 20px; text-align: center;">
         <div style="font-size: 14px; font-weight: 700; color: #002D62; margin-bottom: 6px;">Pick a division and coach</div>
         <p style="font-size: 12px; color: #6B7280; max-width: 32ch; margin: 0 auto; text-wrap: pretty;">We'll remember your team on this device so it loads automatically next time.</p>
       </div>
     </sc-if>
 
-    <sc-if value="{{ hasStats }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ hasStats }}">
       <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 18px 16px 16px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
         <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px;">
           <span style="display: flex; align-items: baseline; gap: 8px;">
@@ -116,7 +116,7 @@
       <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
         <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 12px;">Points by category</div>
         <div style="display: flex; flex-direction: column; gap: 14px;">
-          <sc-for list="{{ categories }}" as="cat" hint-placeholder-count="4">
+          <sc-for list="{{ categories }}" as="cat">
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
                 <span style="font-size: 13px; font-weight: 600; color: #111827;">{{ cat.label }}</span>
@@ -130,15 +130,15 @@
         </div>
       </div>
 
-      <sc-if value="{{ showLog }}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{ showLog }}">
         <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; overflow: hidden;">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #F3F4F6;">
             <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #002D62;">Check-in log</span>
             <span style="font-size: 11px; font-weight: 500; color: #6B7280;">{{ auditCount }}</span>
           </div>
-          <sc-if value="{{ hasAudit }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ hasAudit }}">
             <div style="display: flex; flex-direction: column;">
-              <sc-for list="{{ audit }}" as="row" hint-placeholder-count="3">
+              <sc-for list="{{ audit }}" as="row">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; border-bottom: 1px solid #F3F4F6;">
                   <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
                     <span style="font-size: 13px; font-weight: 600; color: #111827;">{{ row.duty }}</span>
@@ -152,7 +152,7 @@
               </sc-for>
             </div>
           </sc-if>
-          <sc-if value="{{ noAudit }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ noAudit }}">
             <div style="padding: 26px 20px; text-align: center;">
               <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">No check-ins yet</div>
               <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto; text-wrap: pretty;">Points appear here within seconds of a volunteer scanning the QR code at the field tent.</p>
@@ -167,22 +167,22 @@
 
     <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow: hidden;">
       <button type="button" onClick="{{ onToggleGuidelines }}" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: none; border: none; padding: 14px 16px; cursor: pointer; text-align: left; font-family: inherit;" style-hover="background: #F9FAFB;">
-        <span style="font-size: 13px; font-weight: 700; color: #002D62;">Credit &amp; verification guidelines</span>
+        <span style="font-size: 13px; font-weight: 700; color: #002D62;">Volunteer guidelines &amp; targets</span>
         <span style="font-size: 12px; font-weight: 700; color: #6B7280;">{{ guidelinesToggle }}</span>
       </button>
-      <sc-if value="{{ guidelinesOpen }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ guidelinesOpen }}">
         <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playoff qualification requirement</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">For U8 - U19 &amp; EXTRA: Teams must earn a minimum of 17 total verified points to be eligible for post-season play (Cypress Cup and/or Playoffs)[cite: 1]. Playground, U5 &amp; U6 are non-competitive divisions[cite: 1].</p>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 – U19 &amp; EXTRA)</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Field Marshal (max 2), Friday Setup (max 5), and Picture Day (max 2).</p>
           </div>
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Category caps (26 points possible)[cite: 1]</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">• Referee Assignments: Up to 10 points for completed on-field games (up to 17 total including pre-season certified refs and early MatchTrak sign-ups)[cite: 1].<br>• Field Marshal: Capped at 2 points (2 shifts per team)[cite: 1].<br>• Friday Night Setup: Capped at 5 points (1 point per Friday night attendance)[cite: 1].<br>• Picture Day: Capped at 2 points (1 point per 1-hour shift)[cite: 1].</p>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">U5 &amp; U6 Divisions</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 8 volunteer points out of 9 possible. Points are earned through Saturday morning setup/takedown (up to 5 points), Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points), and Picture Picnic Day (max 2 points).</p>
           </div>
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Something missing or incorrect?</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Duplicate check-ins, time conflicts (same referee at two fields simultaneously), or check-ins exceeding category limits are automatically flagged in red. If an assignment was misallocated, have your coach submit a review request to Cypress154RRA@gmail.com[cite: 1].</p>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playground Division</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 volunteer points (4 points possible). Points are earned through Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points) and Picture Picnic Day shifts (max 2 points).</p>
           </div>
         </div>
       </sc-if>
@@ -205,7 +205,6 @@ const CACHE_DIR = 'ayso154_cached_directory';
 const CACHE_TIME = 'ayso154_cached_timestamp';
 const LAST_TEAM = 'ayso154_last_team';
 
-// Static Fallback Directory: 100% of teams are available instantaneously on all devices
 const STATIC_TEAMS = [
   "Playground - Playground",
   "05U - Boys - Stefan Colvey", "05U - Boys - Casey Harpham", "05U - Boys - Ryan Loza", "05U - Boys - Ankit Vasa", "05U - Boys - Greg Weber",
@@ -220,7 +219,7 @@ const STATIC_TEAMS = [
   "10U - Girls - Dawn Caires", "10U - Girls - David Corado", "10U - Girls - Josie Cotton", "10U - Girls - Fekadu Debebe", "10U - Girls - Alexander Olmos", "10U - Girls - Matt Olsen", "10U - Girls - Tomer Otor", "10U - Girls - Brennen Poralski", "10U - Girls - Andrew Yeung",
   "10UX - Girls - Sam Humphery",
   "11UX - Girls - Jon Tarian",
-  "12U - Boys - Mina Abader", "12U - Boys - Jonathan Flores", "12U - Boys - Isaiah Hicks", "12U - Boys - Terri Mackay", "12U - Boys - Jorge Marquez", "12U - Boys - Allegra Martin", "12U - Boys - Amira Medina", "12U - Boys - Chris Munoz", "12U - Boys - Lucky Relator", "12U - Boys - Lawrence Tam", "12U - Boys - Hector Vargas",
+  "12U - Boys - Mina Abader", "12U - Boys - Jonathan Flores", "12U - Isaiah Hicks", "12U - Boys - Terri Mackay", "12U - Boys - Jorge Marquez", "12U - Boys - Allegra Martin", "12U - Boys - Amira Medina", "12U - Boys - Chris Munoz", "12U - Boys - Lucky Relator", "12U - Boys - Lawrence Tam", "12U - Boys - Hector Vargas",
   "12UX - Boys - Ignacio Brache",
   "12U - Girls - Saul Alvarez", "12U - Girls - David Corado", "12U - Girls - Carlos Cruz", "12U - Girls - Fernando Huerta", "12U - Girls - Justin Rast",
   "12UX - Girls - Jessica Ortega",
@@ -251,16 +250,9 @@ function buildStaticDirectory() {
   return dir;
 }
 
-const CATS = [
-  { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
-  { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
-  { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
-  { key: 'Picture Day', label: 'Picture Day & Silent Weekend', cap: 2 }
-];
-
 class Component extends DCLogic {
   state = {
-    directory: buildStaticDirectory(), // Populated immediately at load time
+    directory: buildStaticDirectory(),
     division: '', 
     teamCode: '', 
     teamLabel: '',
@@ -315,12 +307,11 @@ class Component extends DCLogic {
       } else {
         this.setState({ 
           loading: false, 
-          syncLabel: 'Server warming up — tap ↻ Sync to refresh' 
+          syncLabel: 'Server warming up — tap ↻ Sync' 
         });
       }
     };
 
-    // Extended 15-second watchdog timer to account for corporate proxies & cold starts
     const wd = setTimeout(fail, 15000);
 
     window[name] = (data) => {
@@ -371,12 +362,21 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
-    const goal = this.props.pointsGoal ?? 17;
+    const isPlayground = s.division.includes('Playground');
+    const isU5U6 = s.division.startsWith('05U') || s.division.startsWith('06U');
+    
+    // Set division-specific target goals
+    let goal = this.props.pointsGoal ?? 17;
+    if (isPlayground) {
+      goal = 4;
+    } else if (isU5U6) {
+      goal = 8;
+    }
+
     const showLog = this.props.showCheckInLog ?? true;
     const dirTeams = s.directory[s.division] || [];
     const coaches = dirTeams.map(t => ({ teamCode: t.teamCode, label: 'Coach ' + t.coach }));
 
-    const isNonPlayoff = s.division.startsWith('05U') || s.division.startsWith('06U') || s.division.includes('Playground');
     const total = s.stats ? (s.stats.totalPoints || 0) : 0;
     const needed = Math.max(0, goal - total);
     const met = needed === 0;
@@ -389,17 +389,43 @@ class Component extends DCLogic {
     let totalPct = Math.min(100, Math.round((total / goal) * 100)) + '%';
     let barColor = met ? '#059669' : '#002D62';
     let goalCaption = met
-      ? 'This team has met the ' + goal + '-point playoff requirement.'
+      ? 'This team has met the ' + goal + '-point playoff qualification requirement.'
       : needed + ' more verified ' + (needed === 1 ? 'point' : 'points') + ' needed for playoff eligibility.';
 
-    if (isNonPlayoff) {
-      pillText = 'Non-Playoff';
-      pillBg = '#E0E7FF';
-      pillFg = '#3730A3';
-      goalSubtitle = 'points earned';
-      totalPct = total > 0 ? '100%' : '0%';
-      barColor = '#059669';
-      goalCaption = 'Playground, 05U & 06U are non-competitive divisions. Thank you for volunteering to support our kids!';
+    if (isPlayground) {
+      pillText = met ? 'Goal Achieved' : needed + ' to go';
+      goalSubtitle = 'of 4 volunteer points';
+      goalCaption = met
+        ? 'Great job! This Playground team has completed all 4 volunteer points.'
+        : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to reach the 4-point season goal.';
+    } else if (isU5U6) {
+      pillText = met ? 'Goal Achieved' : needed + ' to go';
+      goalSubtitle = 'of 8 target points (9 max)';
+      goalCaption = met
+        ? 'Goal completed! This team has earned ' + total + ' volunteer points toward the 8-point team goal.'
+        : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to hit the 8-point team goal (9 possible).';
+    }
+
+    // Category configurations tailored to each division's real roles
+    let activeCats = [];
+    if (isPlayground) {
+      activeCats = [
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
+        { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
+      ];
+    } else if (isU5U6) {
+      activeCats = [
+        { key: 'Friday Night Field Setup', label: 'Saturday Field Setup / Takedown', cap: 5 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
+        { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
+      ];
+    } else {
+      activeCats = [
+        { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
+        { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
+        { key: 'Picture Day', label: 'Picture Day & Silent Weekend', cap: 2 }
+      ];
     }
 
     const audit = ((s.stats && s.stats.audit) || []).map(it => {
@@ -444,7 +470,7 @@ class Component extends DCLogic {
       pillBg,
       pillFg,
       goalCaption,
-      categories: CATS.map(c => {
+      categories: activeCats.map(c => {
         const v = cats[c.key] || 0;
         return { 
           label: c.label, 
