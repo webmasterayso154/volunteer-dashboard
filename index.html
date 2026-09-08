@@ -55,7 +55,7 @@
           <div style="display: flex; flex-direction: column;">
             <label for="divisionSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Division</label>
             <select id="divisionSelect" value="{{ division }}" onChange="{{ onDivisionChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
-              <option value="">{{ divisionPlaceholder }}</option>
+              <option value="">Choose division…</option>
               <sc-for list="{{ divisions }}" as="d" hint-placeholder-count="0">
                 <option value="{{ d }}">{{ d }}</option>
               </sc-for>
@@ -64,7 +64,7 @@
           <div style="display: flex; flex-direction: column;">
             <label for="coachSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Head Coach</label>
             <select id="coachSelect" value="{{ teamCode }}" disabled="{{ coachDisabled }}" onChange="{{ onCoachChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
-              <option value="">Choose head coach…</option>
+              <option value="">{{ coachPlaceholder }}</option>
               <sc-for list="{{ coaches }}" as="c" hint-placeholder-count="0">
                 <option value="{{ c.teamCode }}">{{ c.label }}</option>
               </sc-for>
@@ -94,7 +94,7 @@
     <sc-if value="{{ showIdle }}" hint-placeholder-val="{{ false }}">
       <div style="background: #fff; border: 1px dashed #D1D5DB; border-radius: 12px; padding: 28px 20px; text-align: center;">
         <div style="font-size: 14px; font-weight: 700; color: #002D62; margin-bottom: 6px;">Pick a division and coach</div>
-        <p style="font-size: 12px; color: #6B7280; max-width: 32ch; margin: 0 auto; text-wrap: pretty;">We'll remember your team on this phone so it loads automatically next time.</p>
+        <p style="font-size: 12px; color: #6B7280; max-width: 32ch; margin: 0 auto; text-wrap: pretty;">We'll remember your team on this device so it loads automatically next time.</p>
       </div>
     </sc-if>
 
@@ -155,7 +155,7 @@
           <sc-if value="{{ noAudit }}" hint-placeholder-val="{{ false }}">
             <div style="padding: 26px 20px; text-align: center;">
               <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">No check-ins yet</div>
-              <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto; text-wrap: pretty;">Points appear here within minutes of a volunteer scanning the QR code at the field.</p>
+              <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto; text-wrap: pretty;">Points appear here within seconds of a volunteer scanning the QR code at the field tent.</p>
             </div>
           </sc-if>
           <div style="background: #F9FAFB; border-top: 1px solid #F3F4F6; padding: 9px 16px; font-size: 11px; color: #6B7280; text-wrap: pretty;">
@@ -174,15 +174,15 @@
         <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
           <div>
             <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playoff qualification requirement</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">For U8 - U19 &amp; EXTRA: Teams must earn a minimum of 17 total verified points to be eligible for post-season play (Cypress Cup and/or Playoffs). Playground, U5 &amp; U6 are non-competitive divisions.</p>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">For U8 - U19 &amp; EXTRA: Teams must earn a minimum of 17 total verified points to be eligible for post-season play (Cypress Cup and/or Playoffs)[cite: 1]. Playground, U5 &amp; U6 are non-competitive divisions[cite: 1].</p>
           </div>
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Category caps (26 points possible)</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">• Referee Assignments: Up to 10 points for completed on-field games (up to 17 total including pre-season certified refs and early MatchTrak sign-ups).<br>• Field Marshal: Capped at 2 points (2 shifts per team).<br>• Friday Night Setup: Capped at 5 points (1 point per Friday night attendance).<br>• Picture Day: Capped at 2 points (1 point per 1-hour shift).</p>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Category caps (26 points possible)[cite: 1]</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">• Referee Assignments: Up to 10 points for completed on-field games (up to 17 total including pre-season certified refs and early MatchTrak sign-ups)[cite: 1].<br>• Field Marshal: Capped at 2 points (2 shifts per team)[cite: 1].<br>• Friday Night Setup: Capped at 5 points (1 point per Friday night attendance)[cite: 1].<br>• Picture Day: Capped at 2 points (1 point per 1-hour shift)[cite: 1].</p>
           </div>
           <div>
             <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Something missing or incorrect?</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Duplicate check-ins, time conflicts (same referee at two fields at once), or check-ins exceeding category limits are automatically flagged in red. If an assignment was misallocated, have your coach submit a review request to Cypress154RRA@gmail.com.</p>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Duplicate check-ins, time conflicts (same referee at two fields simultaneously), or check-ins exceeding category limits are automatically flagged in red. If an assignment was misallocated, have your coach submit a review request to Cypress154RRA@gmail.com[cite: 1].</p>
           </div>
         </div>
       </sc-if>
@@ -205,7 +205,52 @@ const CACHE_DIR = 'ayso154_cached_directory';
 const CACHE_TIME = 'ayso154_cached_timestamp';
 const LAST_TEAM = 'ayso154_last_team';
 
-// Capped per 2026 rule flyer: On-field Ref = 10, FM = 2, Setup = 5, Pic = 2
+// Static Fallback Directory: 100% of teams are available instantaneously on all devices
+const STATIC_TEAMS = [
+  "Playground - Playground",
+  "05U - Boys - Stefan Colvey", "05U - Boys - Casey Harpham", "05U - Boys - Ryan Loza", "05U - Boys - Ankit Vasa", "05U - Boys - Greg Weber",
+  "05U - Girls - Priscilla Alvardo", "05U - Girls - Tim Bouahom", "05U - Girls - Ramzi Nasr", "05U - Girls - Saul Ruiz",
+  "06U - Boys - Jessica Campuzano", "06U - Boys - Alber Eskander", "06U - Boys - James Fahrny", "06U - Boys - Ryan Fox", "06U - Boys - Chris Gshweng", "06U - Boys - Deanna Hartman", "06U - Boys - Jessica Matal", "06U - Boys - Amira Medina", "06U - Boys - Brennen Portalski",
+  "06U - Girls - Diana Baik", "06U - Girls - Suresh Dangeti", "06U - Girls - Cobi Ferriro", "06U - Girls - Joseph Frontino", "06U - Girls - Kendall Klein", "06U - Girls - Andrea Lopez", "06U - Girls - Matt Olsen", "06U - Girls - Breanna Pena", "06U - Girls - Jeremy Vreeland",
+  "08U - Boys - Raushanah Ali", "08U - Boys - Raumin Benjamin", "08U - Boys - Bryce Burnett", "08U - Boys - Dan Carmichael", "08U - Boys - Natasha Dressler", "08U - Boys - Arielle Garcia", "08U - Boys - Casey Harpham", "08U - Boys - Jeffrey Hosler", "08U - Boys - Matthew Kamada", "08U - Boys - Christina Kinne", "08U - Boys - Jorge Marquez", "08U - Boys - Victor Perez", "08U - Boys - Juan Rodriguez", "08U - Boys - Roberto Rojas", "08U - Boys - Veronica Ruiz", "08U - Boys - Amanda Towers", "08U - Boys - Fernando Vega",
+  "08U - Girls - Samuel Alvarez", "08U - Girls - Krissy Barone", "08U - Girls - Michael Burke", "08U - Girls - Meghan Codipilly", "08U - Girls - Anukool Gandhi", "08U - Girls - Abraham Gomez", "08U - Girls - Mark Hernandez", "08U - Girls - Nathan Silva", "08U - Girls - Crystal Van Maanen", "08U - Girls - Adrian Yeung",
+  "9UX - Boys - Chris Franco", "9UX - Girls - Kevin Yonemoto",
+  "10U - Boys - Faheem Armanyous", "10U - Boys - Dustin Brieger", "10U - Boys - Ryan Bulatao", "10U - Boys - Andrew Evango", "10U - Boys - Harold Huang", "10U - Boys - Jeff Klaus", "10U - Boys - Jace Leicht", "10U - Boys - Michael Lewis", "10U - Boys - Leonardo Limon", "10U - Boys - Ryan Loza", "10U - Boys - Mark Mancilla", "10U - Boys - Long Nguyen", "10U - Boys - Stephanie Orozco", "10U - Boys - Trevor Richardson", "10U - Boys - Javier Zambrano", "10U - Boys - Tariq Zidan",
+  "10UX - Boys - Paul Cuthbert",
+  "10U - Girls - Dawn Caires", "10U - Girls - David Corado", "10U - Girls - Josie Cotton", "10U - Girls - Fekadu Debebe", "10U - Girls - Alexander Olmos", "10U - Girls - Matt Olsen", "10U - Girls - Tomer Otor", "10U - Girls - Brennen Poralski", "10U - Girls - Andrew Yeung",
+  "10UX - Girls - Sam Humphery",
+  "11UX - Girls - Jon Tarian",
+  "12U - Boys - Mina Abader", "12U - Boys - Jonathan Flores", "12U - Boys - Isaiah Hicks", "12U - Boys - Terri Mackay", "12U - Boys - Jorge Marquez", "12U - Boys - Allegra Martin", "12U - Boys - Amira Medina", "12U - Boys - Chris Munoz", "12U - Boys - Lucky Relator", "12U - Boys - Lawrence Tam", "12U - Boys - Hector Vargas",
+  "12UX - Boys - Ignacio Brache",
+  "12U - Girls - Saul Alvarez", "12U - Girls - David Corado", "12U - Girls - Carlos Cruz", "12U - Girls - Fernando Huerta", "12U - Girls - Justin Rast",
+  "12UX - Girls - Jessica Ortega",
+  "13UX - Boys - Jessica Husami",
+  "14U - Boys - Mina Abader", "14U - Boys - Allegra Martin", "14U - Boys - Ernie Solano", "14U - Boys - Jodie Thomas",
+  "14UX - Boys - Christian Villalobos",
+  "14U - Girls - Jeff Dronkers", "14U - Girls - Pablo Peregrina",
+  "14UX - Girls - Ben Wysocki",
+  "16U - Boys - Bruce Conze", "16U - Girls - Miguel Hernandez",
+  "19U - Boys - Jennifer Deselm", "19U - Girls - Josh Palafox"
+];
+
+function buildStaticDirectory() {
+  const dir = {};
+  STATIC_TEAMS.forEach(rawTeam => {
+    const parts = rawTeam.split(' - ');
+    if (parts.length >= 3) {
+      const division = (parts[0].trim() + ' - ' + parts[1].trim());
+      const coach = parts.slice(2).join(' - ').trim();
+      if (!dir[division]) dir[division] = [];
+      dir[division].push({ teamCode: rawTeam, coach: coach });
+    } else {
+      const division = parts[0].trim();
+      if (!dir[division]) dir[division] = [];
+      dir[division].push({ teamCode: rawTeam, coach: rawTeam });
+    }
+  });
+  return dir;
+}
+
 const CATS = [
   { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
   { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
@@ -215,9 +260,16 @@ const CATS = [
 
 class Component extends DCLogic {
   state = {
-    directory: {}, division: '', teamCode: '', teamLabel: '',
-    stats: null, loading: false, syncLabel: 'Connecting to ledger…',
-    pickerOpen: true, guidelinesOpen: false, dirLoaded: false
+    directory: buildStaticDirectory(), // Populated immediately at load time
+    division: '', 
+    teamCode: '', 
+    teamLabel: '',
+    stats: null, 
+    loading: false, 
+    syncLabel: 'Ready · Instant Standings',
+    pickerOpen: true, 
+    guidelinesOpen: false, 
+    dirLoaded: true
   };
 
   componentDidMount() {
@@ -230,8 +282,14 @@ class Component extends DCLogic {
       const s = localStorage.getItem(LAST_TEAM);
       if (s) saved = JSON.parse(s);
     } catch (e) {}
+
     if (saved && saved.teamCode) {
-      this.setState({ division: saved.division, teamCode: saved.teamCode, teamLabel: saved.teamLabel, pickerOpen: false });
+      this.setState({ 
+        division: saved.division, 
+        teamCode: saved.teamCode, 
+        teamLabel: saved.teamLabel, 
+        pickerOpen: false 
+      });
       this.fetchStats(saved.teamCode);
     }
     this.fetchDirectory();
@@ -239,15 +297,40 @@ class Component extends DCLogic {
 
   jsonp(endpoint, cb, retry = 0) {
     const name = 'ayso_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
-    let done = false, el = null;
-    const clean = () => { try { delete window[name]; } catch (e) {} if (el && el.parentNode) el.parentNode.removeChild(el); };
-    const fail = () => {
-      if (done) return; done = true; clearTimeout(wd); clean();
-      if (retry < 2) this.jsonp(endpoint, cb, retry + 1);
-      else { this.setState({ loading: false, syncLabel: 'Network slow — tap Sync to retry' }); }
+    let done = false;
+    let el = null;
+
+    const clean = () => {
+      try { delete window[name]; } catch (e) {}
+      if (el && el.parentNode) el.parentNode.removeChild(el);
     };
-    const wd = setTimeout(fail, 5000);
-    window[name] = (data) => { if (done) return; done = true; clearTimeout(wd); clean(); cb(data); };
+
+    const fail = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(wd);
+      clean();
+      if (retry < 2) {
+        this.jsonp(endpoint, cb, retry + 1);
+      } else {
+        this.setState({ 
+          loading: false, 
+          syncLabel: 'Server warming up — tap ↻ Sync to refresh' 
+        });
+      }
+    };
+
+    // Extended 15-second watchdog timer to account for corporate proxies & cold starts
+    const wd = setTimeout(fail, 15000);
+
+    window[name] = (data) => {
+      if (done) return;
+      done = true;
+      clearTimeout(wd);
+      clean();
+      cb(data);
+    };
+
     el = document.createElement('script');
     el.src = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&_t=' + Date.now();
     el.onerror = fail;
@@ -268,9 +351,12 @@ class Component extends DCLogic {
 
   fetchStats(teamCode) {
     if (!teamCode) return;
-    this.setState({ loading: true });
+    this.setState({ loading: true, syncLabel: 'Syncing team points…' });
     this.jsonp(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), (res) => {
-      if (!res) { this.setState({ loading: false }); return; }
+      if (!res) { 
+        this.setState({ loading: false }); 
+        return; 
+      }
       const patch = { loading: false, stats: res };
       if (res.syncTimestamp) patch.syncLabel = 'Updated ' + res.syncTimestamp;
       this.setState(patch);
@@ -278,7 +364,9 @@ class Component extends DCLogic {
   }
 
   saveTeam(division, teamCode, teamLabel) {
-    try { localStorage.setItem(LAST_TEAM, JSON.stringify({ division, teamCode, teamLabel })); } catch (e) {}
+    try { 
+      localStorage.setItem(LAST_TEAM, JSON.stringify({ division, teamCode, teamLabel })); 
+    } catch (e) {}
   }
 
   renderVals() {
@@ -314,7 +402,6 @@ class Component extends DCLogic {
       goalCaption = 'Playground, 05U & 06U are non-competitive divisions. Thank you for volunteering to support our kids!';
     }
 
-    // Flag red badges for Cap, Conflict, or Duplicate entries
     const audit = ((s.stats && s.stats.audit) || []).map(it => {
       const st = String(it.status || '');
       let bg = '#DEF7EC', fg = '#059669';
@@ -337,12 +424,12 @@ class Component extends DCLogic {
     return {
       syncLabel: s.syncLabel,
       divisions: Object.keys(s.directory),
-      divisionPlaceholder: s.dirLoaded ? 'Choose division…' : 'Loading divisions…',
       division: s.division,
       teamCode: s.teamCode,
       teamLabel: s.teamLabel,
       coaches,
       coachDisabled: coaches.length === 0,
+      coachPlaceholder: coaches.length === 0 ? 'Choose division first…' : 'Choose head coach…',
       showPicker: s.pickerOpen,
       showTeamChip: !s.pickerOpen && !!s.teamLabel,
       loading: s.loading,
@@ -359,7 +446,13 @@ class Component extends DCLogic {
       goalCaption,
       categories: CATS.map(c => {
         const v = cats[c.key] || 0;
-        return { label: c.label, val: v, cap: c.cap, pct: Math.min(100, Math.round((v / c.cap) * 100)) + '%', color: v >= c.cap ? '#059669' : '#002D62' };
+        return { 
+          label: c.label, 
+          val: v, 
+          cap: c.cap, 
+          pct: Math.min(100, Math.round((v / c.cap) * 100)) + '%', 
+          color: v >= c.cap ? '#059669' : '#002D62' 
+        };
       }),
       showLog,
       audit,
@@ -371,9 +464,11 @@ class Component extends DCLogic {
       onToggleGuidelines: () => this.setState(p => ({ guidelinesOpen: !p.guidelinesOpen })),
       onChangeTeam: () => this.setState({ pickerOpen: true }),
       onSync: () => {
-        this.setState({ syncLabel: 'Syncing…' });
-        this.fetchDirectory();
-        if (this.state.teamCode) this.fetchStats(this.state.teamCode);
+        if (this.state.teamCode) {
+          this.fetchStats(this.state.teamCode);
+        } else {
+          this.fetchDirectory();
+        }
       },
       onDivisionChange: (e) => this.setState({ division: e.target.value, teamCode: '', stats: null }),
       onCoachChange: (e) => {
