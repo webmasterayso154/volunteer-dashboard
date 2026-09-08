@@ -127,10 +127,8 @@
   </div>
 
   <script>
-    // ⚠️ IMPORTANT: Paste your published Google Apps Script Web App URL here!
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwSh1phXhKfvfRY9-1dq2BHeIw9kFSzEhwltj4bk-WgiwWYZB4T6bLTfyiXus3J14NE/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx9a8MucGcBQj6txl60w0zXNHGQr0m4T3pFKPTcjy6kmTRD8DW-bLL-MwpB2VPkVY4/exec';
 
-    // 1. Fetch current settings when page loads
     window.onload = async function() {
       try {
         const response = await fetch(WEB_APP_URL + '?action=getSettings');
@@ -148,7 +146,6 @@
       }
     };
 
-    // 2. Handle the save button
     document.getElementById('configForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const btn = document.getElementById('saveBtn');
@@ -180,8 +177,6 @@
 
       btn.disabled = false;
       btn.innerText = '💾 Save Configuration';
-      
-      // Clear status after 4 seconds
       setTimeout(() => { document.getElementById('statusMessage').className = 'status'; }, 4000);
     });
 
