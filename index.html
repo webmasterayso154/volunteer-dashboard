@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AYSO 154 · Volunteer Standings</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -154,7 +155,7 @@
           <sc-if value="{{ noAudit }}" hint-placeholder-val="{{ false }}">
             <div style="padding: 26px 20px; text-align: center;">
               <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">No check-ins yet</div>
-              <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto; text-wrap: pretty;">Points appear here within minutes of a volunteer scanning the QR code at the main tent.</p>
+              <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto; text-wrap: pretty;">Points appear here within minutes of a volunteer scanning the QR code at the field.</p>
             </div>
           </sc-if>
           <div style="background: #F9FAFB; border-top: 1px solid #F3F4F6; padding: 9px 16px; font-size: 11px; color: #6B7280; text-wrap: pretty;">
@@ -181,7 +182,7 @@
           </div>
           <div>
             <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Category maximums</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Referee assignments earn 1 pt each, up to 17. Field Marshal is capped at 2 pts. Friday Night Setup is capped at 5 pts. Picture Day &amp; Silent Weekend are capped at 2 pts.</p>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Referee assignments earn 1 pt each, up to 17. Field Marshal is capped at 2 pts. Friday Night Setup is capped at 5 pts. Picture Day is capped at 2 pts.</p>
           </div>
           <div>
             <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Board authority</div>
@@ -201,8 +202,9 @@
   </footer>
 </div>
 </x-dc>
+
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:17,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
-const API_URL = 'https://script.google.com/macros/s/AKfycbyYbmTmR_goZXEwEO-No2-fqGXUhdpAefVsYLmm499ncIb8dCqXF3rcUIgdQ3SZOgD5/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx9a8MucGcBQj6txl60w0zXNHGQr0m4T3pFKPTcjy6kmTRD8DW-bLL-MwpB2VPkVY4/exec';
 const CACHE_DIR = 'ayso154_cached_directory';
 const CACHE_TIME = 'ayso154_cached_timestamp';
 const LAST_TEAM = 'ayso154_last_team';
