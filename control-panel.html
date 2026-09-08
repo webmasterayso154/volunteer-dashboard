@@ -113,12 +113,12 @@
 
       <div class="form-group">
         <label for="RefMaxCap">🛑 Referee Point Cap (Max points per team)</label>
-        <input type="number" id="RefMaxCap" name="RefMaxCap" required>
+        <input type="number" id="RefMaxCap" name="RefMaxCap" value="17" required>
       </div>
 
       <div class="form-group">
-        <label for="PizzaThreshold">🍕 Pizza Party Point Threshold</label>
-        <input type="number" id="PizzaThreshold" name="PizzaThreshold" required>
+        <label for="PlayoffThreshold">🏆 Post-Season / Playoff Qualification Threshold (Points)</label>
+        <input type="number" id="PlayoffThreshold" name="PlayoffThreshold" value="17" required>
       </div>
 
       <button type="submit" id="saveBtn" class="btn">💾 Save Configuration</button>
@@ -136,8 +136,8 @@
         
         document.getElementById('BoardEmail').value = data.BoardEmail || '';
         document.getElementById('RCEmail').value = data.RCEmail || '';
-        document.getElementById('RefMaxCap').value = data.RefMaxCap || '';
-        document.getElementById('PizzaThreshold').value = data.PizzaThreshold || '';
+        document.getElementById('RefMaxCap').value = data.RefMaxCap || 17;
+        document.getElementById('PlayoffThreshold').value = data.PlayoffThreshold || 17;
         
         document.getElementById('loading').style.display = 'none';
         document.getElementById('configForm').style.display = 'block';
@@ -156,7 +156,7 @@
         BoardEmail: document.getElementById('BoardEmail').value,
         RCEmail: document.getElementById('RCEmail').value,
         RefMaxCap: document.getElementById('RefMaxCap').value,
-        PizzaThreshold: document.getElementById('PizzaThreshold').value
+        PlayoffThreshold: document.getElementById('PlayoffThreshold').value
       };
 
       try {
