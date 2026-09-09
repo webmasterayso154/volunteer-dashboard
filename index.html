@@ -182,7 +182,7 @@
         <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
           <div>
             <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 – U19 &amp; EXTRA)</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Field Marshal (max 2), Friday Setup (max 5), and Picture Day (max 2).</p>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 of 26 possible points to qualify for post-season play (Cypress Cup and Playoffs). <strong>Referee points (17 possible):</strong> up to 5 for certified team referees communicated to your division director pre-season and activated in MatchTrak, 2 if every referee spot for your team's games is filled in MatchTrak before September 26, and up to 10 for on-field assignments completed in full uniform with a QR check-in at the field tent. <strong>Volunteer points (9 possible):</strong> Field Marshal (max 2), Friday Night Field Setup (max 5), and Picture Picnic Day (max 2).</p>
           </div>
           <div>
             <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">U5 &amp; U6 Divisions</div>
@@ -499,7 +499,7 @@ class Component extends DCLogic {
     let pillText = met ? 'Qualified' : needed + ' to go';
     let pillBg = met ? '#DEF7EC' : '#FEF3C7';
     let pillFg = met ? '#059669' : '#B45309';
-    let goalSubtitle = 'of ' + goal + ' points';
+    let goalSubtitle = 'of ' + goal + ' points (26 max)';
     let totalPct = Math.min(100, Math.round((total / goal) * 100)) + '%';
     let barColor = met ? '#059669' : '#002D62';
     let goalCaption = met
@@ -535,10 +535,12 @@ class Component extends DCLogic {
       ];
     } else {
       activeCats = [
+        { key: 'Pre-Season Referees', label: 'Certified Team Referees', cap: 5 },
+        { key: 'MatchTrak Roster Bonus', label: 'MatchTrak Filled by Sep 26', cap: 2 },
         { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
         { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
         { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
-        { key: 'Picture Day', label: 'Picture Day & Silent Weekend', cap: 2 }
+        { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
       ];
     }
 
@@ -557,7 +559,7 @@ class Component extends DCLogic {
         status: st, 
         badgeBg: bg, 
         badgeFg: fg, 
-        pts: it.points > 0 ? '+' + it.points : '0' 
+        pts: it.points > 0 ? '+' + it.points : (it.points < 0 ? String(it.points) : '0')
       };
     });
 
