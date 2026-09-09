@@ -17,6 +17,8 @@
       --success-bg: #DCFCE7;
       --warning: #D97706;
       --warning-bg: #FEF3C7;
+      --danger: #DC2626;
+      --danger-bg: #FEE2E2;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -31,7 +33,7 @@
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .header-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .header-title { font-size: 19px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     .user-pill {
       background: var(--primary-light);
       padding: 6px 14px;
@@ -61,6 +63,40 @@
     }
 
     .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+
+    /* Tab Switcher */
+    .tab-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      background: #E2E8F0;
+    }
+    .tab-counter {
+      background: var(--danger);
+      color: #FFF;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
 
     .stats-bar {
       display: grid;
@@ -107,43 +143,20 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      transition: transform 0.15s ease;
     }
-    .team-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    .team-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
-    }
+    .team-card:hover { transform: translateY(-2px); }
+    .team-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
     .team-division { font-size: 12px; font-weight: 700; color: var(--accent); }
     .team-coach { font-size: 16px; font-weight: 700; margin-top: 2px; }
 
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 700;
-    }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; }
     .badge-qualified { background: var(--success-bg); color: var(--success); }
     .badge-pending { background: var(--warning-bg); color: var(--warning); }
+    .badge-danger { background: var(--danger-bg); color: var(--danger); }
 
-    .progress-bar-bg {
-      background: #E2E8F0;
-      border-radius: 6px;
-      height: 8px;
-      overflow: hidden;
-      margin: 12px 0;
-    }
-    .progress-bar-fill {
-      background: var(--success);
-      height: 100%;
-      transition: width 0.3s ease;
-    }
+    .progress-bar-bg { background: #E2E8F0; border-radius: 6px; height: 8px; overflow: hidden; margin: 12px 0; }
+    .progress-bar-fill { background: var(--success); height: 100%; }
 
     .btn {
       background: var(--primary);
@@ -159,8 +172,39 @@
       margin-top: 12px;
     }
     .btn:hover { background: var(--primary-light); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin-top: 0; }
+    .btn-danger { background: var(--danger); }
+    .btn-danger:hover { background: #B91C1C; }
 
-    /* Modal Styling */
+    /* Anomaly Table Styling */
+    .anomaly-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .anomaly-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .anomaly-flag-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .flag-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid #FDE68A; }
+    .flag-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #FECACA; }
+    .flag-info { background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD; }
+
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -181,25 +225,13 @@
       padding: 24px;
       position: relative;
     }
-    .modal-close {
-      position: absolute;
-      top: 18px; right: 18px;
-      font-size: 20px;
-      font-weight: 700;
-      cursor: pointer;
-      color: var(--text-muted);
-    }
+    .modal-close { position: absolute; top: 18px; right: 18px; font-size: 20px; font-weight: 700; cursor: pointer; color: var(--text-muted); }
     .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-    .audit-list { margin-top: 16px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
-    .audit-row { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; justify-content: space-between; }
+    .audit-list { margin-top: 16px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
+    .audit-row { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
     .audit-row:last-child { border-bottom: none; }
 
-    .override-box {
-      margin-top: 20px;
-      padding: 16px;
-      background: #F1F5F9;
-      border-radius: 8px;
-    }
+    .override-box { margin-top: 20px; padding: 16px; background: #F1F5F9; border-radius: 8px; }
   </style>
 </head>
 <body>
@@ -218,36 +250,60 @@
   </div>
 
   <div class="container">
-    <div class="stats-bar">
-      <div class="stat-card">
-        <div class="stat-label">Total Teams</div>
-        <div class="stat-value" id="statTotalTeams">--</div>
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabTeams" onclick="switchTab('teams')">
+        👥 Teams & Standings
+      </button>
+      <button class="tab-btn" id="tabAnomalies" onclick="switchTab('anomalies')">
+        🚨 Integrity & Audit Queue <span class="tab-counter" id="anomalyCounterBadge" style="display:none;">0</span>
+      </button>
+    </div>
+
+    <!-- VIEW 1: TEAMS & STANDINGS -->
+    <div id="viewTeams">
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-label">Total Teams</div>
+          <div class="stat-value" id="statTotalTeams">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Playoff Qualified</div>
+          <div class="stat-value" id="statQualified" style="color: var(--success);">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Playoff Threshold</div>
+          <div class="stat-value" id="statThreshold">17 pts</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Playoff Qualified</div>
-        <div class="stat-value" id="statQualified" style="color: var(--success);">--</div>
+
+      <div class="controls">
+        <input type="text" id="searchInput" class="input-control" placeholder="🔍 Search coach or division..." oninput="filterTeams()">
+        <select id="divisionFilter" class="input-control" onchange="filterTeams()">
+          <option value="">All Divisions</option>
+        </select>
+        <select id="statusFilter" class="input-control" onchange="filterTeams()">
+          <option value="">All Statuses</option>
+          <option value="qualified">Qualified (17+)</option>
+          <option value="pending">In Progress (&lt;17)</option>
+        </select>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Points Required</div>
-        <div class="stat-value" id="statThreshold">17 pts</div>
+
+      <div class="team-grid" id="teamsContainer">
+        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
+          Loading team standings and point audits...
+        </div>
       </div>
     </div>
 
-    <div class="controls">
-      <input type="text" id="searchInput" class="input-control" placeholder="🔍 Search coach or division..." oninput="filterTeams()">
-      <select id="divisionFilter" class="input-control" onchange="filterTeams()">
-        <option value="">All Divisions</option>
-      </select>
-      <select id="statusFilter" class="input-control" onchange="filterTeams()">
-        <option value="">All Statuses</option>
-        <option value="qualified">Qualified (17+)</option>
-        <option value="pending">In Progress (&lt;17)</option>
-      </select>
-    </div>
-
-    <div class="team-grid" id="teamsContainer">
-      <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
-        Loading team standings and point audits...
+    <!-- VIEW 2: ANOMALY / AUDIT QUEUE -->
+    <div id="viewAnomalies" style="display: none;">
+      <div style="margin-bottom: 16px; color: var(--text-muted); font-size: 14px;">
+        Automated scan detecting rapid double-clicks (&lt;15 min), same-day duplicates, and referee field slot collisions.
+      </div>
+      <div id="anomaliesList">
+        <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+          Scanning form submissions for anomalies...
+        </div>
       </div>
     </div>
   </div>
@@ -260,23 +316,27 @@
       <div class="modal-title" id="modalTeamName"></div>
       <div id="modalScoreSummary" style="font-weight: 700; font-size: 16px; margin-top: 4px;"></div>
 
-      <h4 style="margin-top: 16px; font-size: 14px;">Audit History</h4>
+      <h4 style="margin-top: 16px; font-size: 14px;">Audit History & Submissions</h4>
       <div class="audit-list" id="modalAuditList">
         <div style="padding: 12px; color: var(--text-muted);">Fetching audit records...</div>
       </div>
 
       <div class="override-box">
-        <h4 style="font-size: 14px; margin-bottom: 8px;">Board Point Override / Award</h4>
-        <select id="overrideType" class="input-control" style="width: 100%; margin-bottom: 8px;">
-          <option value="Pre-Season Referees">Pre-Season Referees</option>
-          <option value="MatchTrak Roster Bonus">MatchTrak Roster Bonus</option>
-          <option value="Discretionary Board Credit">Discretionary Board Credit</option>
+        <h4 style="font-size: 14px; margin-bottom: 8px;">Board Point Override & Rule Adjustments</h4>
+        <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Adjustment / Award Type</label>
+        <select id="overrideType" class="input-control" style="width: 100%; margin-bottom: 8px;" onchange="handleOverrideTypeChange()">
+          <option value="Uniform Non-Compliance Deduction">Uniform Non-Compliance Deduction (-1 pt)</option>
+          <option value="Referee Assignment Disqualification">Referee Disqualification (-1 pt)</option>
+          <option value="Certified Team Referees">Certified Team Referees (+1 pt, max 5)</option>
+          <option value="MatchTrak Filled by Sep 26">MatchTrak Filled by Sep 26 (+2 pts)</option>
+          <option value="Discretionary Board Credit">Discretionary Board Credit (+1 pt)</option>
+          <option value="Discretionary Board Deduction">Discretionary Board Deduction (-1 pt)</option>
         </select>
         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="number" id="overridePts" class="input-control" placeholder="Points (+/-)" value="1" style="max-width: 120px;">
-          <input type="text" id="overrideNote" class="input-control" placeholder="Reason / Justification">
+          <input type="number" id="overridePts" class="input-control" placeholder="Points (+/-)" value="-1" style="max-width: 120px;">
+          <input type="text" id="overrideNote" class="input-control" placeholder="Reason (e.g., referee not in full uniform at LJHS #4)">
         </div>
-        <button class="btn" onclick="submitOverride()">Apply Point Override</button>
+        <button class="btn" onclick="submitOverride()">Apply Adjustment</button>
       </div>
     </div>
   </div>
@@ -304,13 +364,19 @@
         document.getElementById('draftBanner').style.display = 'block';
       }
 
+      if (data.anomalyCount > 0) {
+        const badge = document.getElementById('anomalyCounterBadge');
+        badge.innerText = data.anomalyCount;
+        badge.style.display = 'inline-block';
+      }
+
       document.getElementById('statThreshold').innerText = (data.settings.PlayoffThreshold || 17) + " pts";
       document.getElementById('statTotalTeams').innerText = data.teams.length;
       document.getElementById('statQualified').innerText = data.teams.filter(t => t.qualified).length;
 
-      // Populate Divisions
       const divisions = [...new Set(data.teams.map(t => t.division))].sort();
       const divSelect = document.getElementById('divisionFilter');
+      divSelect.innerHTML = '<option value="">All Divisions</option>';
       divisions.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d;
@@ -319,6 +385,94 @@
       });
 
       renderTeamCards(data.teams);
+    }
+
+    function switchTab(tab) {
+      if (tab === 'teams') {
+        document.getElementById('tabTeams').className = 'tab-btn active';
+        document.getElementById('tabAnomalies').className = 'tab-btn';
+        document.getElementById('viewTeams').style.display = 'block';
+        document.getElementById('viewAnomalies').style.display = 'none';
+      } else {
+        document.getElementById('tabTeams').className = 'tab-btn';
+        document.getElementById('tabAnomalies').className = 'tab-btn active';
+        document.getElementById('viewTeams').style.display = 'none';
+        document.getElementById('viewAnomalies').style.display = 'block';
+        loadAnomalies();
+      }
+    }
+
+    function loadAnomalies() {
+      const container = document.getElementById('anomaliesList');
+      container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);">Running real-time audit scanner...</div>';
+
+      google.script.run
+        .withSuccessHandler(renderAnomalies)
+        .withFailureHandler(handleError)
+        .scanSubmissionsForAnomalies();
+    }
+
+    function renderAnomalies(anomalies) {
+      const container = document.getElementById('anomaliesList');
+      container.innerHTML = '';
+
+      if (!anomalies || anomalies.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--success); font-weight: 700;">✅ Clean Sheet! No duplicates, collisions, or rapid submissions detected.</div>';
+        return;
+      }
+
+      anomalies.forEach(a => {
+        const card = document.createElement('div');
+        card.className = 'anomaly-card';
+
+        let flagsHtml = '';
+        a.flags.forEach(f => {
+          const pillClass = f.severity === 'danger' ? 'flag-danger' : (f.severity === 'warning' ? 'flag-warning' : 'flag-info');
+          flagsHtml += `<div class="anomaly-flag-pill ${pillClass}">⚠️ ${f.message}</div>`;
+        });
+
+        card.innerHTML = `
+          <div class="anomaly-header">
+            <div>
+              <strong style="font-size: 15px;">${a.teamCode}</strong>
+              <div style="font-size: 13px; color: var(--text-muted);">
+                Volunteer: <strong>${a.fullName}</strong> (${a.email || 'No email'}) • ${a.date}
+              </div>
+            </div>
+            <div style="text-align: right; font-size: 12px; color: var(--text-muted);">
+              Row #${a.row} • ${a.role} (${a.field} @ ${a.time})
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            ${flagsHtml}
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px;">
+            <button class="btn btn-sm btn-danger" onclick="triggerUniformDeduction('${encodeURIComponent(a.teamCode)}', '${encodeURIComponent(a.fullName)}', '${encodeURIComponent(a.field)}')">
+              Apply Uniform Violation (-1)
+            </button>
+            <button class="btn btn-sm" onclick="openModal('${encodeURIComponent(a.teamCode)}')">
+              Inspect Team Standings
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function triggerUniformDeduction(teamCode, volunteer, field) {
+      const code = decodeURIComponent(teamCode);
+      const vol = decodeURIComponent(volunteer);
+      const fld = decodeURIComponent(field);
+
+      if (confirm(`Apply a -1 Point Non-Uniform Deduction to ${code} for volunteer ${vol} at ${fld}?`)) {
+        google.script.run
+          .withSuccessHandler(() => {
+            alert("Uniform deduction applied and logged to audit.");
+            location.reload();
+          })
+          .withFailureHandler(handleError)
+          .applyBoardAwardOverride(code, "Uniform Non-Compliance Deduction", -1, `Referee not in full uniform: ${vol} at ${fld}`);
+      }
     }
 
     function renderTeamCards(teams) {
@@ -352,7 +506,7 @@
             </div>
             <div style="font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;">
               <span>Ref: ${t.categories.ref} | FM: ${t.categories.fm} | Set: ${t.categories.setup}</span>
-              <span>Awards: ${t.categories.awards}</span>
+              <span>Awards: ${t.categories.awards + t.categories.certRef + t.categories.matchtrak}</span>
             </div>
           </div>
           <button class="btn" onclick="openModal('${encodeURIComponent(t.teamCode)}')">Inspect & Overrides</button>
@@ -377,6 +531,18 @@
       renderTeamCards(filtered);
     }
 
+    function handleOverrideTypeChange() {
+      const type = document.getElementById('overrideType').value;
+      const ptsInput = document.getElementById('overridePts');
+      if (type.includes('Deduction') || type.includes('Disqualification')) {
+        ptsInput.value = -1;
+      } else if (type === 'MatchTrak Filled by Sep 26') {
+        ptsInput.value = 2;
+      } else {
+        ptsInput.value = 1;
+      }
+    }
+
     function openModal(encodedTeam) {
       currentTeamCode = decodeURIComponent(encodedTeam);
       const team = globalData.teams.find(t => t.teamCode === currentTeamCode);
@@ -384,8 +550,9 @@
 
       document.getElementById('modalDivision').innerText = team.division;
       document.getElementById('modalTeamName').innerText = team.coach;
-      document.getElementById('modalScoreSummary').innerText = 'Total Points: ' + team.totalPoints + ' (Goal: ' + (globalData.settings.PlayoffThreshold || 17) + ' pts)';
+      document.getElementById('modalScoreSummary').innerText = 'Total Points: ' + team.totalPoints + ' (Playoff Goal: ' + (globalData.settings.PlayoffThreshold || 17) + ' pts)';
       document.getElementById('modalAuditList').innerHTML = '<div style="padding: 12px; color: var(--text-muted);">Fetching detailed audit records...</div>';
+      handleOverrideTypeChange();
       document.getElementById('detailModal').style.display = 'flex';
 
       google.script.run
@@ -404,12 +571,16 @@
       stats.audit.forEach(a => {
         const row = document.createElement('div');
         row.className = 'audit-row';
+        const isDeduction = a.points < 0;
         row.innerHTML = `
           <div>
             <strong>${a.duty}</strong> (${a.date})
+            ${a.note ? '<div style="font-size: 11px; color: var(--text-muted);">' + a.note + '</div>' : ''}
           </div>
           <div>
-            <span style="font-weight: 700;">+${a.points} pt</span> [${a.status}]
+            <span style="font-weight: 700; color: ${isDeduction ? 'var(--danger)' : (a.points > 0 ? 'var(--success)' : 'var(--text-muted)')};">
+              ${a.points > 0 ? '+' : ''}${a.points} pt
+            </span> [${a.status}]
           </div>
         `;
         list.appendChild(row);
@@ -428,7 +599,7 @@
 
       google.script.run
         .withSuccessHandler(() => {
-          alert("Override applied successfully!");
+          alert("Adjustment applied successfully!");
           closeModal();
           location.reload();
         })

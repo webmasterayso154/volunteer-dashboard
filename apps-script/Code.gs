@@ -1,6 +1,6 @@
 /**
  * AYSO Region 154 - Volunteer Standings Backend
- * Anti-Cheat, Deduplication & Official 2026 Point Capping Logic
+ * Anti-Cheat, Deduplication, Daily Cap & Official 2026 Point Capping Logic
  */
 
 const MASTER_TEAMS = [
@@ -30,25 +30,34 @@ const MASTER_TEAMS = [
   "19U - Boys - Jennifer Deselm", "19U - Girls - Josh Palafox"
 ];
 
-// Lexington Jr. High School 10-Field Configuration
 const LJHS_FIELDS = [
-  "LJHS - Field #1", "LJHS - Field #2", "LJHS - Field #3", // U5/U6
-  "LJHS - Field #4", "LJHS - Field #5", "LJHS - Field #6", // U8
-  "LJHS - Field #7", "LJHS - Field #8",                   // 10U
-  "LJHS - Field #9", "LJHS - Field #10"                   // 12U (North / Arnold Lawn)
+  "LJHS - Field #1", "LJHS - Field #2", "LJHS - Field #3",
+  "LJHS - Field #4", "LJHS - Field #5", "LJHS - Field #6",
+  "LJHS - Field #7", "LJHS - Field #8",
+  "LJHS - Field #9", "LJHS - Field #10"
 ];
 
+// Official Season Point Caps
+const CAP_CERTIFIED_REF = 5;
+const CAP_MATCHTRAK_BONUS = 2;
 const CAP_ONFIELD_REF = 10;
 const CAP_FIELD_MARSHAL = 2;
 const CAP_SETUP = 5;
 const CAP_PIC = 2;
+const MAX_POSSIBLE_POINTS = 26;
 
 function doGet(e) {
   const params = (e && e.parameter) ? e.parameter : {};
   const action = params.action;
   const callback = params.callback;
-  let result = null;
 
+  if (!action || action === 'board') {
+    if (typeof renderBoardApp === 'function') {
+      return renderBoardApp();
+    }
+  }
+
+  let result = null;
   if (action === 'getDirectory') {
     result = getDirectoryData();
   } else if (action === 'getTeamStats') {
@@ -132,16 +141,21 @@ function getTeamStatsData(targetTeam) {
   const baseResult = {
     totalPoints: 0,
     categories: {
+      'Certified Team Referees': 0,
+      'MatchTrak Filled by Sep 26': 0,
+      'Referee (On-Field)': 0,
       'Referee Assignment': 0,
+      'Field Marshal': 0,
       'Field Marshal Shift': 0,
+      'Friday Night Setup': 0,
       'Friday Night Field Setup': 0,
+      'Picture Picnic Day': 0,
       'Picture Day': 0
     },
     audit: [],
     syncTimestamp: nowStr
   };
 
-  // Guard: Empty or missing team codes must immediately evaluate to 0
   if (!targetTeam || typeof targetTeam !== 'string' || !targetTeam.trim()) {
     return baseResult;
   }
@@ -156,74 +170,80 @@ function getTeamStatsData(targetTeam) {
   let fmPoints = 0;
   let setupPoints = 0;
   let picPoints = 0;
+
   const audit = [];
+  const seenDayRole = new Set(); // Enforces 1 point per day per role per team
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || !row[0]) continue;
 
     const timestamp = row[0];
-    const dateStr = (timestamp instanceof Date)
-      ? Utilities.formatDate(timestamp, 'America/Los_Angeles', 'MMM d, yyyy')
-      : String(timestamp).slice(0, 10);
+    let dateStr = '';
+    if (timestamp instanceof Date) {
+      dateStr = Utilities.formatDate(timestamp, 'America/Los_Angeles', 'MMM d, yyyy');
+    } else {
+      const parsedDate = new Date(timestamp);
+      dateStr = !isNaN(parsedDate.getTime()) 
+        ? Utilities.formatDate(parsedDate, 'America/Los_Angeles', 'MMM d, yyyy')
+        : String(timestamp).split(' ')[0];
+    }
 
-    const dutyRaw = String(row[3] || '').trim();
-    const rowTeamRef = String(row[5] || '').trim();
-    const rowTeamFm = String(row[8] || '').trim();
-    const rowTeamSetup = String(row[11] || '').trim();
+    // Schema: Col E (index 4) = Role, Col G (index 6) = Ref, Col J (index 9) = FM, Col M (index 12) = Setup
+    const dutyRaw = String(row[4] || '').trim();
+    const rowTeamRef = String(row[6] || '').trim();
+    const rowTeamFm = String(row[9] || '').trim();
+    const rowTeamSetup = String(row[12] || '').trim();
 
     let isMatch = false;
     let category = '';
-    let status = 'Verified';
-    let pts = 0;
+    let categoryCap = 0;
+    let currentCategoryTotal = 0;
 
     if (rowTeamRef === cleanTarget || (/ref/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
       isMatch = true;
       category = 'Referee Assignment';
-      if (refPoints < CAP_ONFIELD_REF) {
-        refPoints++;
-        pts = 1;
-        status = 'Verified';
-      } else {
-        status = 'Cap Reached';
-        pts = 0;
-      }
+      categoryCap = CAP_ONFIELD_REF;
+      currentCategoryTotal = refPoints;
     } else if (rowTeamFm === cleanTarget || (/marshal/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
       isMatch = true;
       category = 'Field Marshal Shift';
-      if (fmPoints < CAP_FIELD_MARSHAL) {
-        fmPoints++;
-        pts = 1;
-        status = 'Verified';
-      } else {
-        status = 'Cap Reached';
-        pts = 0;
-      }
+      categoryCap = CAP_FIELD_MARSHAL;
+      currentCategoryTotal = fmPoints;
     } else if (rowTeamSetup === cleanTarget || (/set\s*up/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
       isMatch = true;
       category = 'Friday Night Field Setup';
-      if (setupPoints < CAP_SETUP) {
-        setupPoints++;
-        pts = 1;
-        status = 'Verified';
-      } else {
-        status = 'Cap Reached';
-        pts = 0;
-      }
+      categoryCap = CAP_SETUP;
+      currentCategoryTotal = setupPoints;
     } else if (/picture/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1) {
       isMatch = true;
       category = 'Picture Day';
-      if (picPoints < CAP_PIC) {
-        picPoints++;
-        pts = 1;
-        status = 'Verified';
-      } else {
-        status = 'Cap Reached';
-        pts = 0;
-      }
+      categoryCap = CAP_PIC;
+      currentCategoryTotal = picPoints;
     }
 
     if (isMatch) {
+      const dayKey = dateStr + '_' + category;
+      let status = 'Verified';
+      let pts = 0;
+
+      if (seenDayRole.has(dayKey)) {
+        status = 'Daily Limit Reached';
+        pts = 0;
+      } else if (currentCategoryTotal >= categoryCap) {
+        status = 'Cap Reached';
+        pts = 0;
+      } else {
+        status = 'Verified';
+        pts = 1;
+        seenDayRole.add(dayKey);
+
+        if (category === 'Referee Assignment') refPoints++;
+        else if (category === 'Field Marshal Shift') fmPoints++;
+        else if (category === 'Friday Night Field Setup') setupPoints++;
+        else if (category === 'Picture Day') picPoints++;
+      }
+
       audit.push({
         duty: category,
         date: dateStr,
@@ -233,11 +253,83 @@ function getTeamStatsData(targetTeam) {
     }
   }
 
-  baseResult.totalPoints = refPoints + fmPoints + setupPoints + picPoints;
+  // Process Team_Awards overrides (Uniform deductions, MatchTrak bonus, Cert refs)
+  const awardsSheet = ss.getSheetByName('Team_Awards');
+  let certRefPoints = 0;
+  let matchtrakPoints = 0;
+  let discretionaryAwards = 0;
+
+  if (awardsSheet && awardsSheet.getLastRow() > 1) {
+    const awardRows = awardsSheet.getDataRange().getValues();
+    for (let j = 1; j < awardRows.length; j++) {
+      const aRow = awardRows[j];
+      const aTeam = String(aRow[1] || '').trim();
+      if (aTeam !== cleanTarget) continue;
+
+      const aType = String(aRow[2] || '').trim();
+      const aPts = Number(aRow[3]) || 0;
+      const aNote = String(aRow[4] || '').trim();
+      const aTime = aRow[0];
+      const aDateStr = (aTime instanceof Date)
+        ? Utilities.formatDate(aTime, 'America/Los_Angeles', 'MMM d, yyyy')
+        : String(aTime).split(' ')[0];
+
+      if (aType.includes('Uniform') || aType.includes('Disqualification')) {
+        refPoints = Math.max(0, refPoints + aPts);
+        audit.push({
+          duty: aType,
+          date: aDateStr,
+          status: 'Deduction Applied',
+          points: aPts,
+          note: aNote
+        });
+      } else if (aType === 'Certified Team Referees') {
+        certRefPoints = Math.min(CAP_CERTIFIED_REF, certRefPoints + aPts);
+        audit.push({
+          duty: aType,
+          date: aDateStr,
+          status: 'Board Award',
+          points: aPts,
+          note: aNote
+        });
+      } else if (aType === 'MatchTrak Filled by Sep 26') {
+        matchtrakPoints = Math.min(CAP_MATCHTRAK_BONUS, matchtrakPoints + aPts);
+        audit.push({
+          duty: aType,
+          date: aDateStr,
+          status: 'Board Award',
+          points: aPts,
+          note: aNote
+        });
+      } else {
+        discretionaryAwards += aPts;
+        audit.push({
+          duty: aType,
+          date: aDateStr,
+          status: aPts < 0 ? 'Deduction Applied' : 'Board Award',
+          points: aPts,
+          note: aNote
+        });
+      }
+    }
+  }
+
+  baseResult.totalPoints = Math.min(
+    MAX_POSSIBLE_POINTS,
+    Math.max(0, refPoints + fmPoints + setupPoints + picPoints + certRefPoints + matchtrakPoints + discretionaryAwards)
+  );
+
+  baseResult.categories['Certified Team Referees'] = certRefPoints;
+  baseResult.categories['MatchTrak Filled by Sep 26'] = matchtrakPoints;
+  baseResult.categories['Referee (On-Field)'] = refPoints;
   baseResult.categories['Referee Assignment'] = refPoints;
+  baseResult.categories['Field Marshal'] = fmPoints;
   baseResult.categories['Field Marshal Shift'] = fmPoints;
+  baseResult.categories['Friday Night Setup'] = setupPoints;
   baseResult.categories['Friday Night Field Setup'] = setupPoints;
+  baseResult.categories['Picture Picnic Day'] = picPoints;
   baseResult.categories['Picture Day'] = picPoints;
+
   baseResult.audit = audit.reverse();
 
   return baseResult;
