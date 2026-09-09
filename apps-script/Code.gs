@@ -30,62 +30,79 @@ const MASTER_TEAMS = [
   "19U - Boys - Jennifer Deselm", "19U - Girls - Josh Palafox"
 ];
 
+// Lexington Jr. High School 10-Field Configuration
+const LJHS_FIELDS = [
+  "LJHS - Field #1", "LJHS - Field #2", "LJHS - Field #3", // U5/U6
+  "LJHS - Field #4", "LJHS - Field #5", "LJHS - Field #6", // U8
+  "LJHS - Field #7", "LJHS - Field #8",                   // 10U
+  "LJHS - Field #9", "LJHS - Field #10"                   // 12U (North / Arnold Lawn)
+];
+
+const CAP_ONFIELD_REF = 10;
+const CAP_FIELD_MARSHAL = 2;
+const CAP_SETUP = 5;
+const CAP_PIC = 2;
+
 function doGet(e) {
-  const action = e.parameter.action;
-  const callback = e.parameter.callback;
-  let result = {};
+  const params = (e && e.parameter) ? e.parameter : {};
+  const action = params.action;
+  const callback = params.callback;
+  let result = null;
 
   if (action === 'getDirectory') {
     result = getDirectoryData();
   } else if (action === 'getTeamStats') {
-    // Defined in TeamAwards.gs — wraps getTeamStatsData with the administrative
-    // point buckets (pre-season referees, MatchTrak bonus, Picture Picnic Day)
-    // that no QR check-in can produce.
-    result = getTeamStatsWithAwards(e.parameter.teamCode);
+    const teamCode = params.teamCode;
+    if (typeof getTeamStatsWithAwards === 'function') {
+      result = getTeamStatsWithAwards(teamCode);
+    } else {
+      result = getTeamStatsData(teamCode);
+    }
   } else if (action === 'getSettings') {
     result = getSettingsData();
-    return ContentService.createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
+  } else {
+    result = { error: 'Invalid action parameter' };
   }
+
+  const jsonStr = JSON.stringify(result);
 
   if (callback) {
-    const jsonp = callback + '(' + JSON.stringify(result) + ')';
-    return ContentService.createTextOutput(jsonp)
+    return ContentService.createTextOutput(callback + '(' + jsonStr + ')')
       .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  } else {
+    return ContentService.createTextOutput(jsonStr)
+      .setMimeType(ContentService.MimeType.JSON);
   }
-
-  return ContentService.createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = ss.getSheetByName('Settings');
     if (!sheet) {
       sheet = ss.insertSheet('Settings');
       sheet.appendRow(['Key', 'Value']);
     }
-    const settings = ['BoardEmail', 'RCEmail', 'RefMaxCap', 'PlayoffThreshold'];
-    sheet.clearContents();
-    sheet.appendRow(['Key', 'Value']);
-    settings.forEach(k => {
-      if (data[k] !== undefined) sheet.appendRow([k, data[k]]);
-    });
+    const payload = JSON.parse(e.postData.contents);
+    const data = sheet.getDataRange().getValues();
+    const existingKeys = {};
+    for (let i = 1; i < data.length; i++) {
+      existingKeys[data[i][0]] = i + 1;
+    }
+
+    for (const [k, v] of Object.entries(payload)) {
+      if (existingKeys[k]) {
+        sheet.getRange(existingKeys[k], 2).setValue(v);
+      } else {
+        sheet.appendRow([k, v]);
+      }
+    }
     return ContentService.createTextOutput(JSON.stringify({ status: 'success' }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
       .setMimeType(ContentService.MimeType.JSON);
   }
-}
-
-function getFormSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  return ss.getSheetByName('Form Responses 1') ||
-         ss.getSheetByName('Form_Responses') ||
-         ss.getSheets()[0];
 }
 
 function getDirectoryData() {
@@ -93,7 +110,7 @@ function getDirectoryData() {
   MASTER_TEAMS.forEach(rawTeam => {
     const parts = rawTeam.split(' - ');
     if (parts.length >= 3) {
-      const division = (parts[0].trim() + ' - ' + parts[1].trim());
+      const division = parts[0].trim() + ' - ' + parts[1].trim();
       const coach = parts.slice(2).join(' - ').trim();
       if (!dir[division]) dir[division] = [];
       dir[division].push({ teamCode: rawTeam, coach: coach });
@@ -103,200 +120,140 @@ function getDirectoryData() {
       dir[division].push({ teamCode: rawTeam, coach: rawTeam });
     }
   });
-
   return {
     directory: dir,
     syncTimestamp: Utilities.formatDate(new Date(), 'America/Los_Angeles', 'MMM d, yyyy, h:mm a')
   };
 }
 
-function getColumnMap(headerRow) {
-  const map = {
-    timestamp: 0,
-    firstName: -1,
-    lastName: -1,
-    email: -1,
-    role: -1,
-    refTeam: -1,
-    refTime: -1,
-    refField: -1,
-    fmTeam: -1,
-    fmField: -1,
-    fmTime: -1,
-    setupTeam: -1,
-    setupField: -1
+function getTeamStatsData(targetTeam) {
+  const nowStr = Utilities.formatDate(new Date(), 'America/Los_Angeles', 'MMM d, yyyy, h:mm a');
+
+  const baseResult = {
+    totalPoints: 0,
+    categories: {
+      'Referee Assignment': 0,
+      'Field Marshal Shift': 0,
+      'Friday Night Field Setup': 0,
+      'Picture Day': 0
+    },
+    audit: [],
+    syncTimestamp: nowStr
   };
 
-  const fieldCols = [];
+  // Guard: Empty or missing team codes must immediately evaluate to 0
+  if (!targetTeam || typeof targetTeam !== 'string' || !targetTeam.trim()) {
+    return baseResult;
+  }
+  const cleanTarget = targetTeam.trim();
 
-  headerRow.forEach((col, idx) => {
-    const h = String(col).toLowerCase().trim();
-    if (h.includes('timestamp')) map.timestamp = idx;
-    else if (h.includes('first name')) map.firstName = idx;
-    else if (h.includes('last name')) map.lastName = idx;
-    else if (h.includes('email address')) map.email = idx;
-    else if (h.includes('volunteer role')) map.role = idx;
-    else if (h.includes('who is the team')) map.refTeam = idx;
-    else if (h.includes('game time')) map.refTime = idx;
-    else if (h.includes('earning volunteer points')) map.fmTeam = idx;
-    else if (h.includes('assigned field')) map.fmField = idx;
-    else if (h.includes('shift start')) map.fmTime = idx;
-    else if (h.includes('associated team')) map.setupTeam = idx;
-    else if (h.includes('field') && !h.includes('assigned')) {
-      fieldCols.push(idx);
-    }
-  });
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Form Responses 1');
+  if (!sheet || sheet.getLastRow() < 2) return baseResult;
 
-  if (fieldCols.length > 0) map.refField = fieldCols[0];
-  if (fieldCols.length > 1) map.setupField = fieldCols[1];
-
-  return map;
-}
-
-function getTeamStatsData(teamCode) {
-  if (!teamCode) return { totalPoints: 0, categories: {}, audit: [] };
-
-  const formSheet = getFormSheet();
-
-  // Official point caps from the 2026 rules flyer
-  const CAP_ONFIELD_REF = 10;
-  const CAP_FM = 2;
-  const CAP_SETUP = 5;
-  const CAP_PIC = 2;
-
+  const rows = sheet.getDataRange().getValues();
   let refPoints = 0;
   let fmPoints = 0;
   let setupPoints = 0;
   let picPoints = 0;
-
-  // Anti-cheat tracking collections
-  const submissionFingerprints = new Set();
-  const personTimeSlots = new Set();
-  const teamSetupDates = new Set();
-
   const audit = [];
 
-  if (formSheet && formSheet.getLastRow() > 1) {
-    const data = formSheet.getDataRange().getValues();
-    const headers = data[0];
-    const cols = getColumnMap(headers);
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row[0]) continue;
 
-    for (let i = 1; i < data.length; i++) {
-      const r = data[i];
-      const timestamp = r[cols.timestamp];
-      const role = String(r[cols.role] || '').trim();
+    const timestamp = row[0];
+    const dateStr = (timestamp instanceof Date)
+      ? Utilities.formatDate(timestamp, 'America/Los_Angeles', 'MMM d, yyyy')
+      : String(timestamp).slice(0, 10);
 
-      const firstName = cols.firstName !== -1 ? String(r[cols.firstName] || '').trim() : '';
-      const lastName = cols.lastName !== -1 ? String(r[cols.lastName] || '').trim() : '';
-      const personKey = (firstName + ' ' + lastName).toLowerCase().trim();
+    const dutyRaw = String(row[3] || '').trim();
+    const rowTeamRef = String(row[5] || '').trim();
+    const rowTeamFm = String(row[8] || '').trim();
+    const rowTeamSetup = String(row[11] || '').trim();
 
-      let assignedTeam = '';
-      let timeVal = '';
-      let fieldVal = '';
+    let isMatch = false;
+    let category = '';
+    let status = 'Verified';
+    let pts = 0;
 
-      if (role === 'Referee') {
-        assignedTeam = cols.refTeam !== -1 ? String(r[cols.refTeam] || '').trim() : '';
-        timeVal = cols.refTime !== -1 ? String(r[cols.refTime] || '').trim() : '';
-        fieldVal = cols.refField !== -1 ? String(r[cols.refField] || '').trim() : '';
-      } else if (role === 'Field Marshal') {
-        assignedTeam = cols.fmTeam !== -1 ? String(r[cols.fmTeam] || '').trim() : '';
-        fieldVal = cols.fmField !== -1 ? String(r[cols.fmField] || '').trim() : '';
-        timeVal = cols.fmTime !== -1 ? String(r[cols.fmTime] || '').trim() : '';
-      } else if (role === 'Field Set Up' || role.includes('Set Up')) {
-        assignedTeam = cols.setupTeam !== -1 ? String(r[cols.setupTeam] || '').trim() : '';
-        fieldVal = cols.setupField !== -1 ? String(r[cols.setupField] || '').trim() : '';
+    if (rowTeamRef === cleanTarget || (/ref/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
+      isMatch = true;
+      category = 'Referee Assignment';
+      if (refPoints < CAP_ONFIELD_REF) {
+        refPoints++;
+        pts = 1;
+        status = 'Verified';
+      } else {
+        status = 'Cap Reached';
+        pts = 0;
       }
-
-      if (assignedTeam !== teamCode) continue;
-
-      let dateStr = 'Game Day';
-      try {
-        const d = (timestamp instanceof Date) ? timestamp : new Date(timestamp);
-        if (!isNaN(d.getTime())) {
-          dateStr = Utilities.formatDate(d, 'America/Los_Angeles', 'MMM d, yyyy');
-        }
-      } catch (err) {}
-
-      let dutyLabel = role;
-      if (fieldVal) dutyLabel += ' - ' + fieldVal;
-      if (timeVal) dutyLabel += ' (' + timeVal + ')';
-
-      const normTime = timeVal.toLowerCase().replace(/\s+/g, '');
-      const normField = fieldVal.toLowerCase().trim();
-
-      // Anti-Cheat Check 1: Exact Duplicate Submissions
-      const exactKey = [personKey, role, dateStr, normTime, normField].join('|');
-      if (submissionFingerprints.has(exactKey)) {
-        audit.push({ duty: dutyLabel, date: dateStr, status: 'Duplicate Submission', points: 0 });
-        continue;
+    } else if (rowTeamFm === cleanTarget || (/marshal/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
+      isMatch = true;
+      category = 'Field Marshal Shift';
+      if (fmPoints < CAP_FIELD_MARSHAL) {
+        fmPoints++;
+        pts = 1;
+        status = 'Verified';
+      } else {
+        status = 'Cap Reached';
+        pts = 0;
       }
-      submissionFingerprints.add(exactKey);
-
-      // Anti-Cheat Check 2: Simultaneous Time Conflicts (Same person, same date, same time slot)
-      if (normTime && (role === 'Referee' || role === 'Field Marshal')) {
-        const timeSlotKey = [personKey, dateStr, normTime].join('|');
-        if (personTimeSlots.has(timeSlotKey)) {
-          audit.push({ duty: dutyLabel, date: dateStr, status: 'Time Conflict', points: 0 });
-          continue;
-        }
-        personTimeSlots.add(timeSlotKey);
+    } else if (rowTeamSetup === cleanTarget || (/set\s*up/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
+      isMatch = true;
+      category = 'Friday Night Field Setup';
+      if (setupPoints < CAP_SETUP) {
+        setupPoints++;
+        pts = 1;
+        status = 'Verified';
+      } else {
+        status = 'Cap Reached';
+        pts = 0;
       }
-
-      // Point Evaluation & Category Caps
-      if (role === 'Referee') {
-        if (refPoints < CAP_ONFIELD_REF) {
-          refPoints++;
-          audit.push({ duty: dutyLabel, date: dateStr, status: 'Verified', points: 1 });
-        } else {
-          audit.push({ duty: dutyLabel, date: dateStr, status: 'Cap Exceeded (Max 10)', points: 0 });
-        }
-      } else if (role === 'Field Marshal') {
-        if (fmPoints < CAP_FM) {
-          fmPoints++;
-          audit.push({ duty: dutyLabel, date: dateStr, status: 'Verified', points: 1 });
-        } else {
-          audit.push({ duty: dutyLabel, date: dateStr, status: 'Cap Exceeded (Max 2)', points: 0 });
-        }
-      } else if (role === 'Field Set Up' || role.includes('Set Up')) {
-        // Daily Setup Cap: Max 1 point per team per date
-        const setupDateKey = [teamCode, dateStr].join('|');
-        if (teamSetupDates.has(setupDateKey)) {
-          audit.push({ duty: dutyLabel, date: dateStr, status: 'Daily Cap (1/date)', points: 0 });
-        } else if (setupPoints < CAP_SETUP) {
-          setupPoints++;
-          teamSetupDates.add(setupDateKey);
-          audit.push({ duty: dutyLabel, date: dateStr, status: 'Verified', points: 1 });
-        } else {
-          audit.push({ duty: dutyLabel, date: dateStr, status: 'Cap Exceeded (Max 5)', points: 0 });
-        }
+    } else if (/picture/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1) {
+      isMatch = true;
+      category = 'Picture Day';
+      if (picPoints < CAP_PIC) {
+        picPoints++;
+        pts = 1;
+        status = 'Verified';
+      } else {
+        status = 'Cap Reached';
+        pts = 0;
       }
+    }
+
+    if (isMatch) {
+      audit.push({
+        duty: category,
+        date: dateStr,
+        status: status,
+        points: pts
+      });
     }
   }
 
-  const total = refPoints + fmPoints + setupPoints + picPoints;
+  baseResult.totalPoints = refPoints + fmPoints + setupPoints + picPoints;
+  baseResult.categories['Referee Assignment'] = refPoints;
+  baseResult.categories['Field Marshal Shift'] = fmPoints;
+  baseResult.categories['Friday Night Field Setup'] = setupPoints;
+  baseResult.categories['Picture Day'] = picPoints;
+  baseResult.audit = audit.reverse();
 
-  return {
-    totalPoints: total,
-    categories: {
-      'Referee Assignment': refPoints,
-      'Field Marshal Shift': fmPoints,
-      'Friday Night Field Setup': setupPoints,
-      'Picture Day': picPoints
-    },
-    audit: audit.reverse(), // Most recent submissions on top
-    syncTimestamp: Utilities.formatDate(new Date(), 'America/Los_Angeles', 'MMM d, yyyy, h:mm a')
-  };
+  return baseResult;
 }
 
 function getSettingsData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Settings');
+  let sheet = ss.getSheetByName('Settings');
   const result = { BoardEmail: '', RCEmail: '', RefMaxCap: 10, PlayoffThreshold: 17 };
   if (!sheet || sheet.getLastRow() < 2) return result;
 
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    result[data[i][0]] = data[i][1];
+    if (data[i][0]) {
+      result[data[i][0]] = data[i][1];
+    }
   }
   return result;
 }
