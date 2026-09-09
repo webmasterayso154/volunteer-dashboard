@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AYSO 154 · Volunteer Standings</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='0' y='14' font-size='16' fill='%23002D62'>⚽</text></svg>">
 <script src="./support.js"></script>
 </head>
 <body>
@@ -47,6 +48,13 @@
   </header>
 
   <main style="flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 12px 12px 28px 12px;">
+
+    <sc-if value="{{ hasError }}">
+      <div style="background: {{ errorBg }}; border: 1px solid {{ errorBorder }}; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;">
+        <div style="font-size: 12px; font-weight: 600; margin-bottom: 6px; color: {{ errorFg }};">{{ errorIcon }} {{ errorTitle }}</div>
+        <p style="font-size: 12px; margin: 0; color: {{ errorFg }};">{{ error }}</p>
+      </div>
+    </sc-if>
 
     <sc-if value="{{ showPicker }}">
       <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
@@ -253,41 +261,117 @@ function buildStaticDirectory() {
 class Component extends DCLogic {
   state = {
     directory: buildStaticDirectory(),
-    division: '', 
-    teamCode: '', 
+    division: '',
+    teamCode: '',
     teamLabel: '',
-    stats: null, 
-    loading: false, 
-    syncLabel: 'Ready · Instant Standings',
-    pickerOpen: true, 
-    guidelinesOpen: false, 
+    stats: null,
+    cachedStats: null,
+    cachedTimestamp: null,
+    error: null,
+    statsError: false,
+    dirError: false,
+    loading: false,
+    syncLabel: 'Ready',
+    pickerOpen: true,
+    guidelinesOpen: false,
     dirLoaded: true
   };
 
   componentDidMount() {
-    let saved = null;
+    let cachedDir = null, cachedDirTime = null, savedTeam = null, cachedStats = null;
+
     try {
       const d = localStorage.getItem(CACHE_DIR);
+      if (d) cachedDir = JSON.parse(d);
       const t = localStorage.getItem(CACHE_TIME);
-      if (d) this.setState({ directory: JSON.parse(d), dirLoaded: true });
-      if (t) this.setState({ syncLabel: t });
+      if (t) cachedDirTime = t;
       const s = localStorage.getItem(LAST_TEAM);
-      if (s) saved = JSON.parse(s);
-    } catch (e) {}
-
-    if (saved && saved.teamCode) {
-      this.setState({ 
-        division: saved.division, 
-        teamCode: saved.teamCode, 
-        teamLabel: saved.teamLabel, 
-        pickerOpen: false 
-      });
-      this.fetchStats(saved.teamCode);
+      if (s) savedTeam = JSON.parse(s);
+    } catch (e) {
+      console.warn('[AYSO] localStorage read error:', e.message);
     }
+
+    const initialState = {
+      directory: cachedDir || buildStaticDirectory(),
+      dirLoaded: true,
+      syncLabel: cachedDirTime || 'Ready'
+    };
+
+    if (savedTeam && savedTeam.teamCode) {
+      const cacheKey = 'ayso154_stats_' + savedTeam.teamCode;
+      try {
+        const c = localStorage.getItem(cacheKey);
+        if (c) cachedStats = JSON.parse(c);
+      } catch (e) {
+        console.warn('[AYSO] stats cache read error:', e.message);
+      }
+
+      initialState.division = savedTeam.division;
+      initialState.teamCode = savedTeam.teamCode;
+      initialState.teamLabel = savedTeam.teamLabel;
+      initialState.pickerOpen = false;
+      initialState.stats = cachedStats || null;
+      initialState.cachedStats = cachedStats || null;
+      initialState.cachedTimestamp = cachedStats?.syncTimestamp || null;
+
+      if (cachedStats) {
+        initialState.syncLabel = 'Offline data · Last updated ' + (cachedStats.syncTimestamp || 'unknown');
+        console.log('[AYSO] Loaded from cache, UI instant');
+      }
+    }
+
+    this.setState(initialState);
+
     this.fetchDirectory();
+    if (savedTeam && savedTeam.teamCode) {
+      this.fetchStats(savedTeam.teamCode);
+    }
   }
 
-  jsonp(endpoint, cb, retry = 0) {
+  request(endpoint, cb, retry = 0, transport = 'auto') {
+    const isStatsCall = endpoint.includes('getTeamStats');
+    const timeouts = [25000, 26500, 28000];
+    const timeout = timeouts[Math.min(retry, 2)];
+
+    if (transport === 'auto' || transport === 'fetch') {
+      this.fetchRequest(endpoint, cb, retry, isStatsCall, timeout);
+    } else {
+      this.jsonpRequest(endpoint, cb, retry, isStatsCall, timeout);
+    }
+  }
+
+  fetchRequest(endpoint, cb, retry, isStatsCall, timeout) {
+    const controller = new AbortController();
+    const wd = setTimeout(() => controller.abort(), timeout);
+
+    const url = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
+    console.log(`[AYSO] fetch: ${url} (attempt ${retry + 1}/3, ${timeout}ms timeout)`);
+
+    fetch(url, { method: 'GET', mode: 'cors', redirect: 'follow', signal: controller.signal })
+      .then(res => {
+        clearTimeout(wd);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        clearTimeout(wd);
+        console.log('[AYSO] fetch success', isStatsCall ? 'stats' : 'directory');
+        cb(data);
+      })
+      .catch(err => {
+        clearTimeout(wd);
+        if (retry < 2) {
+          const backoff = [1000, 2500][retry];
+          console.warn(`[AYSO] fetch failed: ${err.message}, retrying in ${backoff}ms...`, { url, retry });
+          setTimeout(() => this.request(endpoint, cb, retry + 1, 'fetch'), backoff);
+        } else {
+          console.warn(`[AYSO] fetch exhausted after 3 attempts, falling back to JSONP`, { url, err: err.message });
+          this.request(endpoint, cb, 0, 'jsonp');
+        }
+      });
+  }
+
+  jsonpRequest(endpoint, cb, retry, isStatsCall, timeout) {
     const name = 'ayso_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
     let done = false;
     let el = null;
@@ -303,36 +387,45 @@ class Component extends DCLogic {
       clearTimeout(wd);
       clean();
       if (retry < 2) {
-        this.jsonp(endpoint, cb, retry + 1);
+        const backoff = [1000, 2500][retry];
+        console.warn(`[AYSO] jsonp failed, retrying in ${backoff}ms...`, { endpoint, retry });
+        setTimeout(() => this.request(endpoint, cb, retry + 1, 'jsonp'), backoff);
       } else {
-        this.setState({ 
-          loading: false, 
-          syncLabel: 'Server warming up — tap ↻ Sync' 
-        });
+        console.error(`[AYSO] All transports exhausted after 3 attempts`, { endpoint, isStatsCall });
+        cb(null);
       }
     };
 
-    const wd = setTimeout(fail, 15000);
+    const wd = setTimeout(fail, timeout);
+    const url = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&_t=' + Date.now();
+    console.log(`[AYSO] jsonp: ${url} (attempt ${retry + 1}/3, ${timeout}ms timeout)`);
 
     window[name] = (data) => {
       if (done) return;
       done = true;
       clearTimeout(wd);
       clean();
+      console.log('[AYSO] jsonp success', isStatsCall ? 'stats' : 'directory');
       cb(data);
     };
 
     el = document.createElement('script');
-    el.src = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&_t=' + Date.now();
-    el.onerror = fail;
+    el.src = url;
+    el.onerror = () => {
+      console.warn(`[AYSO] jsonp script load error, retrying...`);
+      fail();
+    };
     (document.head || document.documentElement).appendChild(el);
   }
 
   fetchDirectory() {
-    this.jsonp(API_URL + '?action=getDirectory', (res) => {
-      if (!res || !res.directory) return;
+    this.request(API_URL + '?action=getDirectory', (res) => {
+      if (!res || !res.directory) {
+        console.warn('[AYSO] Directory fetch returned empty, using cached');
+        return;
+      }
       const label = res.syncTimestamp ? 'Updated ' + res.syncTimestamp : 'Live connected';
-      this.setState({ directory: res.directory, dirLoaded: true, syncLabel: label });
+      this.setState({ directory: res.directory, dirLoaded: true, syncLabel: label, error: null, dirError: false });
       try {
         localStorage.setItem(CACHE_DIR, JSON.stringify(res.directory));
         localStorage.setItem(CACHE_TIME, label);
@@ -342,14 +435,35 @@ class Component extends DCLogic {
 
   fetchStats(teamCode) {
     if (!teamCode) return;
-    this.setState({ loading: true, syncLabel: 'Syncing team points…' });
-    this.jsonp(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), (res) => {
-      if (!res) { 
-        this.setState({ loading: false }); 
-        return; 
+    this.setState({ loading: true, syncLabel: 'Syncing…', error: null, dirError: false });
+    this.request(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), (res) => {
+      const patch = { loading: false };
+      if (!res) {
+        console.warn('[AYSO] Stats fetch failed for', teamCode);
+        const cached = this.state.cachedStats;
+        if (cached) {
+          console.log('[AYSO] Showing cached stats with soft warning');
+          patch.stats = cached;
+          patch.cachedTimestamp = cached.syncTimestamp || 'unknown';
+          patch.syncLabel = 'Offline data · Last updated ' + patch.cachedTimestamp;
+          patch.error = 'Connection unavailable — showing offline data';
+          patch.statsError = true;
+        } else {
+          console.error('[AYSO] No cached stats for', teamCode);
+          patch.error = 'Unable to load team points. Check your connection and try again.';
+          patch.statsError = true;
+        }
+        this.setState(patch);
+        return;
       }
-      const patch = { loading: false, stats: res };
+      patch.stats = res;
+      patch.cachedStats = res;
+      patch.statsError = false;
       if (res.syncTimestamp) patch.syncLabel = 'Updated ' + res.syncTimestamp;
+      try {
+        const cacheKey = 'ayso154_stats_' + teamCode;
+        localStorage.setItem(cacheKey, JSON.stringify(res));
+      } catch (e) {}
       this.setState(patch);
     });
   }
@@ -447,20 +561,35 @@ class Component extends DCLogic {
       };
     });
 
+    const hasOnlyCachedStats = s.stats && s.statsError;
+    const hasNoStats = !s.stats && !s.loading;
+    const isSoftWarning = !!s.error && hasOnlyCachedStats;
+
+    const errorStyles = isSoftWarning
+      ? { bg: '#FEF3C7', border: '#FCD34D', fg: '#92400E', icon: 'ℹ', title: 'Offline mode' }
+      : { bg: '#FDE8E8', border: '#FECACA', fg: '#DC2626', icon: '⚠', title: 'Connection error' };
+
     return {
-      syncLabel: s.syncLabel,
-      divisions: Object.keys(s.directory),
-      division: s.division,
-      teamCode: s.teamCode,
-      teamLabel: s.teamLabel,
-      coaches,
-      coachDisabled: coaches.length === 0,
-      coachPlaceholder: coaches.length === 0 ? 'Choose division first…' : 'Choose head coach…',
+      syncLabel: s.syncLabel || 'Ready',
+      divisions: Object.keys(s.directory || {}),
+      division: s.division || '',
+      teamCode: s.teamCode || '',
+      teamLabel: s.teamLabel || '',
+      coaches: coaches || [],
+      coachDisabled: (coaches || []).length === 0,
+      coachPlaceholder: (coaches || []).length === 0 ? 'Choose division first…' : 'Choose head coach…',
       showPicker: s.pickerOpen,
       showTeamChip: !s.pickerOpen && !!s.teamLabel,
       loading: s.loading,
+      hasError: !!s.error,
+      error: s.error || '',
+      errorBg: errorStyles.bg,
+      errorBorder: errorStyles.border,
+      errorFg: errorStyles.fg,
+      errorIcon: errorStyles.icon,
+      errorTitle: errorStyles.title,
       hasStats: !!s.stats && !s.loading,
-      showIdle: !s.stats && !s.loading,
+      showIdle: hasNoStats,
       goal,
       total,
       goalSubtitle,
@@ -470,25 +599,25 @@ class Component extends DCLogic {
       pillBg,
       pillFg,
       goalCaption,
-      categories: activeCats.map(c => {
-        const v = cats[c.key] || 0;
-        return { 
-          label: c.label, 
-          val: v, 
-          cap: c.cap, 
-          pct: Math.min(100, Math.round((v / c.cap) * 100)) + '%', 
-          color: v >= c.cap ? '#059669' : '#002D62' 
+      categories: (activeCats || []).map(c => {
+        const v = (cats && cats[c.key]) || 0;
+        return {
+          label: c.label || '',
+          val: v || 0,
+          cap: c.cap || 1,
+          pct: Math.min(100, Math.round((v / (c.cap || 1)) * 100)) + '%',
+          color: v >= (c.cap || 1) ? '#059669' : '#002D62'
         };
-      }),
-      showLog,
-      audit,
-      hasAudit: audit.length > 0,
-      noAudit: audit.length === 0,
-      auditCount: audit.length === 1 ? '1 record' : audit.length + ' records',
+      }) || [],
+      showLog: showLog || false,
+      audit: (audit || []),
+      hasAudit: (audit || []).length > 0,
+      noAudit: (audit || []).length === 0,
+      auditCount: ((audit || []).length === 1 ? '1 record' : (audit || []).length + ' records') || '0 records',
       guidelinesOpen: s.guidelinesOpen,
       guidelinesToggle: s.guidelinesOpen ? 'Hide' : 'Show',
       onToggleGuidelines: () => this.setState(p => ({ guidelinesOpen: !p.guidelinesOpen })),
-      onChangeTeam: () => this.setState({ pickerOpen: true }),
+      onChangeTeam: () => this.setState({ pickerOpen: true, error: null, statsError: false }),
       onSync: () => {
         if (this.state.teamCode) {
           this.fetchStats(this.state.teamCode);
@@ -496,14 +625,35 @@ class Component extends DCLogic {
           this.fetchDirectory();
         }
       },
-      onDivisionChange: (e) => this.setState({ division: e.target.value, teamCode: '', stats: null }),
+      onDivisionChange: (e) => this.setState({ division: e.target.value, teamCode: '', stats: null, cachedStats: null, error: null, statsError: false }),
       onCoachChange: (e) => {
         const code = e.target.value;
         const t = (this.state.directory[this.state.division] || []).find(x => x.teamCode === code);
         const label = t ? this.state.division + ' · Coach ' + t.coach : '';
-        this.setState({ teamCode: code, teamLabel: label, pickerOpen: !code });
+
+        let cachedStats = null;
+        let syncLabel = 'Syncing…';
+        try {
+          const cacheKey = 'ayso154_stats_' + code;
+          const c = localStorage.getItem(cacheKey);
+          if (c) {
+            cachedStats = JSON.parse(c);
+            syncLabel = 'Offline data · Last updated ' + (cachedStats.syncTimestamp || 'unknown');
+          }
+        } catch (e) {}
+
+        this.setState({
+          teamCode: code,
+          teamLabel: label,
+          pickerOpen: !code,
+          cachedStats,
+          stats: cachedStats || null,
+          error: null,
+          statsError: false,
+          syncLabel
+        });
         this.saveTeam(this.state.division, code, label);
-        this.fetchStats(code);
+        if (code) this.fetchStats(code);
       }
     };
   }
