@@ -31,7 +31,8 @@ function runContractTests() {
     ['Audit row shape', testContractAuditRows],
     ['JSONP and JSON envelopes', testContractEnvelopes],
     ['Empty and unknown teamCode stay renderable', testContractUnknownTeam],
-    ['Qualification is mathematically reachable', testContractQualificationReachable]
+    ['Qualification is mathematically reachable', testContractQualificationReachable],
+    ['Every flyer point bucket reaches the payload', testContractBucketCoverage]
   ];
 
   let passed = 0;
@@ -194,10 +195,11 @@ function testContractUnknownTeam() {
 }
 
 /**
- * The guard for the defect this suite was written after: with Picture Day
- * unimplemented, a competitive team could reach at most 17 points against a
- * 17-point threshold, so only a flawless season qualified and one missed
- * point made qualification impossible. The flyer allows 26 against 17.
+ * Forward-looking invariant, not a reproduction of the original defect: it
+ * fires if someone raises PlayoffThreshold above what the caps can produce,
+ * or trims a cap below it. The bug this suite was written after — a bucket
+ * declared but never actually awarded — is caught by the bucket-coverage
+ * test below instead.
  */
 function testContractQualificationReachable() {
   const threshold = Number(getSettingsData().PlayoffThreshold) || 17;
@@ -217,4 +219,41 @@ function testContractQualificationReachable() {
   );
 
   Logger.log('        ' + maxPossible + ' possible vs ' + threshold + ' required');
+}
+
+/**
+ * Every bucket in the flyer model must reach the payload as a category the
+ * dashboard can read. This is the guard for the actual defect: `picPoints`
+ * existed, was summed into the total, and was returned under 'Picture Day' —
+ * but nothing ever incremented it, so two of the season's points were
+ * unreachable and nothing anywhere reported that.
+ */
+function testContractBucketCoverage() {
+  const cats = contractServedStats(CONTRACT_TEAM).categories;
+
+  const bucketToCategory = {
+    preSeasonRefs: 'Pre-Season Referees',
+    matchTrakBonus: 'MatchTrak Roster Bonus',
+    onFieldReferee: 'Referee Assignment',
+    fieldMarshal: 'Field Marshal Shift',
+    fridaySetup: 'Friday Night Field Setup',
+    pictureDay: 'Picture Day'
+  };
+
+  const missing = [];
+  Object.keys(POINT_CAPS).forEach(function (bucket) {
+    const category = bucketToCategory[bucket];
+    if (!category) {
+      missing.push(bucket + ' (no category mapping declared in this test)');
+    } else if (!Object.prototype.hasOwnProperty.call(cats, category)) {
+      missing.push(bucket + " -> '" + category + "'");
+    }
+  });
+
+  contractAssert(
+    missing.length === 0,
+    'these flyer point buckets never reach the dashboard and so can never be awarded: ' + missing.join(', ')
+  );
+
+  Logger.log('        all ' + Object.keys(POINT_CAPS).length + ' flyer buckets reach the payload');
 }
