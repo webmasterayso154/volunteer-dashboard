@@ -4,7 +4,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><script>if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()))};(function(){const f=window.fetch;window.fetch=function(u,o={}){const s=(typeof u==="string"?u:u.url).includes("?")?"&":"?";return f.call(this,(typeof u==="string"?u:u.url)+s+"_nocache="+Date.now(),{...o,cache:"no-store"})}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AYSO 154 Â· Volunteer Standings</title>
+<title>AYSO 154 &middot; Volunteer Standings</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -31,7 +31,7 @@
         <img src="logo.png" alt="AYSO 154" style="height: 34px; width: 34px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; flex-shrink: 0;">
         <span style="display: flex; flex-direction: column; min-width: 0;">
           <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.2px; line-height: 1.15;">Volunteer Standings</span>
-          <span style="font-size: 11px; font-weight: 500; color: #93C5FD;">Fall 2026 Â· Cypress AYSO Region 154</span>
+          <span style="font-size: 11px; font-weight: 500; color: #93C5FD;">Fall 2026 &middot; Cypress AYSO Region 154</span>
         </span>
       </a>
       <a href="https://www.ayso154cypress.org/" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.12); color: #fff; font-size: 12px; font-weight: 600; padding: 8px 11px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); white-space: nowrap; flex-shrink: 0;" style-hover="background: #fff; color: #002D62;">Main Site</a>
@@ -56,7 +56,7 @@
           <div style="display: flex; flex-direction: column;">
             <label for="divisionSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Division</label>
             <select id="divisionSelect" value="{{ division }}" onChange="{{ onDivisionChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
-              <option value="">Choose divisionâ€¦</option>
+              <option value="">Choose division...</option>
               <sc-for list="{{ divisions }}" as="d">
                 <option value="{{ d }}">{{ d }}</option>
               </sc-for>
@@ -88,7 +88,7 @@
     <sc-if value="{{ loading }}">
       <div style="text-align: center; padding: 40px 0; color: #002D62; font-weight: 600; font-size: 13px;">
         <div style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;"></div>
-        Loading team standingsâ€¦
+        Loading team standings...
       </div>
     </sc-if>
 
@@ -195,7 +195,7 @@
     <div style="display: flex; justify-content: center; gap: 14px; margin-bottom: 5px;">
       <a href="https://www.ayso154cypress.org/" style="font-weight: 600;">AYSO 154 Homepage</a>
     </div>
-    <p>American Youth Soccer Organization Â· Region 154 Cypress, CA</p>
+    <p>American Youth Soccer Organization &middot; Region 154 Cypress, CA</p>
   </footer>
 </div>
 </x-dc>
@@ -259,7 +259,7 @@ class Component extends DCLogic {
     teamLabel: '',
     stats: null, 
     loading: false, 
-    syncLabel: 'Ready Â· Instant Standings',
+    syncLabel: 'Ready &middot; Instant Standings',
     pickerOpen: true, 
     guidelinesOpen: false, 
     dirLoaded: true
@@ -343,7 +343,7 @@ class Component extends DCLogic {
 
   fetchStats(teamCode) {
     if (!teamCode) return;
-    this.setState({ loading: true, syncLabel: 'Syncing team pointsâ€¦' });
+    this.setState({ loading: true, syncLabel: 'Syncing team points...' });
     this.jsonp(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), (res) => {
       if (!res) { 
         this.setState({ loading: false }); 
@@ -456,7 +456,7 @@ class Component extends DCLogic {
       teamLabel: s.teamLabel,
       coaches,
       coachDisabled: coaches.length === 0,
-      coachPlaceholder: coaches.length === 0 ? 'Choose division firstâ€¦' : 'Choose head coachâ€¦',
+      coachPlaceholder: coaches.length === 0 ? 'Choose division first...' : 'Choose head coach...',
       showPicker: s.pickerOpen,
       showTeamChip: !s.pickerOpen && !!s.teamLabel,
       loading: s.loading,
@@ -501,7 +501,7 @@ class Component extends DCLogic {
       onCoachChange: (e) => {
         const code = e.target.value;
         const t = (this.state.directory[this.state.division] || []).find(x => x.teamCode === code);
-        const label = t ? this.state.division + ' Â· Coach ' + t.coach : '';
+        const label = t ? this.state.division + ' &middot; Coach ' + t.coach : '';
         this.setState({ teamCode: code, teamLabel: label, pickerOpen: !code });
         this.saveTeam(this.state.division, code, label);
         this.fetchStats(code);
