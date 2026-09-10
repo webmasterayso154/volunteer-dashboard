@@ -1,6 +1,25 @@
 /**
- * AYSO Region 154 - Volunteer Standings Backend
- * Anti-Cheat, Deduplication, Daily Cap & Official 2026 Point Capping Logic
+ * ============================================================================
+ * AYSO REGION 154 - VOLUNTEER STANDINGS BACKEND
+ * ============================================================================
+ * File: Code.gs
+ * Description: Core data processing engine for volunteer form responses, point 
+ *              calculations, category capping, NOCRA filtering, and slot deduplication.
+ * 
+ * VERSION & CHANGE HISTORY:
+ * - v1.0 (Jul 2026): Initial baseline release & schema setup.
+ * - v2.0 (Aug 2026): Added automated cap enforcement for Ref, FM, Setup, & Pic Day.
+ * - v3.0 (Sep 8, 2026): Fixed live 14-column sheet schema index alignment.
+ * - v4.0 (Sep 9, 2026): Calibrated to support Dual ARs for out-of-region/upper division 
+ *                      home matches (up to 2 pts/game), excluded paid NOCRA/USSF 
+ *                      referees (0 pts), replaced blunt daily locks with individual 
+ *                      volunteer slot deduplication, and removed single-day 
+ *                      restrictions on Field Marshal shifts per Nikki/Vince clarifications.
+ * - v4.1 (Sep 9, 2026): Calibrated status labeling and visual hierarchy:
+ *                      - Replaced "Paid Referee (NOCRA)" with neutral "NOCRA - No Points".
+ *                      - Set default submission status to "Recorded" instead of "Verified".
+ *                      - Reserved "Verified" strictly for board-confirmed awards and audits.
+ * ============================================================================
  */
 
 const MASTER_TEAMS = [
@@ -37,7 +56,7 @@ const LJHS_FIELDS = [
   "LJHS - Field #9", "LJHS - Field #10"
 ];
 
-// Official Season Point Caps
+// Official 2026 Season Point Caps
 const CAP_CERTIFIED_REF = 5;
 const CAP_MATCHTRAK_BONUS = 2;
 const CAP_ONFIELD_REF = 10;
@@ -172,7 +191,8 @@ function getTeamStatsData(targetTeam) {
   let picPoints = 0;
 
   const audit = [];
-  const seenDayRole = new Set(); // Enforces 1 point per day per role per team
+  // Slot key: volunteerId + date + time + category to allow dual ARs per match while preventing double submits
+  const seenVolunteerSlots = new Set();
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
@@ -189,63 +209,92 @@ function getTeamStatsData(targetTeam) {
         : String(timestamp).split(' ')[0];
     }
 
-    // Schema: Col E (index 4) = Role, Col G (index 6) = Ref, Col J (index 9) = FM, Col M (index 12) = Setup
+    // Schema: Col B: Email, Col C: First, Col D: Last, Col E: Role, Col F: RefPos, Col G: RefTeam, Col H: GameTime
+    // Col I: RefField, Col J: FM Team, Col K: FM Field, Col L: FM Time, Col M: Setup Team, Col N: Setup Field
+    const email = String(row[1] || '').trim().toLowerCase();
+    const firstName = String(row[2] || '').trim();
+    const lastName = String(row[3] || '').trim();
+    const volId = email || (firstName + ' ' + lastName).trim().toLowerCase();
+
     const dutyRaw = String(row[4] || '').trim();
+    const refPosition = String(row[5] || '').trim();
     const rowTeamRef = String(row[6] || '').trim();
+    const refGameTime = String(row[7] || '').trim();
+    
     const rowTeamFm = String(row[9] || '').trim();
+    const fmGameTime = String(row[11] || '').trim();
+
     const rowTeamSetup = String(row[12] || '').trim();
 
     let isMatch = false;
     let category = '';
     let categoryCap = 0;
     let currentCategoryTotal = 0;
+    let timeSlot = '';
+    let isNocra = false;
 
     if (rowTeamRef === cleanTarget || (/ref/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
       isMatch = true;
       category = 'Referee Assignment';
       categoryCap = CAP_ONFIELD_REF;
       currentCategoryTotal = refPoints;
+      timeSlot = refGameTime || 'GameTime';
+      if (/nocra|ussf/i.test(refPosition)) {
+        isNocra = true;
+      }
     } else if (rowTeamFm === cleanTarget || (/marshal/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
       isMatch = true;
       category = 'Field Marshal Shift';
       categoryCap = CAP_FIELD_MARSHAL;
       currentCategoryTotal = fmPoints;
+      timeSlot = fmGameTime || 'ShiftTime';
     } else if (rowTeamSetup === cleanTarget || (/set\s*up/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
       isMatch = true;
       category = 'Friday Night Field Setup';
       categoryCap = CAP_SETUP;
       currentCategoryTotal = setupPoints;
+      timeSlot = 'FridayNight';
     } else if (/picture/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1) {
       isMatch = true;
       category = 'Picture Day';
       categoryCap = CAP_PIC;
       currentCategoryTotal = picPoints;
+      timeSlot = 'PicShift';
     }
 
     if (isMatch) {
-      const dayKey = dateStr + '_' + category;
-      let status = 'Verified';
+      let status = 'Recorded';
       let pts = 0;
 
-      if (seenDayRole.has(dayKey)) {
-        status = 'Daily Limit Reached';
-        pts = 0;
-      } else if (currentCategoryTotal >= categoryCap) {
-        status = 'Cap Reached';
+      // Rule 1: Paid NOCRA / USSF Center Referees receive 0 volunteer points
+      if (isNocra) {
+        status = 'NOCRA - No Points';
         pts = 0;
       } else {
-        status = 'Verified';
-        pts = 1;
-        seenDayRole.add(dayKey);
+        const slotKey = volId + '_' + dateStr + '_' + timeSlot.toLowerCase() + '_' + category;
 
-        if (category === 'Referee Assignment') refPoints++;
-        else if (category === 'Field Marshal Shift') fmPoints++;
-        else if (category === 'Friday Night Field Setup') setupPoints++;
-        else if (category === 'Picture Day') picPoints++;
+        // Rule 2: Prevent exact same volunteer from double-submitting for the same match slot
+        if (seenVolunteerSlots.has(slotKey)) {
+          status = 'Duplicate Submission';
+          pts = 0;
+        } else if (currentCategoryTotal >= categoryCap) {
+          status = 'Cap Reached';
+          pts = 0;
+        } else {
+          // Automated form submissions are labeled 'Recorded'
+          status = 'Recorded';
+          pts = 1;
+          seenVolunteerSlots.add(slotKey);
+
+          if (category === 'Referee Assignment') refPoints++;
+          else if (category === 'Field Marshal Shift') fmPoints++;
+          else if (category === 'Friday Night Field Setup') setupPoints++;
+          else if (category === 'Picture Day') picPoints++;
+        }
       }
 
       audit.push({
-        duty: category,
+        duty: category + (timeSlot && timeSlot !== 'FridayNight' && timeSlot !== 'PicShift' ? ` (${timeSlot})` : ''),
         date: dateStr,
         status: status,
         points: pts
@@ -253,7 +302,7 @@ function getTeamStatsData(targetTeam) {
     }
   }
 
-  // Process Team_Awards overrides (Uniform deductions, MatchTrak bonus, Cert refs)
+  // Aggregate Team_Awards overrides (Marked as 'Verified' or 'Deduction Applied')
   const awardsSheet = ss.getSheetByName('Team_Awards');
   let certRefPoints = 0;
   let matchtrakPoints = 0;
@@ -288,7 +337,7 @@ function getTeamStatsData(targetTeam) {
         audit.push({
           duty: aType,
           date: aDateStr,
-          status: 'Board Award',
+          status: 'Verified',
           points: aPts,
           note: aNote
         });
@@ -297,7 +346,7 @@ function getTeamStatsData(targetTeam) {
         audit.push({
           duty: aType,
           date: aDateStr,
-          status: 'Board Award',
+          status: 'Verified',
           points: aPts,
           note: aNote
         });
@@ -306,7 +355,7 @@ function getTeamStatsData(targetTeam) {
         audit.push({
           duty: aType,
           date: aDateStr,
-          status: aPts < 0 ? 'Deduction Applied' : 'Board Award',
+          status: aPts < 0 ? 'Deduction Applied' : 'Verified',
           points: aPts,
           note: aNote
         });

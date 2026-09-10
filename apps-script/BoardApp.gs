@@ -1,7 +1,20 @@
 /**
- * AYSO Region 154 - Board Portal Server Backend
- * Enforces authentication, compiles division rollups, scans for anomalies/cheating,
- * and executes point overrides and uniform deductions.
+ * ============================================================================
+ * AYSO REGION 154 - BOARD PORTAL SERVER BACKEND
+ * ============================================================================
+ * File: BoardApp.gs
+ * Description: Enforces board authentication, compiles division aggregates,
+ *              scans for submission anomalies, and processes award/uniform overrides.
+ * 
+ * VERSION & CHANGE HISTORY:
+ * - v1.0 (Aug 2026): Initial secure board authentication and rollup engine.
+ * - v2.0 (Sep 8, 2026): Added direct HTML rendering routing in doGet.
+ * - v3.0 (Sep 9, 2026): Calibrated to support Dual ARs per home match, exclude paid 
+ *                      NOCRA refs, enforce individual slot deduplication, and support 
+ *                      same-day Field Marshal shifts.
+ * - v3.1 (Sep 9, 2026): Updated anomaly engine to label NOCRA assignments with
+ *                      neutral status "NOCRA - No Points".
+ * ============================================================================
  */
 
 function renderBoardApp() {
@@ -27,9 +40,6 @@ function getBoardUserSession() {
   };
 }
 
-/**
- * Fast aggregate loader for the division rollup view + anomaly count.
- */
 function getBoardDashboardData() {
   const session = getBoardUserSession();
   if (!session.isAuthorized) {
@@ -65,7 +75,7 @@ function getBoardDashboardData() {
     teamAggregates[code] = { ref: 0, fm: 0, setup: 0, pic: 0, certRef: 0, matchtrak: 0, awards: 0, total: 0 };
   });
 
-  const seenTeamDayRole = new Set();
+  const seenVolunteerSlots = new Set();
 
   for (let i = 1; i < respRows.length; i++) {
     const row = respRows[i];
@@ -76,29 +86,46 @@ function getBoardDashboardData() {
       ? Utilities.formatDate(timestamp, 'America/Los_Angeles', 'MMM d, yyyy')
       : String(timestamp).split(' ')[0];
 
+    const email = String(row[1] || '').trim().toLowerCase();
+    const firstName = String(row[2] || '').trim();
+    const lastName = String(row[3] || '').trim();
+    const volId = email || (firstName + ' ' + lastName).trim().toLowerCase();
+
     const dutyRaw = String(row[4] || '').trim();
+    const refPos = String(row[5] || '').trim();
     const rRef = String(row[6] || '').trim();
+    const refTime = String(row[7] || '').trim();
+
     const rFm = String(row[9] || '').trim();
+    const fmTime = String(row[11] || '').trim();
+
     const rSetup = String(row[12] || '').trim();
 
     allTeams.forEach(code => {
       const agg = teamAggregates[code];
       let matchedRole = '';
+      let slotTime = '';
+      let isNocra = false;
 
       if (rRef === code || (/ref/i.test(dutyRaw) && row.indexOf(code) !== -1)) {
         matchedRole = 'ref';
+        slotTime = refTime || 'GameTime';
+        if (/nocra|ussf/i.test(refPos)) isNocra = true;
       } else if (rFm === code || (/marshal/i.test(dutyRaw) && row.indexOf(code) !== -1)) {
         matchedRole = 'fm';
+        slotTime = fmTime || 'ShiftTime';
       } else if (rSetup === code || (/set\s*up/i.test(dutyRaw) && row.indexOf(code) !== -1)) {
         matchedRole = 'setup';
+        slotTime = 'FridayNight';
       } else if (/picture/i.test(dutyRaw) && row.indexOf(code) !== -1) {
         matchedRole = 'pic';
+        slotTime = 'PicShift';
       }
 
-      if (matchedRole) {
-        const dayKey = code + '_' + dateStr + '_' + matchedRole;
-        if (!seenTeamDayRole.has(dayKey)) {
-          seenTeamDayRole.add(dayKey);
+      if (matchedRole && !isNocra) {
+        const slotKey = volId + '_' + dateStr + '_' + slotTime.toLowerCase() + '_' + matchedRole;
+        if (!seenVolunteerSlots.has(slotKey)) {
+          seenVolunteerSlots.add(slotKey);
           if (matchedRole === 'ref' && agg.ref < settings.RefMaxCap) agg.ref++;
           else if (matchedRole === 'fm' && agg.fm < settings.FieldMarshalCap) agg.fm++;
           else if (matchedRole === 'setup' && agg.setup < settings.FieldSetupCap) agg.setup++;
@@ -144,7 +171,6 @@ function getBoardDashboardData() {
     };
   });
 
-  // Calculate flagged anomalies
   const anomalies = scanSubmissionsForAnomalies();
 
   return {
@@ -157,7 +183,7 @@ function getBoardDashboardData() {
 }
 
 /**
- * Anomaly Detection Engine: Scans Form Responses for cheats, rapid double-clicks, and collisions.
+ * Scan Submissions for Anomalies (NOCRA alerts, rapid double-clicks, and same-person collisions)
  */
 function scanSubmissionsForAnomalies() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -167,10 +193,8 @@ function scanSubmissionsForAnomalies() {
   const rows = respSheet.getDataRange().getValues();
   const anomalies = [];
 
-  // Lookups to identify slot collisions & duplicates
   const submissionsByVolunteer = {};
-  const refSlots = {};
-  const teamDayRole = {};
+  const refCenterSlots = {};
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
@@ -216,14 +240,23 @@ function scanSubmissionsForAnomalies() {
       flags: []
     };
 
-    // 1. Rapid Duplicate Check (<15 min from same person)
+    // 1. NOCRA Paid Referee Check
+    if (/nocra|ussf/i.test(refPos)) {
+      entry.flags.push({
+        type: 'NOCRA_PAID',
+        severity: 'info',
+        message: `NOCRA / USSF Assignment (${refPos}): Logged as 'NOCRA - No Points' (0 pts).`
+      });
+    }
+
+    // 2. Rapid Duplicate Check (<15 min from same person)
     const volKey = email || fullName.toLowerCase();
     if (volKey) {
       if (!submissionsByVolunteer[volKey]) submissionsByVolunteer[volKey] = [];
       const priorEntries = submissionsByVolunteer[volKey];
       for (const p of priorEntries) {
         const diffMinutes = Math.abs(parsedTime - p.timestamp) / 60000;
-        if (diffMinutes < 15 && p.role === role) {
+        if (diffMinutes < 15 && p.role === role && p.time === time) {
           entry.flags.push({
             type: 'RAPID_DUPLICATE',
             severity: 'warning',
@@ -235,34 +268,20 @@ function scanSubmissionsForAnomalies() {
       submissionsByVolunteer[volKey].push(entry);
     }
 
-    // 2. Ref Slot Collision Check (Same Field, Same Time, Same Center Referee Role)
+    // 3. Conflicting Center Referee Check
     if (/ref/i.test(role) && field !== 'N/A' && time !== 'N/A') {
       const isCenter = /referee\s*\(ayso\)|center|head/i.test(refPos);
       if (isCenter) {
         const slotKey = dateStr + '_' + field.toLowerCase() + '_' + time.toLowerCase();
-        if (refSlots[slotKey]) {
+        if (refCenterSlots[slotKey]) {
           entry.flags.push({
             type: 'SLOT_COLLISION',
             severity: 'danger',
-            message: `Conflicting Center Ref: Row #${refSlots[slotKey].row} also claimed ${field} at ${time}`
+            message: `Conflicting Center Ref: Row #${refCenterSlots[slotKey].row} also claimed ${field} at ${time}`
           });
         } else {
-          refSlots[slotKey] = entry;
+          refCenterSlots[slotKey] = entry;
         }
-      }
-    }
-
-    // 3. Same Day Over-Claim Check
-    if (teamCode !== 'Unknown Team') {
-      const dayTeamRoleKey = dateStr + '_' + teamCode + '_' + role;
-      if (teamDayRole[dayTeamRoleKey]) {
-        entry.flags.push({
-          type: 'DAILY_LIMIT_EXCEEDED',
-          severity: 'info',
-          message: `Team already logged points for ${role} on ${dateStr} (Row #${teamDayRole[dayTeamRoleKey].row})`
-        });
-      } else {
-        teamDayRole[dayTeamRoleKey] = entry;
       }
     }
 
