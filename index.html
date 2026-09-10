@@ -1,11 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><script>
-    try{for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i);let v=localStorage.getItem(k);if(v&&v.includes("&middot;")){localStorage.setItem(k,v.replaceAll("&middot;","\u00B7"))}}}catch(e){}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()))};(function(){const f=window.fetch;window.fetch=function(u,o={}){const s=(typeof u==="string"?u:u.url).includes("?")?"&":"?";return f.call(this,(typeof u==="string"?u:u.url)+s+"_nocache="+Date.now(),{...o,cache:"no-store"})}})();</script>
-<meta charset="utf-8">
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+(function () {
+  var APP_BUILD_ID = 'build_20260910a';
+  try {
+    if (localStorage.getItem('ayso_app_build') !== APP_BUILD_ID) {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('ayso_app_build', APP_BUILD_ID);
+    }
+  } catch (e) {}
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      regs.forEach(function (r) { r.unregister(); });
+    });
+  }
+
+  var origFetch = window.fetch;
+  if (origFetch) {
+    window.fetch = function (input, init) {
+      init = init || {};
+      var url = typeof input === 'string' ? input : input.url;
+      var sep = url.indexOf('?') >= 0 ? '&' : '?';
+      var busted = url + sep + '_ts=' + Date.now();
+      var target = typeof input === 'string' ? busted : new Request(busted, input);
+      return origFetch.call(this, target, Object.assign({}, init, { cache: 'no-store' }));
+    };
+  }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AYSO 154 &middot; Volunteer Standings</title>
+<title>AYSO 154 - Volunteer Standings</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -32,7 +63,7 @@
         <img src="logo.png" alt="AYSO 154" style="height: 34px; width: 34px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; flex-shrink: 0;">
         <span style="display: flex; flex-direction: column; min-width: 0;">
           <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.2px; line-height: 1.15;">Volunteer Standings</span>
-          <span style="font-size: 11px; font-weight: 500; color: #93C5FD;">Fall 2026 &middot; Cypress AYSO Region 154</span>
+          <span style="font-size: 11px; font-weight: 500; color: #93C5FD;">Fall 2026 - Cypress AYSO Region 154</span>
         </span>
       </a>
       <a href="https://www.ayso154cypress.org/" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.12); color: #fff; font-size: 12px; font-weight: 600; padding: 8px 11px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); white-space: nowrap; flex-shrink: 0;" style-hover="background: #fff; color: #002D62;">Main Site</a>
@@ -43,7 +74,7 @@
           <span style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(16,185,129,0.7); animation: pulse 1.8s infinite cubic-bezier(0.66,0,0,1);"></span>
           <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ syncLabel }}</span>
         </span>
-        <button type="button" onClick="{{ onSync }}" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" style-hover="background: rgba(255,255,255,0.3);">&#x21bb; Sync</button>
+        <button type="button" onClick="{{ onSync }}" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" style-hover="background: rgba(255,255,255,0.3);">Sync</button>
       </div>
     </div>
   </header>
@@ -175,7 +206,7 @@
       <sc-if value="{{ guidelinesOpen }}">
         <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 €“ U19 &amp; EXTRA)</div>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 - U19 &amp; EXTRA)</div>
             <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Field Marshal (max 2), Friday Setup (max 5), and Picture Day (max 2).</p>
           </div>
           <div>
@@ -196,7 +227,7 @@
     <div style="display: flex; justify-content: center; gap: 14px; margin-bottom: 5px;">
       <a href="https://www.ayso154cypress.org/" style="font-weight: 600;">AYSO 154 Homepage</a>
     </div>
-    <p>American Youth Soccer Organization &middot; Region 154 Cypress, CA</p>
+    <p>American Youth Soccer Organization - Region 154 Cypress, CA</p>
   </footer>
 </div>
 </x-dc>
