@@ -9,86 +9,94 @@
 
 ## 🌟 The Game Plan (System Overview)
 
-Our volunteer tracking system runs like a well-coordinated soccer squad with three key positions on the pitch:
+Our volunteer tracking system runs like a well-coordinated soccer squad with key positions on the pitch:
 
 * 📱 **The Public Pitch (Coach Dashboard):**  
-  👉 [https://webmasterayso154.github.io/volunteer-dashboard/](https://webmasterayso154.github.io/volunteer-dashboard/)  
-  This is the family-friendly scoreboard coaches and parents check. Teams track their sprint toward the **17-point playoff goal**. To protect our soccer families' privacy, volunteer names and contact info never appear on this public dashboard.
-* 📋 **The Official Match Sheet (`Form Responses 1`):**  
-  Our central Google Sheet that catches Saturday QR code check-ins from the fields in real time.
+  👉 <a href="https://webmasterayso154.github.io/volunteer-dashboard/" target="_blank" rel="noopener noreferrer"><strong>Open Live Volunteer Points Dashboard</strong></a>  
+  This is the family-friendly scoreboard coaches and parents check. Teams track their sprint toward the **17-point playoff goal**. Volunteer names and contact info never appear on this public surface.
+
+* 📝 **The Game Day Check-In Form (QR Destination):**  
+  👉 <a href="https://docs.google.com/forms/d/e/1FAIpQLSdDPW8Bs7T1v7xYBIzVmHwi7rpx6rrLcqYk83vvVUJo_j5WSQ/viewform" target="_blank" rel="noopener noreferrer"><strong>Open Volunteer Check-In Form</strong></a>  
+  The mobile form that parents and referees scan at the fields to record match coverage and setup hours.
+
+* 📋 **The Official Match Sheet (Raw Responses):**  
+  👉 <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit" target="_blank" rel="noopener noreferrer"><strong>Open Google Response Spreadsheet</strong></a>  
+  Our central database containing raw Saturday check-ins (`Form Responses 1`).
+
 * 🎛️ **The Coach's Box (`Admin_Config` & `Team_Awards`):**  
-  The private board area where we fine-tune point targets, award special team bonuses, and celebrate extra volunteer hustle.
+  👉 <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit#gid=1448287399" target="_blank" rel="noopener noreferrer"><strong>Open Admin_Config Settings Tab</strong></a>  
+  The administrative area where point caps are adjusted, late teams are registered, and manual team awards are entered.
 
 ---
 
 ## 🥅 Playoff Targets & Category Caps (`Admin_Config`)
 
-Every player knows the goal! The points required to qualify for playoffs and the maximum points a team can earn per category live in the **`Admin_Config`** tab (Columns D & E).
+Every player knows the goal! Point requirements and seasonal caps are configured in the **`Admin_Config`** tab (Columns D & E).
 
 | Goal / Duty ⚽ | Target / Cap | How Teams Score Points |
 | :--- | :---: | :--- |
-| **Playoff Qualification** | **17 Total Pts** | The magic number teams need to qualify for post-season and tournament play. |
-| **Referee Assignments** | **10 Pts Max** | Saturday on-field referee assignments. Every covered game keeps our kids playing safely! |
-| **Friday Night Setup** | **5 Pts Max** | Field lining, putting up nets, and setting corner flags (1 point per hour). |
-| **Field Marshal Shifts** | **2 Pts Max** | Keeping our sidelines positive, safe, and family-friendly. |
-| **Picture Day & Picnic** | **2 Pts Max** | Helping our young athletes look sharp on photo day. |
+| **Playoff Qualification** | **17 Total Pts** | The target required for post-season and tournament play. |
+| **Referee Assignments** | **10 Pts Max** | Saturday on-field referee assignments. Keeps matches staffed and safe. |
+| **Friday Night Setup** | **5 Pts Max** | Field lining, putting up nets, and setting corner flags (1 pt/hr). |
+| **Field Marshal Shifts** | **2 Pts Max** | Ensuring sideline safety and positive sportsmanship. |
+| **Picture Day & Picnic** | **2 Pts Max** | Volunteer assistance during team photo events. |
 | **Certified Team Referees** | **5 Pts Bonus** | Administrative bonus credited to teams with fully certified, rostered referees. |
-| **MatchTrak Compliance** | **2 Pts Bonus** | Reward for coaches who have their MatchTrak schedule populated by September 26. |
+| **MatchTrak Compliance** | **2 Pts Bonus** | Reward for coaches who fully populate their MatchTrak roster by September 26. |
 
-> 💡 **Board Tip:** Need to adjust a cap mid-season? Change the number in Column E of `Admin_Config` and the public dashboard updates instantly. **Keep the checkbox in cell E8 (`StandingsFrozen`) unchecked** until the regular season concludes and playoff seeds are finalized!
+> 💡 **Board Tip:** Keep the checkbox in cell E8 (**`StandingsFrozen`**) unchecked throughout the season. Checking this box locks down points when regular-season tracking closes.
 
 ---
 
 ## 🦺 Friday Night Setup & Saturday Check-Ins
 
-* 🌙 **Friday Night Field Prep:** Volunteers scan the field QR code, choose **Friday Night Field Setup**, and log their team. The system awards **1 point per hour** up to the 5-point season ceiling.
-* 🚩 **Assistant Referees (Dual AR):** Both volunteer line refs get full credit! When two assistant referees work the same match, each team gets **+1 point** with no collision flags.
-* ⏱️ **NOCRA Paid Referees:** Paid center referees earn zero team volunteer points and are awarded a neutral **`NOCRA - No Points`** badge in the log.
-* 📝 **Live Form Entries:** Incoming check-ins show up with a soft blue **`Recorded` (+1 pt)** badge so coaches know their effort has been captured.
+* 🌙 **Friday Night Field Prep:** Volunteers scan the field QR code, select **Friday Night Field Setup**, and log their team. The backend awards **1 point per hour** up to the 5-point season ceiling.
+* 🚩 **Assistant Referees (Dual AR):** When two assistant referees work the same match, both teams are awarded **+1 point** without collision flags.
+* ⏱️ **NOCRA Paid Referees:** Paid center referees receive a neutral **`NOCRA - No Points` (0 pts)** badge in the log.
+* 📝 **Live Form Entries:** Incoming check-ins display with a soft blue **`Recorded` (+1 pt)** badge so coaches can confirm their shift logged.
 
 ---
 
 ## 🏅 Awarding Special Team Points (`Team_Awards`)
 
-Not all great volunteer work happens via Saturday QR codes! When teams earn administrative bonuses, enter them in the **`Team_Awards`** tab:
+When teams earn administrative bonuses, enter them in the <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit" target="_blank" rel="noopener noreferrer"><strong>Team_Awards Tab</strong></a>:
 
 | Column | Header | What to Enter |
 | :---: | :--- | :--- |
 | **B** | `preSeasonRefs` | Certified referee bonus points (up to 5). |
-| **C** | `matchTrakBonus` | Enter `2` for teams fully compliant on MatchTrak by Sep 26. |
+| **C** | `matchTrakBonus` | Enter `2` for teams compliant on MatchTrak by Sep 26. |
 | **D** | `pictureDay` | Picture day volunteer shift credits (up to 2). |
-| **E** | `adjustment` | Manual point awards (e.g. `+1` for special field prep) or deductions (`-1` for missed duties). |
-| **F** | `reason` | A warm note explaining the credit (e.g., "Helped repair goal nets at Lexington"). |
-| **G** | `grantedBy` | Your name or board role (e.g., "Troy B.", "Nikki M."). |
+| **E** | `adjustment` | Manual point adjustments (`+1`, `+2`) or deductions (`-1`, `-2`). |
+| **F** | `reason` | Description (e.g., "Net setup support", "Missed ref assignment"). |
+| **G** | `grantedBy` | Board title or initials (e.g., "Nikki M.", "Troy B."). |
 
 ---
 
 ## 👟 Welcoming Late Teams & Coaches (`Admin_Config`)
 
-If a new team forms after opening weekend:
-1. Open the **`Admin_Config`** tab.
-2. Scroll to the first blank row under **Columns G & H (`SUPPLEMENTAL ROSTER`)**.
-3. Enter the **Division** (e.g., `10U - Boys`) and **Coach Name**.
-4. The system automatically creates the team code and adds them to the coach dropdown on the website!
+If a team is added mid-season:
+1. Open <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit#gid=1448287399" target="_blank" rel="noopener noreferrer"><strong>Admin_Config</strong></a>.
+2. Scroll to the first empty row under **Columns G & H (`SUPPLEMENTAL ROSTER`)**.
+3. Type the **Division** (e.g., `10U - Boys`) and **Coach Name**.
+4. The system automatically creates the team code and adds them to the live dashboard dropdowns.
 
 ---
 
 ## 🚩 Resolving Sideline Collisions (Anomaly Checks)
 
-Occasionally two parents tap Center Referee for the same field and time:
-1. Check the official match card in MatchTrak to verify who centered and who ran the line.
-2. Open `Form Responses 1`.
-3. Update the line referee's row to "AR" so both parents receive their rightful credit!
+If two volunteers claim the Center Referee slot for the same match:
+1. Open the game card in MatchTrak to verify who centered versus who ran the line.
+2. Open <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit" target="_blank" rel="noopener noreferrer"><strong>Form Responses 1</strong></a>.
+3. Change the line referee's duty entry to "AR" so both volunteers receive proper credit.
 
 ---
 
 ## 📋 Weekly Board Playbook Checklist
 
 * ☕ **Monday Morning (Referee Admin or delegate):**  
-  Review the Saturday game cards against `Form Responses 1`. Resolve any duplicate taps or center ref collisions so all teams start the week with clean points.
+  Review Saturday game cards against `Form Responses 1`. Resolve center referee collisions or rapid duplicates so point totals stay accurate.
 * 📱 **Tuesday Evening (Coach Admin or delegate):**  
-  Take a quick look at the live coach dashboard to ensure team point progress is tallying smoothly and answer any coach questions.
+  Check the public dashboard to ensure team progress toward the 17-point threshold is tallying smoothly.
 * 🥅 **Friday Afternoon (Field Director / Webmaster):**  
-  Verify the field setup equipment is ready for Friday evening volunteers.
+  Confirm field setup gear and QR codes are ready for Friday evening volunteers.
 * 🏁 **End of Season (Regional Commissioner):**  
-  Head to `Admin_Config`, check the **`StandingsFrozen`** box (cell E8), and lock in the final playoff standings!
+  In `Admin_Config`, check the **`StandingsFrozen`** box (cell E8) to lock playoff seeds.
