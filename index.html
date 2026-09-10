@@ -46,13 +46,26 @@
     </div>
 
     <!-- Loading Spinner -->
-    <div id="loadingIndicator" class="hidden py-8 text-center">
+    <div id="loadingIndicator" class="hidden py-8 text-center" role="status">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-red-600"></div>
       <p class="text-xs text-slate-500 mt-2">Loading team data...</p>
     </div>
 
+    <!-- Inline Error Banner -->
+    <div id="errorBanner" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-6 flex items-start justify-between gap-3" role="alert">
+      <p class="text-sm text-rose-800" id="errorBannerText">Something went wrong.</p>
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="errorRetryBtn" type="button" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700">
+          Retry
+        </button>
+        <button id="errorDismissBtn" type="button" aria-label="Dismiss error" class="text-rose-500 hover:text-rose-700 text-sm font-bold px-1">
+          &times;
+        </button>
+      </div>
+    </div>
+
     <!-- Team Stats Display Area -->
-    <div id="statsContainer" class="hidden space-y-6">
+    <div id="statsContainer" class="hidden space-y-6" aria-live="polite">
       
       <!-- Playoff Status Banner -->
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
@@ -145,7 +158,7 @@
 
   <script>
     // Configuration: Apps Script Web App Deployment URL
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf2bOknS7-6W_7Z0-6wz0KqI5y1QzK0-example/exec'; // Replace with your active Apps Script URL
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9a8MucGcBQj6txl60w0zXNHGQr0m4T3pFKPTcjy6kmTRD8DW-bLL-MwpB2VPkVY4/exec';
 
     let cachedDirectory = {};
 
@@ -242,12 +255,31 @@
           accIcon.textContent = 'Show';
         }
       });
+
+      // Inline error banner controls
+      document.getElementById('errorRetryBtn').addEventListener('click', () => {
+        if (lastRequestedTeamCode) fetchTeamStats(lastRequestedTeamCode);
+      });
+      document.getElementById('errorDismissBtn').addEventListener('click', hideError);
     });
 
+    let lastRequestedTeamCode = null;
+
+    function showError(message) {
+      document.getElementById('errorBannerText').textContent = message;
+      document.getElementById('errorBanner').classList.remove('hidden');
+    }
+
+    function hideError() {
+      document.getElementById('errorBanner').classList.add('hidden');
+    }
+
     async function fetchTeamStats(teamCode) {
+      lastRequestedTeamCode = teamCode;
       const loader = document.getElementById('loadingIndicator');
       const container = document.getElementById('statsContainer');
 
+      hideError();
       loader.classList.remove('hidden');
       container.classList.add('hidden');
 
@@ -260,7 +292,7 @@
         container.classList.remove('hidden');
       } catch (err) {
         loader.classList.add('hidden');
-        alert('Could not retrieve team points. Please try again.');
+        showError('Could not retrieve team points. Please check your connection and try again.');
       }
     }
 
