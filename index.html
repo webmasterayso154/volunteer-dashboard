@@ -1,30 +1,7 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-  <!-- Mobile Anti-Cache Directives -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <script>
-    // 1. Unregister lingering service workers holding old assets
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        regs.forEach(r => r.unregister());
-      });
-    }
-
-    // 2. Prevent mobile browsers from caching Apps Script data calls
-    (function() {
-      const _nativeFetch = window.fetch;
-      window.fetch = function(url, options = {}) {
-        const target = typeof url === 'string' ? url : (url.url || url.toString());
-        const sep = target.includes('?') ? '&' : '?';
-        const freshUrl = target + sep + '_nocache=' + Date.now();
-        options.cache = 'no-store';
-        return _nativeFetch.call(this, freshUrl, options);
-      };
-    })();
-  </script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><script>if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()))};(function(){const f=window.fetch;window.fetch=function(u,o={}){const s=(typeof u==="string"?u:u.url).includes("?")?"&":"?";return f.call(this,(typeof u==="string"?u:u.url)+s+"_nocache="+Date.now(),{...o,cache:"no-store"})}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AYSO 154 Â· Volunteer Standings</title>
