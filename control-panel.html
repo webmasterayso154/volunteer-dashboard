@@ -1,190 +1,238 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AYSO 154 | Control Panel</title>
+  <title>AYSO Region 154 | Board Operations Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root {
-      --ayso-blue: #0033a0;
-      --ayso-red: #e31837;
-      --bg-color: #f4f7f6;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-color);
-      color: #333;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      background: #ffffff;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-      border-top: 6px solid var(--ayso-blue);
-    }
-    h2 {
-      color: var(--ayso-blue);
-      margin-top: 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-bottom: 2px solid #eee;
-      padding-bottom: 15px;
-    }
-    .form-group {
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #555;
-    }
-    input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-size: 16px;
-      transition: border-color 0.3s;
-    }
-    input:focus {
-      border-color: var(--ayso-blue);
-      outline: none;
-    }
-    .btn {
-      background-color: var(--ayso-blue);
-      color: white;
-      padding: 14px 20px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: bold;
-      width: 100%;
-      transition: background 0.3s;
-    }
-    .btn:hover {
-      background-color: #002266;
-    }
-    .btn:disabled {
-      background-color: #999;
-      cursor: not-allowed;
-    }
-    .status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 6px;
-      text-align: center;
-      font-weight: bold;
-      display: none;
-    }
-    .status.success { background-color: #d4edda; color: #155724; display: block; }
-    .status.error { background-color: #f8d7da; color: #721c24; display: block; }
-    .loader {
-      text-align: center;
-      color: #777;
-      font-style: italic;
-      margin-bottom: 20px;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
   </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900 antialiased min-h-screen pb-16">
 
-  <div class="container">
-    <h2>⚙️ Board Control Panel</h2>
-    <div id="loading" class="loader">Loading current settings from the backend...</div>
-    
-    <form id="configForm" style="display: none;">
-      <div class="form-group">
-        <label for="BoardEmail">🚨 Board Alert Email (Major Incidents)</label>
-        <input type="email" id="BoardEmail" name="BoardEmail" required>
+  <!-- Header -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-4 text-center sm:text-left">
+        <img src="logo.png" alt="AYSO Region 154" class="h-14 w-auto drop-shadow">
+        <div>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-600 text-white mb-1">
+            Executive Board Portal
+          </span>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight">AYSO Cypress Region 154</h1>
+          <p class="text-xs text-slate-400">Volunteer Points Operations & Game Day Hub</p>
+        </div>
+      </div>
+      <a href="index.html" target="_blank" rel="noopener noreferrer" 
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-sm transition">
+        ⚽ View Public Dashboard &rarr;
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-5xl mx-auto px-4 pt-8 space-y-8">
+
+    <!-- Mission Control Quick Action Grid -->
+    <div>
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Game Day Quick Launch</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <!-- Card 1: Public Standings -->
+        <a href="index.html" target="_blank" rel="noopener noreferrer" 
+           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-red-500 transition flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
+              📱
+            </div>
+            <h3 class="font-bold text-slate-900 group-hover:text-red-600 transition text-base">Public Coach Standings</h3>
+            <p class="text-xs text-slate-500 mt-1">Live scoreboard showing team progress toward the 17-point playoff goal.</p>
+          </div>
+          <span class="text-xs font-semibold text-red-600 mt-4 inline-flex items-center gap-1">Open Dashboard &rarr;</span>
+        </a>
+
+        <!-- Card 2: Volunteer Check-In Form -->
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSdDPW8Bs7T1v7xYBIzVmHwi7rpx6rrLcqYk83vvVUJo_j5WSQ/viewform" target="_blank" rel="noopener noreferrer" 
+           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
+              📝
+            </div>
+            <h3 class="font-bold text-slate-900 group-hover:text-blue-600 transition text-base">Game Day Check-In Form</h3>
+            <p class="text-xs text-slate-500 mt-1">The live mobile form volunteers scan at fields to log ref shifts and setup.</p>
+          </div>
+          <span class="text-xs font-semibold text-blue-600 mt-4 inline-flex items-center gap-1">Open Check-In Form &rarr;</span>
+        </a>
+
+        <!-- Card 3: Form Responses Sheet -->
+        <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit" target="_blank" rel="noopener noreferrer" 
+           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-500 transition flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
+              📋
+            </div>
+            <h3 class="font-bold text-slate-900 group-hover:text-emerald-600 transition text-base">Official Match Sheet</h3>
+            <p class="text-xs text-slate-500 mt-1">Direct access to Form Responses 1 to review Saturday volunteer entries.</p>
+          </div>
+          <span class="text-xs font-semibold text-emerald-600 mt-4 inline-flex items-center gap-1">Open Responses &rarr;</span>
+        </a>
+
+        <!-- Card 4: Team Awards -->
+        <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit" target="_blank" rel="noopener noreferrer" 
+           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-500 transition flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
+              🏅
+            </div>
+            <h3 class="font-bold text-slate-900 group-hover:text-amber-600 transition text-base">Team Awards & Bonus Points</h3>
+            <p class="text-xs text-slate-500 mt-1">Award certified referee bonuses, MatchTrak bonuses, or field adjustments.</p>
+          </div>
+          <span class="text-xs font-semibold text-amber-600 mt-4 inline-flex items-center gap-1">Open Team_Awards &rarr;</span>
+        </a>
+
+        <!-- Card 5: Admin Config & Late Teams -->
+        <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit#gid=1448287399" target="_blank" rel="noopener noreferrer" 
+           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-purple-500 transition flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
+              🎛️
+            </div>
+            <h3 class="font-bold text-slate-900 group-hover:text-purple-600 transition text-base">Season Caps & Late Coaches</h3>
+            <p class="text-xs text-slate-500 mt-1">Register supplemental coaches and manage season-end standings lock.</p>
+          </div>
+          <span class="text-xs font-semibold text-purple-600 mt-4 inline-flex items-center gap-1">Open Admin_Config &rarr;</span>
+        </a>
+
+        <!-- Card 6: GitHub Repo Technical Spec -->
+        <a href="https://github.com/webmasterayso154/volunteer-dashboard" target="_blank" rel="noopener noreferrer" 
+           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-500 transition flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
+              ⚙️
+            </div>
+            <h3 class="font-bold text-slate-900 group-hover:text-slate-700 transition text-base">Technical Repository</h3>
+            <p class="text-xs text-slate-500 mt-1">Webmaster source code, automated test suite, and contract specs.</p>
+          </div>
+          <span class="text-xs font-semibold text-slate-600 mt-4 inline-flex items-center gap-1">View GitHub &rarr;</span>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- Executive Board Playbook Section -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+      
+      <div class="border-b border-slate-100 pb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900">🏆 Executive Board Weekly Playbook</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Standard operating routine for weekly volunteer tracking</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+          Fall 2026
+        </span>
       </div>
 
-      <div class="form-group">
-        <label for="RCEmail">⚠️ RC Email (Missing Referee Alerts)</label>
-        <input type="email" id="RCEmail" name="RCEmail" required>
-      </div>
-
-      <div class="form-group">
-        <label for="RefMaxCap">🛑 Referee Point Cap (Max points per team)</label>
-        <input type="number" id="RefMaxCap" name="RefMaxCap" value="17" required>
-      </div>
-
-      <div class="form-group">
-        <label for="PlayoffThreshold">🏆 Post-Season / Playoff Qualification Threshold (Points)</label>
-        <input type="number" id="PlayoffThreshold" name="PlayoffThreshold" value="17" required>
-      </div>
-
-      <button type="submit" id="saveBtn" class="btn">💾 Save Configuration</button>
-      <div id="statusMessage" class="status"></div>
-    </form>
-  </div>
-
-  <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx9a8MucGcBQj6txl60w0zXNHGQr0m4T3pFKPTcjy6kmTRD8DW-bLL-MwpB2VPkVY4/exec';
-
-    window.onload = async function() {
-      try {
-        const response = await fetch(WEB_APP_URL + '?action=getSettings');
-        const data = await response.json();
+      <!-- Weekly Schedule Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         
-        document.getElementById('BoardEmail').value = data.BoardEmail || '';
-        document.getElementById('RCEmail').value = data.RCEmail || '';
-        document.getElementById('RefMaxCap').value = data.RefMaxCap || 17;
-        document.getElementById('PlayoffThreshold').value = data.PlayoffThreshold || 17;
-        
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('configForm').style.display = 'block';
-      } catch (error) {
-        showStatus('Error loading settings. Check your Web App URL.', 'error');
-      }
-    };
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-base">☕</span>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800">Monday Morning</h4>
+          </div>
+          <p class="text-xs font-semibold text-red-600">Referee Admin or Delegate</p>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Cross-reference Saturday match cards in MatchTrak against <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">Form Responses 1</a>. Resolve any Center Referee collisions or accidental double-taps.
+          </p>
+        </div>
 
-    document.getElementById('configForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const btn = document.getElementById('saveBtn');
-      btn.disabled = true;
-      btn.innerText = 'Saving...';
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-base">📱</span>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800">Tuesday Evening</h4>
+          </div>
+          <p class="text-xs font-semibold text-blue-600">Coach Admin or Delegate</p>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Check the <a href="index.html" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">Live Dashboard</a> to verify teams are accumulating points accurately toward the 17-point threshold and field coach questions.
+          </p>
+        </div>
 
-      const updatedData = {
-        BoardEmail: document.getElementById('BoardEmail').value,
-        RCEmail: document.getElementById('RCEmail').value,
-        RefMaxCap: document.getElementById('RefMaxCap').value,
-        PlayoffThreshold: document.getElementById('PlayoffThreshold').value
-      };
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🥅</span>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800">Friday Afternoon</h4>
+          </div>
+          <p class="text-xs font-semibold text-emerald-600">Field Director / Webmaster</p>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Verify Friday Night Field Setup QR codes are ready at the storage shed so volunteers can log setup hours (1 pt/hr, up to 5 pts max).
+          </p>
+        </div>
 
-      try {
-        const response = await fetch(WEB_APP_URL, {
-          method: 'POST',
-          body: JSON.stringify(updatedData)
-        });
-        
-        const result = await response.json();
-        if(result.status === 'success') {
-          showStatus('✅ Settings saved successfully to the Google Sheet!', 'success');
-        } else {
-          showStatus('❌ Failed to save. Check script permissions.', 'error');
-        }
-      } catch (error) {
-        showStatus('❌ Network error while saving.', 'error');
-      }
+      </div>
 
-      btn.disabled = false;
-      btn.innerText = '💾 Save Configuration';
-      setTimeout(() => { document.getElementById('statusMessage').className = 'status'; }, 4000);
-    });
+      <!-- Point Rules Table -->
+      <div class="pt-2">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Season Category Caps</h3>
+        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="p-3">Volunteer Duty</th>
+                <th class="p-3 text-center">Season Cap</th>
+                <th class="p-3">Rules & Notes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+              <tr>
+                <td class="p-3 font-semibold text-slate-900">Playoff Requirement</td>
+                <td class="p-3 text-center font-bold text-red-600">17 pts</td>
+                <td class="p-3">Total points needed for tournament eligibility.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-900">Referee Assignments</td>
+                <td class="p-3 text-center font-bold">10 pts</td>
+                <td class="p-3">On-field referee duty (Dual AR awarded 1 pt each; NOCRA centers earn 0).</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-900">Friday Night Setup</td>
+                <td class="p-3 text-center font-bold">5 pts</td>
+                <td class="p-3">1 point per hour shift.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-900">Field Marshal Shifts</td>
+                <td class="p-3 text-center font-bold">2 pts</td>
+                <td class="p-3">Can be completed on same Saturday or separate dates.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-900">Picture Day & Picnic</td>
+                <td class="p-3 text-center font-bold">2 pts</td>
+                <td class="p-3">Volunteer event assistance.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-900">Certified Referee Bonus</td>
+                <td class="p-3 text-center font-bold">5 pts</td>
+                <td class="p-3">Administrative bonus for certified team referees entered in Team_Awards.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-900">MatchTrak Compliance</td>
+                <td class="p-3 text-center font-bold">2 pts</td>
+                <td class="p-3">Awarded for complete MatchTrak rosters by September 26.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-    function showStatus(message, type) {
-      const statusDiv = document.getElementById('statusMessage');
-      statusDiv.innerText = message;
-      statusDiv.className = `status ${type}`;
-    }
-  </script>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="max-w-5xl mx-auto px-4 mt-8 text-center text-xs text-slate-400">
+    AYSO Region 154 Cypress &bull; Technical Operations &bull; Fall 2026
+  </footer>
+
 </body>
 </html>
