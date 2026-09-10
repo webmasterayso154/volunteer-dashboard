@@ -1,387 +1,513 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AYSO Region 154 | Volunteer Points Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AYSO 154 · Volunteer Standings</title>
+<script src="./support.js"></script>
 </head>
-<body class="bg-slate-50 text-slate-900 antialiased min-h-screen pb-12">
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F4F6F9; color: #111827; -webkit-font-smoothing: antialiased; line-height: 1.4; }
+  a { color: #002D62; text-decoration: none; }
+  a:hover { color: #C8102E; }
+  select { font-family: inherit; }
+  @keyframes pulse { to { box-shadow: 0 0 0 6px rgba(16,185,129,0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: #F4F6F9;">
 
-  <!-- Main Container -->
-  <div class="max-w-2xl mx-auto px-4 pt-6 sm:pt-10">
-    
-    <!-- Header -->
-    <div class="text-center mb-6">
-      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 mb-2">
-        AYSO Cypress Region 154
-      </span>
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Volunteer Points Dashboard</h1>
-      <p class="text-sm text-slate-500 mt-1">Track your team's playoff qualification progress</p>
+  <header style="position: sticky; top: 0; z-index: 100; background: linear-gradient(135deg, #001A38 0%, #002D62 100%); border-bottom: 3px solid #C8102E; color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
+    <div style="max-width: 720px; margin: 0 auto; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <a href="https://www.ayso154cypress.org/" style="display: flex; align-items: center; gap: 10px; color: #fff; min-width: 0;">
+        <img src="logo.png" alt="AYSO 154" style="height: 34px; width: 34px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; flex-shrink: 0;">
+        <span style="display: flex; flex-direction: column; min-width: 0;">
+          <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.2px; line-height: 1.15;">Volunteer Standings</span>
+          <span style="font-size: 11px; font-weight: 500; color: #93C5FD;">Fall 2026 · Cypress AYSO Region 154</span>
+        </span>
+      </a>
+      <a href="https://www.ayso154cypress.org/" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.12); color: #fff; font-size: 12px; font-weight: 600; padding: 8px 11px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); white-space: nowrap; flex-shrink: 0;" style-hover="background: #fff; color: #002D62;">Main Site</a>
     </div>
-
-    <!-- Selectors Card -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6 space-y-4">
-      <div>
-        <label for="divisionSelect" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
-          Select Division
-        </label>
-        <select id="divisionSelect" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500">
-          <option value="">Loading divisions...</option>
-        </select>
-      </div>
-
-      <div>
-        <label for="teamSelect" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
-          Select Coach / Team
-        </label>
-        <select id="teamSelect" disabled class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-800 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 disabled:cursor-not-allowed">
-          <option value="">First select a division</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Loading Spinner -->
-    <div id="loadingIndicator" class="hidden py-8 text-center" role="status">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-red-600"></div>
-      <p class="text-xs text-slate-500 mt-2">Loading team data...</p>
-    </div>
-
-    <!-- Inline Error Banner -->
-    <div id="errorBanner" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-6 flex items-start justify-between gap-3" role="alert">
-      <p class="text-sm text-rose-800" id="errorBannerText">Something went wrong.</p>
-      <div class="flex items-center gap-2 shrink-0">
-        <button id="errorRetryBtn" type="button" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700">
-          Retry
-        </button>
-        <button id="errorDismissBtn" type="button" aria-label="Dismiss error" class="text-rose-500 hover:text-rose-700 text-sm font-bold px-1">
-          &times;
-        </button>
+    <div style="background: rgba(0,0,0,0.22);">
+      <div style="max-width: 720px; margin: 0 auto; padding: 5px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: #CBD5E1;">
+        <span style="display: inline-flex; align-items: center; gap: 6px; min-width: 0;">
+          <span style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(16,185,129,0.7); animation: pulse 1.8s infinite cubic-bezier(0.66,0,0,1);"></span>
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ syncLabel }}</span>
+        </span>
+        <button type="button" onClick="{{ onSync }}" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" style-hover="background: rgba(255,255,255,0.3);">↻ Sync</button>
       </div>
     </div>
+  </header>
 
-    <!-- Team Stats Display Area -->
-    <div id="statsContainer" class="hidden space-y-6" aria-live="polite">
-      
-      <!-- Playoff Status Banner -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Playoff Requirement</span>
-          <span id="qualificationBadge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold"></span>
-        </div>
-        <div class="flex items-baseline justify-between mb-3">
-          <div class="flex items-baseline space-x-1">
-            <span id="totalPointsDisplay" class="text-4xl font-extrabold text-slate-900">0</span>
-            <span class="text-sm font-semibold text-slate-500">/ 17 pts</span>
-          </div>
-          <span id="targetRemainingText" class="text-xs font-medium text-slate-500"></span>
-        </div>
-        <!-- Progress Bar -->
-        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-          <div id="progressBarFill" class="h-3 rounded-full transition-all duration-500 bg-red-600" style="width: 0%"></div>
-        </div>
-      </div>
+  <main style="flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 12px 12px 28px 12px;">
 
-      <!-- Category Breakdown Grid -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Category Targets & Caps</h3>
-        <div class="divide-y divide-slate-100 text-sm">
-          <div class="py-2.5 flex justify-between items-center">
-            <span class="text-slate-700">Certified Team Referees</span>
-            <span class="font-semibold text-slate-900" id="catCertRef">0 / 5</span>
+    <sc-if value="{{ showPicker }}">
+      <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
+        <div style="font-size: 13px; font-weight: 700; color: #002D62; margin-bottom: 12px;">Find your team</div>
+        <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+          <div style="display: flex; flex-direction: column;">
+            <label for="divisionSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Division</label>
+            <select id="divisionSelect" value="{{ division }}" onChange="{{ onDivisionChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
+              <option value="">Choose division…</option>
+              <sc-for list="{{ divisions }}" as="d">
+                <option value="{{ d }}">{{ d }}</option>
+              </sc-for>
+            </select>
           </div>
-          <div class="py-2.5 flex justify-between items-center">
-            <span class="text-slate-700">MatchTrak Filled by Sep 26</span>
-            <span class="font-semibold text-slate-900" id="catMatchTrak">0 / 2</span>
-          </div>
-          <div class="py-2.5 flex justify-between items-center">
-            <span class="text-slate-700">Referee Assignment (On-Field)</span>
-            <span class="font-semibold text-slate-900" id="catRef">0 / 10</span>
-          </div>
-          <div class="py-2.5 flex justify-between items-center">
-            <span class="text-slate-700">Field Marshal Shifts</span>
-            <span class="font-semibold text-slate-900" id="catFM">0 / 2</span>
-          </div>
-          <div class="py-2.5 flex justify-between items-center">
-            <span class="text-slate-700">Friday Night Setup</span>
-            <span class="font-semibold text-slate-900" id="catSetup">0 / 5</span>
-          </div>
-          <div class="py-2.5 flex justify-between items-center">
-            <span class="text-slate-700">Picture Picnic Day</span>
-            <span class="font-semibold text-slate-900" id="catPic">0 / 2</span>
+          <div style="display: flex; flex-direction: column;">
+            <label for="coachSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Head Coach</label>
+            <select id="coachSelect" value="{{ teamCode }}" disabled="{{ coachDisabled }}" onChange="{{ onCoachChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
+              <option value="">{{ coachPlaceholder }}</option>
+              <sc-for list="{{ coaches }}" as="c">
+                <option value="{{ c.teamCode }}">{{ c.label }}</option>
+              </sc-for>
+            </select>
           </div>
         </div>
       </div>
+    </sc-if>
 
-      <!-- Check-In Log -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="p-4 sm:p-5 border-b border-slate-100 flex justify-between items-center">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600">CHECK-IN LOG</h3>
-          <span id="recordCount" class="text-xs font-medium text-slate-500">0 records</span>
-        </div>
-        
-        <div id="auditLogList" class="divide-y divide-slate-100">
-          <!-- Dynamically populated rows -->
-        </div>
+    <sc-if value="{{ showTeamChip }}">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid #E5E7EB; border-radius: 10px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
+        <span style="display: flex; flex-direction: column; min-width: 0;">
+          <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6B7280;">Your team</span>
+          <span style="font-size: 15px; font-weight: 700; color: #002D62; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ teamLabel }}</span>
+        </span>
+        <button type="button" onClick="{{ onChangeTeam }}" style="background: #F3F4F6; border: 1px solid #E5E7EB; color: #002D62; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0;" style-hover="background: #E5E7EB;">Change</button>
+      </div>
+    </sc-if>
 
-        <div class="p-4 bg-slate-50 border-t border-slate-100 text-xs text-slate-500 leading-relaxed">
-          Volunteer names are omitted from this public log. Itemized rosters are available to the head coach or team manager on request.
+    <sc-if value="{{ loading }}">
+      <div style="text-align: center; padding: 40px 0; color: #002D62; font-weight: 600; font-size: 13px;">
+        <div style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;"></div>
+        Loading team standings…
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showIdle }}">
+      <div style="background: #fff; border: 1px dashed #D1D5DB; border-radius: 12px; padding: 28px 20px; text-align: center;">
+        <div style="font-size: 14px; font-weight: 700; color: #002D62; margin-bottom: 6px;">Pick a division and coach</div>
+        <p style="font-size: 12px; color: #6B7280; max-width: 32ch; margin: 0 auto; text-wrap: pretty;">We'll remember your team on this device so it loads automatically next time.</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasStats }}">
+      <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 18px 16px 16px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px;">
+          <span style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-size: 52px; font-weight: 800; color: #002D62; line-height: 0.9; letter-spacing: -2px;">{{ total }}</span>
+            <span style="font-size: 15px; font-weight: 600; color: #6B7280;">{{ goalSubtitle }}</span>
+          </span>
+          <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 10px; border-radius: 20px; white-space: nowrap; background: {{ pillBg }}; color: {{ pillFg }};">{{ pillText }}</span>
+        </div>
+        <div style="height: 12px; border-radius: 999px; background: #EEF1F5; overflow: hidden;">
+          <div style="height: 100%; border-radius: 999px; background: {{ barColor }}; width: {{ totalPct }}; transition: width 0.6s cubic-bezier(0.22,1,0.36,1);"></div>
+        </div>
+        <p style="font-size: 12px; color: #6B7280; margin-top: 8px; text-wrap: pretty;">{{ goalCaption }}</p>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 12px;">Points by category</div>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <sc-for list="{{ categories }}" as="cat">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                <span style="font-size: 13px; font-weight: 600; color: #111827;">{{ cat.label }}</span>
+                <span style="font-size: 13px; font-weight: 700; color: #002D62;">{{ cat.val }}<span style="font-weight: 500; color: #9CA3AF;"> / {{ cat.cap }}</span></span>
+              </div>
+              <div style="height: 6px; border-radius: 999px; background: #EEF1F5; overflow: hidden;">
+                <div style="height: 100%; border-radius: 999px; background: {{ cat.color }}; width: {{ cat.pct }}; transition: width 0.6s cubic-bezier(0.22,1,0.36,1);"></div>
+              </div>
+            </div>
+          </sc-for>
         </div>
       </div>
 
-      <!-- Guidelines Accordion -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-        <button id="accordionToggle" class="w-full flex justify-between items-center text-left text-sm font-semibold text-slate-800">
-          <span>Volunteer guidelines & targets</span>
-          <span id="accordionIcon" class="text-xs font-bold text-red-600">Show</span>
-        </button>
-        <div id="accordionContent" class="hidden mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-2">
-          <p>• <strong>17 Total Points:</strong> Required for post-season and playoff tournament eligibility.</p>
-          <p>• <strong>Referee Assignments:</strong> Up to 10 points max per season. Home matches for Upper & EXTRA divisions supply 2 volunteer ARs (1 pt per AR, up to 2 pts/day). Paid NOCRA center referees earn zero volunteer points.</p>
-          <p>• <strong>Field Marshal Shifts:</strong> 2 points max per season. Teams may fulfill shifts on separate dates or the same Saturday.</p>
-          <p>• <strong>Friday Night Setup:</strong> 1 point per hour shift (up to 5 points max per season).</p>
+      <sc-if value="{{ showLog }}">
+        <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #F3F4F6;">
+            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #002D62;">Check-in log</span>
+            <span style="font-size: 11px; font-weight: 500; color: #6B7280;">{{ auditCount }}</span>
+          </div>
+          <sc-if value="{{ hasAudit }}">
+            <div style="display: flex; flex-direction: column;">
+              <sc-for list="{{ audit }}" as="row">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; border-bottom: 1px solid #F3F4F6;">
+                  <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                    <span style="font-size: 13px; font-weight: 600; color: #111827;">{{ row.duty }}</span>
+                    <span style="font-size: 11px; color: #6B7280;">{{ row.date }}</span>
+                  </span>
+                  <span style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                    <span style="font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 5px; background: {{ row.badgeBg }}; color: {{ row.badgeFg }};">{{ row.status }}</span>
+                    <span style="font-size: 14px; font-weight: 800; color: #002D62; min-width: 28px; text-align: right;">{{ row.pts }}</span>
+                  </span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noAudit }}">
+            <div style="padding: 26px 20px; text-align: center;">
+              <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">No check-ins yet</div>
+              <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto; text-wrap: pretty;">Points appear here within seconds of a volunteer scanning the QR code at the field tent.</p>
+            </div>
+          </sc-if>
+          <div style="background: #F9FAFB; border-top: 1px solid #F3F4F6; padding: 9px 16px; font-size: 11px; color: #6B7280; text-wrap: pretty;">
+            Volunteer names are omitted from this public log. Itemized rosters are available to the head coach or team manager on request.
+          </div>
         </div>
-      </div>
+      </sc-if>
+    </sc-if>
 
-      <!-- Footer Sync Timestamp -->
-      <div class="text-center text-xs text-slate-400">
-        Last Synced: <span id="syncTimestamp">Just now</span>
-      </div>
-
+    <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow: hidden;">
+      <button type="button" onClick="{{ onToggleGuidelines }}" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: none; border: none; padding: 14px 16px; cursor: pointer; text-align: left; font-family: inherit;" style-hover="background: #F9FAFB;">
+        <span style="font-size: 13px; font-weight: 700; color: #002D62;">Volunteer guidelines &amp; targets</span>
+        <span style="font-size: 12px; font-weight: 700; color: #6B7280;">{{ guidelinesToggle }}</span>
+      </button>
+      <sc-if value="{{ guidelinesOpen }}">
+        <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
+          <div>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 – U19 &amp; EXTRA)</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Field Marshal (max 2), Friday Setup (max 5), and Picture Day (max 2).</p>
+          </div>
+          <div>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">U5 &amp; U6 Divisions</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 8 volunteer points out of 9 possible. Points are earned through Saturday morning setup/takedown (up to 5 points), Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points), and Picture Picnic Day (max 2 points).</p>
+          </div>
+          <div>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playground Division</div>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 volunteer points (4 points possible). Points are earned through Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points) and Picture Picnic Day shifts (max 2 points).</p>
+          </div>
+        </div>
+      </sc-if>
     </div>
 
-  </div>
+  </main>
 
-  <script>
-    // Configuration: Apps Script Web App Deployment URL
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9a8MucGcBQj6txl60w0zXNHGQr0m4T3pFKPTcjy6kmTRD8DW-bLL-MwpB2VPkVY4/exec';
+  <footer style="background: #fff; border-top: 1px solid #E5E7EB; padding: 16px; text-align: center; font-size: 11px; color: #6B7280;">
+    <div style="display: flex; justify-content: center; gap: 14px; margin-bottom: 5px;">
+      <a href="https://www.ayso154cypress.org/" style="font-weight: 600;">AYSO 154 Homepage</a>
+    </div>
+    <p>American Youth Soccer Organization · Region 154 Cypress, CA</p>
+  </footer>
+</div>
+</x-dc>
 
-    let cachedDirectory = {};
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:17,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
+const API_URL = 'https://script.google.com/macros/s/AKfycbx9a8MucGcBQj6txl60w0zXNHGQr0m4T3pFKPTcjy6kmTRD8DW-bLL-MwpB2VPkVY4/exec';
+const CACHE_DIR = 'ayso154_cached_directory';
+const CACHE_TIME = 'ayso154_cached_timestamp';
+const LAST_TEAM = 'ayso154_last_team';
 
-    // JSONP Helper to bypass CORS
-    function jsonp(url, callbackName) {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        const timeout = setTimeout(() => {
-          cleanup();
-          reject(new Error('JSONP Request timed out'));
-        }, 12000);
+const STATIC_TEAMS = [
+  "Playground - Playground",
+  "05U - Boys - Stefan Colvey", "05U - Boys - Casey Harpham", "05U - Boys - Ryan Loza", "05U - Boys - Ankit Vasa", "05U - Boys - Greg Weber",
+  "05U - Girls - Priscilla Alvardo", "05U - Girls - Tim Bouahom", "05U - Girls - Ramzi Nasr", "05U - Girls - Saul Ruiz",
+  "06U - Boys - Jessica Campuzano", "06U - Boys - Alber Eskander", "06U - Boys - James Fahrny", "06U - Boys - Ryan Fox", "06U - Boys - Chris Gshweng", "06U - Boys - Deanna Hartman", "06U - Boys - Jessica Matal", "06U - Boys - Amira Medina", "06U - Boys - Brennen Portalski",
+  "06U - Girls - Diana Baik", "06U - Girls - Suresh Dangeti", "06U - Girls - Cobi Ferriro", "06U - Girls - Joseph Frontino", "06U - Girls - Kendall Klein", "06U - Girls - Andrea Lopez", "06U - Girls - Matt Olsen", "06U - Girls - Breanna Pena", "06U - Girls - Jeremy Vreeland",
+  "08U - Boys - Raushanah Ali", "08U - Boys - Raumin Benjamin", "08U - Boys - Bryce Burnett", "08U - Boys - Dan Carmichael", "08U - Boys - Natasha Dressler", "08U - Boys - Arielle Garcia", "08U - Boys - Casey Harpham", "08U - Boys - Jeffrey Hosler", "08U - Boys - Matthew Kamada", "08U - Boys - Christina Kinne", "08U - Boys - Jorge Marquez", "08U - Boys - Victor Perez", "08U - Boys - Juan Rodriguez", "08U - Boys - Roberto Rojas", "08U - Boys - Veronica Ruiz", "08U - Boys - Amanda Towers", "08U - Boys - Fernando Vega",
+  "08U - Girls - Samuel Alvarez", "08U - Girls - Krissy Barone", "08U - Girls - Michael Burke", "08U - Girls - Meghan Codipilly", "08U - Girls - Anukool Gandhi", "08U - Girls - Abraham Gomez", "08U - Girls - Mark Hernandez", "08U - Girls - Nathan Silva", "08U - Girls - Crystal Van Maanen", "08U - Girls - Adrian Yeung",
+  "9UX - Boys - Chris Franco", "9UX - Girls - Kevin Yonemoto",
+  "10U - Boys - Faheem Armanyous", "10U - Boys - Dustin Brieger", "10U - Boys - Ryan Bulatao", "10U - Boys - Andrew Evango", "10U - Boys - Harold Huang", "10U - Boys - Jeff Klaus", "10U - Boys - Jace Leicht", "10U - Boys - Michael Lewis", "10U - Boys - Leonardo Limon", "10U - Boys - Ryan Loza", "10U - Boys - Mark Mancilla", "10U - Boys - Long Nguyen", "10U - Boys - Stephanie Orozco", "10U - Boys - Trevor Richardson", "10U - Boys - Javier Zambrano", "10U - Boys - Tariq Zidan",
+  "10UX - Boys - Paul Cuthbert",
+  "10U - Girls - Dawn Caires", "10U - Girls - David Corado", "10U - Girls - Josie Cotton", "10U - Girls - Fekadu Debebe", "10U - Girls - Alexander Olmos", "10U - Girls - Matt Olsen", "10U - Girls - Tomer Otor", "10U - Girls - Brennen Poralski", "10U - Girls - Andrew Yeung",
+  "10UX - Girls - Sam Humphery",
+  "11UX - Girls - Jon Tarian",
+  "12U - Boys - Mina Abader", "12U - Boys - Jonathan Flores", "12U - Isaiah Hicks", "12U - Boys - Terri Mackay", "12U - Boys - Jorge Marquez", "12U - Boys - Allegra Martin", "12U - Boys - Amira Medina", "12U - Boys - Chris Munoz", "12U - Boys - Lucky Relator", "12U - Boys - Lawrence Tam", "12U - Boys - Hector Vargas",
+  "12UX - Boys - Ignacio Brache",
+  "12U - Girls - Saul Alvarez", "12U - Girls - David Corado", "12U - Girls - Carlos Cruz", "12U - Girls - Fernando Huerta", "12U - Girls - Justin Rast",
+  "12UX - Girls - Jessica Ortega",
+  "13UX - Boys - Jessica Husami",
+  "14U - Boys - Mina Abader", "14U - Boys - Allegra Martin", "14U - Boys - Ernie Solano", "14U - Boys - Jodie Thomas",
+  "14UX - Boys - Christian Villalobos",
+  "14U - Girls - Jeff Dronkers", "14U - Girls - Pablo Peregrina",
+  "14UX - Girls - Ben Wysocki",
+  "16U - Boys - Bruce Conze", "16U - Girls - Miguel Hernandez",
+  "19U - Boys - Jennifer Deselm", "19U - Girls - Josh Palafox"
+];
 
-        function cleanup() {
-          clearTimeout(timeout);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          delete window[callbackName];
-        }
+function buildStaticDirectory() {
+  const dir = {};
+  STATIC_TEAMS.forEach(rawTeam => {
+    const parts = rawTeam.split(' - ');
+    if (parts.length >= 3) {
+      const division = (parts[0].trim() + ' - ' + parts[1].trim());
+      const coach = parts.slice(2).join(' - ').trim();
+      if (!dir[division]) dir[division] = [];
+      dir[division].push({ teamCode: rawTeam, coach: coach });
+    } else {
+      const division = parts[0].trim();
+      if (!dir[division]) dir[division] = [];
+      dir[division].push({ teamCode: rawTeam, coach: rawTeam });
+    }
+  });
+  return dir;
+}
 
-        window[callbackName] = function(data) {
-          cleanup();
-          resolve(data);
-        };
+class Component extends DCLogic {
+  state = {
+    directory: buildStaticDirectory(),
+    division: '', 
+    teamCode: '', 
+    teamLabel: '',
+    stats: null, 
+    loading: false, 
+    syncLabel: 'Ready · Instant Standings',
+    pickerOpen: true, 
+    guidelinesOpen: false, 
+    dirLoaded: true
+  };
 
-        script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
-        script.onerror = () => {
-          cleanup();
-          reject(new Error('JSONP Script load error'));
-        };
-        document.body.appendChild(script);
+  componentDidMount() {
+    let saved = null;
+    try {
+      const d = localStorage.getItem(CACHE_DIR);
+      const t = localStorage.getItem(CACHE_TIME);
+      if (d) this.setState({ directory: JSON.parse(d), dirLoaded: true });
+      if (t) this.setState({ syncLabel: t });
+      const s = localStorage.getItem(LAST_TEAM);
+      if (s) saved = JSON.parse(s);
+    } catch (e) {}
+
+    if (saved && saved.teamCode) {
+      this.setState({ 
+        division: saved.division, 
+        teamCode: saved.teamCode, 
+        teamLabel: saved.teamLabel, 
+        pickerOpen: false 
       });
+      this.fetchStats(saved.teamCode);
+    }
+    this.fetchDirectory();
+  }
+
+  jsonp(endpoint, cb, retry = 0) {
+    const name = 'ayso_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
+    let done = false;
+    let el = null;
+
+    const clean = () => {
+      try { delete window[name]; } catch (e) {}
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    };
+
+    const fail = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(wd);
+      clean();
+      if (retry < 2) {
+        this.jsonp(endpoint, cb, retry + 1);
+      } else {
+        this.setState({ 
+          loading: false, 
+          syncLabel: 'Server warming up — tap ↻ Sync' 
+        });
+      }
+    };
+
+    const wd = setTimeout(fail, 15000);
+
+    window[name] = (data) => {
+      if (done) return;
+      done = true;
+      clearTimeout(wd);
+      clean();
+      cb(data);
+    };
+
+    el = document.createElement('script');
+    el.src = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&_t=' + Date.now();
+    el.onerror = fail;
+    (document.head || document.documentElement).appendChild(el);
+  }
+
+  fetchDirectory() {
+    this.jsonp(API_URL + '?action=getDirectory', (res) => {
+      if (!res || !res.directory) return;
+      const label = res.syncTimestamp ? 'Updated ' + res.syncTimestamp : 'Live connected';
+      this.setState({ directory: res.directory, dirLoaded: true, syncLabel: label });
+      try {
+        localStorage.setItem(CACHE_DIR, JSON.stringify(res.directory));
+        localStorage.setItem(CACHE_TIME, label);
+      } catch (e) {}
+    });
+  }
+
+  fetchStats(teamCode) {
+    if (!teamCode) return;
+    this.setState({ loading: true, syncLabel: 'Syncing team points…' });
+    this.jsonp(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), (res) => {
+      if (!res) { 
+        this.setState({ loading: false }); 
+        return; 
+      }
+      const patch = { loading: false, stats: res };
+      if (res.syncTimestamp) patch.syncLabel = 'Updated ' + res.syncTimestamp;
+      this.setState(patch);
+    });
+  }
+
+  saveTeam(division, teamCode, teamLabel) {
+    try { 
+      localStorage.setItem(LAST_TEAM, JSON.stringify({ division, teamCode, teamLabel })); 
+    } catch (e) {}
+  }
+
+  renderVals() {
+    const s = this.state;
+    const isPlayground = s.division.includes('Playground');
+    const isU5U6 = s.division.startsWith('05U') || s.division.startsWith('06U');
+    
+    // Set division-specific target goals
+    let goal = this.props.pointsGoal ?? 17;
+    if (isPlayground) {
+      goal = 4;
+    } else if (isU5U6) {
+      goal = 8;
     }
 
-    // Initialize Dashboard on DOM load
-    document.addEventListener('DOMContentLoaded', async () => {
-      const divisionSelect = document.getElementById('divisionSelect');
-      const teamSelect = document.getElementById('teamSelect');
+    const showLog = this.props.showCheckInLog ?? true;
+    const dirTeams = s.directory[s.division] || [];
+    const coaches = dirTeams.map(t => ({ teamCode: t.teamCode, label: 'Coach ' + t.coach }));
 
-      try {
-        const data = await jsonp(`${SCRIPT_URL}?action=getDirectory`, 'ayso_dir_cb_' + Date.now());
-        cachedDirectory = data.directory || {};
+    const total = s.stats ? (s.stats.totalPoints || 0) : 0;
+    const needed = Math.max(0, goal - total);
+    const met = needed === 0;
+    const cats = s.stats ? (s.stats.categories || {}) : {};
 
-        divisionSelect.innerHTML = '<option value="">Select a division</option>';
-        Object.keys(cachedDirectory).sort().forEach(div => {
-          const opt = document.createElement('option');
-          opt.value = div;
-          opt.textContent = div;
-          divisionSelect.appendChild(opt);
-        });
-      } catch (err) {
-        divisionSelect.innerHTML = '<option value="">Error loading divisions. Please refresh.</option>';
+    let pillText = met ? 'Qualified' : needed + ' to go';
+    let pillBg = met ? '#DEF7EC' : '#FEF3C7';
+    let pillFg = met ? '#059669' : '#B45309';
+    let goalSubtitle = 'of ' + goal + ' points';
+    let totalPct = Math.min(100, Math.round((total / goal) * 100)) + '%';
+    let barColor = met ? '#059669' : '#002D62';
+    let goalCaption = met
+      ? 'This team has met the ' + goal + '-point playoff qualification requirement.'
+      : needed + ' more verified ' + (needed === 1 ? 'point' : 'points') + ' needed for playoff eligibility.';
+
+    if (isPlayground) {
+      pillText = met ? 'Goal Achieved' : needed + ' to go';
+      goalSubtitle = 'of 4 volunteer points';
+      goalCaption = met
+        ? 'Great job! This Playground team has completed all 4 volunteer points.'
+        : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to reach the 4-point season goal.';
+    } else if (isU5U6) {
+      pillText = met ? 'Goal Achieved' : needed + ' to go';
+      goalSubtitle = 'of 8 target points (9 max)';
+      goalCaption = met
+        ? 'Goal completed! This team has earned ' + total + ' volunteer points toward the 8-point team goal.'
+        : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to hit the 8-point team goal (9 possible).';
+    }
+
+    // Category configurations tailored to each division's real roles
+    let activeCats = [];
+    if (isPlayground) {
+      activeCats = [
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
+        { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
+      ];
+    } else if (isU5U6) {
+      activeCats = [
+        { key: 'Friday Night Field Setup', label: 'Saturday Field Setup / Takedown', cap: 5 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
+        { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
+      ];
+    } else {
+      activeCats = [
+        { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
+        { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
+        { key: 'Picture Day', label: 'Picture Day & Silent Weekend', cap: 2 }
+      ];
+    }
+
+    const audit = ((s.stats && s.stats.audit) || []).map(it => {
+      const st = String(it.status || '');
+      let bg = '#DEF7EC', fg = '#059669';
+      if (st.indexOf('Pending') !== -1) { 
+        bg = '#FEF3C7'; fg = '#B45309'; 
       }
-
-      divisionSelect.addEventListener('change', () => {
-        const selectedDiv = divisionSelect.value;
-        teamSelect.innerHTML = '<option value="">Select a coach</option>';
-        if (!selectedDiv || !cachedDirectory[selectedDiv]) {
-          teamSelect.disabled = true;
-          teamSelect.classList.add('bg-slate-50');
-          document.getElementById('statsContainer').classList.add('hidden');
-          return;
-        }
-
-        cachedDirectory[selectedDiv].forEach(t => {
-          const opt = document.createElement('option');
-          opt.value = t.teamCode;
-          opt.textContent = t.coach;
-          teamSelect.appendChild(opt);
-        });
-
-        teamSelect.disabled = false;
-        teamSelect.classList.remove('bg-slate-50');
-      });
-
-      teamSelect.addEventListener('change', () => {
-        const teamCode = teamSelect.value;
-        if (teamCode) {
-          fetchTeamStats(teamCode);
-        } else {
-          document.getElementById('statsContainer').classList.add('hidden');
-        }
-      });
-
-      // Accordion toggle
-      const accToggle = document.getElementById('accordionToggle');
-      const accContent = document.getElementById('accordionContent');
-      const accIcon = document.getElementById('accordionIcon');
-      accToggle.addEventListener('click', () => {
-        const isHidden = accContent.classList.contains('hidden');
-        if (isHidden) {
-          accContent.classList.remove('hidden');
-          accIcon.textContent = 'Hide';
-        } else {
-          accContent.classList.add('hidden');
-          accIcon.textContent = 'Show';
-        }
-      });
-
-      // Inline error banner controls
-      document.getElementById('errorRetryBtn').addEventListener('click', () => {
-        if (lastRequestedTeamCode) fetchTeamStats(lastRequestedTeamCode);
-      });
-      document.getElementById('errorDismissBtn').addEventListener('click', hideError);
+      if (st.indexOf('Rejected') !== -1 || st.indexOf('Cap') !== -1 || st.indexOf('Conflict') !== -1 || st.indexOf('Duplicate') !== -1) { 
+        bg = '#FDE8E8'; fg = '#DC2626'; 
+      }
+      return { 
+        duty: it.duty, 
+        date: it.date, 
+        status: st, 
+        badgeBg: bg, 
+        badgeFg: fg, 
+        pts: it.points > 0 ? '+' + it.points : '0' 
+      };
     });
 
-    let lastRequestedTeamCode = null;
-
-    function showError(message) {
-      document.getElementById('errorBannerText').textContent = message;
-      document.getElementById('errorBanner').classList.remove('hidden');
-    }
-
-    function hideError() {
-      document.getElementById('errorBanner').classList.add('hidden');
-    }
-
-    async function fetchTeamStats(teamCode) {
-      lastRequestedTeamCode = teamCode;
-      const loader = document.getElementById('loadingIndicator');
-      const container = document.getElementById('statsContainer');
-
-      hideError();
-      loader.classList.remove('hidden');
-      container.classList.add('hidden');
-
-      try {
-        const url = `${SCRIPT_URL}?action=getTeamStats&teamCode=${encodeURIComponent(teamCode)}`;
-        const stats = await jsonp(url, 'ayso_stats_cb_' + Date.now());
-
-        renderStats(stats);
-        loader.classList.add('hidden');
-        container.classList.remove('hidden');
-      } catch (err) {
-        loader.classList.add('hidden');
-        showError('Could not retrieve team points. Please check your connection and try again.');
+    return {
+      syncLabel: s.syncLabel,
+      divisions: Object.keys(s.directory),
+      division: s.division,
+      teamCode: s.teamCode,
+      teamLabel: s.teamLabel,
+      coaches,
+      coachDisabled: coaches.length === 0,
+      coachPlaceholder: coaches.length === 0 ? 'Choose division first…' : 'Choose head coach…',
+      showPicker: s.pickerOpen,
+      showTeamChip: !s.pickerOpen && !!s.teamLabel,
+      loading: s.loading,
+      hasStats: !!s.stats && !s.loading,
+      showIdle: !s.stats && !s.loading,
+      goal,
+      total,
+      goalSubtitle,
+      totalPct,
+      barColor,
+      pillText,
+      pillBg,
+      pillFg,
+      goalCaption,
+      categories: activeCats.map(c => {
+        const v = cats[c.key] || 0;
+        return { 
+          label: c.label, 
+          val: v, 
+          cap: c.cap, 
+          pct: Math.min(100, Math.round((v / c.cap) * 100)) + '%', 
+          color: v >= c.cap ? '#059669' : '#002D62' 
+        };
+      }),
+      showLog,
+      audit,
+      hasAudit: audit.length > 0,
+      noAudit: audit.length === 0,
+      auditCount: audit.length === 1 ? '1 record' : audit.length + ' records',
+      guidelinesOpen: s.guidelinesOpen,
+      guidelinesToggle: s.guidelinesOpen ? 'Hide' : 'Show',
+      onToggleGuidelines: () => this.setState(p => ({ guidelinesOpen: !p.guidelinesOpen })),
+      onChangeTeam: () => this.setState({ pickerOpen: true }),
+      onSync: () => {
+        if (this.state.teamCode) {
+          this.fetchStats(this.state.teamCode);
+        } else {
+          this.fetchDirectory();
+        }
+      },
+      onDivisionChange: (e) => this.setState({ division: e.target.value, teamCode: '', stats: null }),
+      onCoachChange: (e) => {
+        const code = e.target.value;
+        const t = (this.state.directory[this.state.division] || []).find(x => x.teamCode === code);
+        const label = t ? this.state.division + ' · Coach ' + t.coach : '';
+        this.setState({ teamCode: code, teamLabel: label, pickerOpen: !code });
+        this.saveTeam(this.state.division, code, label);
+        this.fetchStats(code);
       }
-    }
-
-    function renderStats(stats) {
-      const total = stats.totalPoints || 0;
-      const cats = stats.categories || {};
-      const audit = stats.audit || [];
-
-      // Progress & Qualification (17 pts)
-      document.getElementById('totalPointsDisplay').textContent = total;
-      const badge = document.getElementById('qualificationBadge');
-      const remainingText = document.getElementById('targetRemainingText');
-      const progressFill = document.getElementById('progressBarFill');
-
-      const pct = Math.min(100, Math.round((total / 17) * 100));
-      progressFill.style.width = pct + '%';
-
-      if (total >= 17) {
-        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200';
-        badge.textContent = 'Playoff Qualified';
-        remainingText.textContent = 'Target Achieved!';
-        progressFill.className = 'h-3 rounded-full transition-all duration-500 bg-emerald-500';
-      } else {
-        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200';
-        badge.textContent = 'In Progress';
-        const diff = 17 - total;
-        remainingText.textContent = `${diff} point${diff === 1 ? '' : 's'} needed`;
-        progressFill.className = 'h-3 rounded-full transition-all duration-500 bg-red-600';
-      }
-
-      // Categories Breakdown
-      document.getElementById('catCertRef').textContent = `${cats['Certified Team Referees'] || 0} / 5`;
-      document.getElementById('catMatchTrak').textContent = `${cats['MatchTrak Filled by Sep 26'] || 0} / 2`;
-      document.getElementById('catRef').textContent = `${cats['Referee Assignment'] || 0} / 10`;
-      document.getElementById('catFM').textContent = `${cats['Field Marshal Shift'] || 0} / 2`;
-      document.getElementById('catSetup').textContent = `${cats['Friday Night Field Setup'] || 0} / 5`;
-      document.getElementById('catPic').textContent = `${cats['Picture Day'] || 0} / 2`;
-
-      // Check-In Log
-      document.getElementById('recordCount').textContent = `${audit.length} record${audit.length === 1 ? '' : 's'}`;
-      const logList = document.getElementById('auditLogList');
-      logList.innerHTML = '';
-
-      if (audit.length === 0) {
-        logList.innerHTML = '<div class="p-4 text-xs text-slate-400 text-center">No volunteer check-ins recorded yet for this team.</div>';
-      } else {
-        audit.forEach(item => {
-          const row = document.createElement('div');
-          row.className = 'p-4 sm:px-5 flex items-center justify-between text-sm';
-
-          // Badge Color Hierarchy
-          let badgeClass = '';
-          if (item.status === 'NOCRA - No Points') {
-            badgeClass = 'bg-slate-100 text-slate-600 border border-slate-300';
-          } else if (item.status === 'Recorded') {
-            badgeClass = 'bg-sky-100 text-sky-800 border border-sky-200';
-          } else if (item.status === 'Verified' || item.status === 'Board Award') {
-            badgeClass = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
-          } else if (item.status === 'Duplicate Submission' || item.status === 'Cap Reached') {
-            badgeClass = 'bg-amber-100 text-amber-800 border border-amber-200';
-          } else if (item.status.includes('Deduction') || item.points < 0) {
-            badgeClass = 'bg-rose-100 text-rose-800 border border-rose-200';
-          } else {
-            badgeClass = 'bg-slate-100 text-slate-700';
-          }
-
-          const ptsText = item.points > 0 ? `+${item.points}` : `${item.points}`;
-          const ptsClass = item.points > 0 ? 'font-bold text-slate-900' : (item.points < 0 ? 'font-bold text-rose-600' : 'font-semibold text-slate-400');
-
-          row.innerHTML = `
-            <div class="pr-2">
-              <div class="font-semibold text-slate-800 text-sm">${item.duty}</div>
-              <div class="text-xs text-slate-400 mt-0.5">${item.date}${item.note ? ' • ' + item.note : ''}</div>
-            </div>
-            <div class="flex items-center space-x-3 shrink-0">
-              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full ${badgeClass}">
-                ${item.status}
-              </span>
-              <span class="w-7 text-right ${ptsClass}">
-                ${ptsText}
-              </span>
-            </div>
-          `;
-          logList.appendChild(row);
-        });
-      }
-
-      document.getElementById('syncTimestamp').textContent = stats.syncTimestamp || 'Just now';
-    }
-  </script>
+    };
+  }
+}
+</script>
 </body>
 </html>
