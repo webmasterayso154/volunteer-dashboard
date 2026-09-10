@@ -344,6 +344,59 @@ class Component extends DCLogic {
     this.fetchDirectory();
   }
 
+  // Fetch-first transport: Apps Script's /exec endpoint 302-redirects, and a
+  // dynamic <script> tag sends ambient Google session cookies along with it.
+  // Users signed into multiple Google accounts trip Apps Script's multi-login
+  // handling, which returns an HTML account-chooser page instead of JS/JSON -
+  // Chrome then blocks it as CORB. fetch() with credentials omitted sends no
+  // cookies, so the redirect resolves to the real JSON response every time.
+  // JSONP script-tag injection is kept only as the offline/error fallback.
+  request(endpoint, cb) {
+    this.fetchRequest(endpoint, (data) => {
+      if (data) {
+        cb(data);
+      } else {
+        this.jsonp(endpoint, cb);
+      }
+    });
+  }
+
+  fetchRequest(endpoint, cb, retry = 0) {
+    const url = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + '_ts=' + Date.now();
+    fetch(url, {
+      method: 'GET',
+      credentials: 'omit',
+      mode: 'cors',
+      redirect: 'follow',
+      cache: 'no-store'
+    }).then(res => res.text()).then(text => {
+      const data = this.parseFetchResponse(text);
+      if (data) {
+        cb(data);
+        return;
+      }
+      throw new Error('unparseable response');
+    }).catch(err => {
+      if (retry < 2) {
+        setTimeout(() => this.fetchRequest(endpoint, cb, retry + 1), retry === 0 ? 1000 : 2500);
+      } else {
+        console.warn('[AYSO] fetch exhausted after 3 attempts, falling back to JSONP:', endpoint, err && err.message);
+        cb(null);
+      }
+    });
+  }
+
+  parseFetchResponse(text) {
+    if (!text) return null;
+    const trimmed = text.trim();
+    const wrapped = trimmed.match(/^[\w$]+\s*\(([\s\S]*)\)\s*;?\s*$/);
+    try {
+      return JSON.parse(wrapped ? wrapped[1] : trimmed);
+    } catch (e) {
+      return null;
+    }
+  }
+
   jsonp(endpoint, cb, retry = 0) {
     const name = 'ayso_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
     let done = false;
@@ -388,7 +441,7 @@ class Component extends DCLogic {
   }
 
   fetchDirectory() {
-    this.jsonp(API_URL + '?action=getDirectory', (res) => {
+    this.request(API_URL + '?action=getDirectory', (res) => {
       if (!res || !res.directory) return;
       const label = res.syncTimestamp ? 'Updated ' + res.syncTimestamp : 'Live connected';
       this.setState({ directory: res.directory, dirLoaded: true, syncLabel: label });
@@ -402,7 +455,7 @@ class Component extends DCLogic {
   fetchStats(teamCode) {
     if (!teamCode) return;
     this.setState({ loading: true, syncLabel: 'Connecting to server (waking up)...' });
-    this.jsonp(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), (res) => {
+    this.request(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), (res) => {
       if (!res) { 
         this.setState({ loading: false }); 
         return; 
