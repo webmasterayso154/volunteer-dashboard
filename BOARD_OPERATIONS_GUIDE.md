@@ -12,7 +12,7 @@
 Our volunteer tracking system runs like a well-coordinated soccer squad with three key positions on the pitch:
 
 * 📱 **The Public Pitch (Coach Dashboard):**  
-  👉 `https://webmasterayso154.github.io/volunteer-dashboard/`  
+  👉 [https://webmasterayso154.github.io/volunteer-dashboard/](https://webmasterayso154.github.io/volunteer-dashboard/)  
   This is the family-friendly scoreboard coaches and parents check. Teams track their sprint toward the **17-point playoff goal**. To protect our soccer families' privacy, volunteer names and contact info never appear on this public dashboard.
 * 📋 **The Official Match Sheet (`Form Responses 1`):**  
   Our central Google Sheet that catches Saturday QR code check-ins from the fields in real time.
