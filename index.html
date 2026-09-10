@@ -37,6 +37,12 @@
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AYSO 154 - Volunteer Standings</title>
+<style>
+  /* Hide the raw x-dc template markup (every sc-if branch is present
+     unconditionally in the static HTML) so it never flashes on screen
+     between initial parse and boot() replacing it with the rendered app. */
+  x-dc { display: none; }
+</style>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -128,6 +134,15 @@
       <div style="background: #fff; border: 1px dashed #D1D5DB; border-radius: 12px; padding: 28px 20px; text-align: center;">
         <div style="font-size: 14px; font-weight: 700; color: #002D62; margin-bottom: 6px;">Pick a division and coach</div>
         <p style="font-size: 12px; color: #6B7280; max-width: 32ch; margin: 0 auto; text-wrap: pretty;">We'll remember your team on this device so it loads automatically next time.</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showReconnect }}">
+      <div style="background: #fff; border: 1px dashed #D1D5DB; border-radius: 12px; padding: 28px 20px; text-align: center;">
+        <div style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;"></div>
+        <div style="font-size: 14px; font-weight: 700; color: #002D62; margin-bottom: 6px;">Reconnecting to standings...</div>
+        <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto 12px auto; text-wrap: pretty;">The server may still be waking up. We'll keep retrying automatically, or tap Sync above.</p>
+        <button type="button" onClick="{{ onSync }}" style="background: #F3F4F6; border: 1px solid #E5E7EB; color: #002D62; font-size: 12px; font-weight: 600; padding: 9px 14px; border-radius: 8px; cursor: pointer;" style-hover="background: #E5E7EB;">Retry now</button>
       </div>
     </sc-if>
 
@@ -283,39 +298,48 @@ function buildStaticDirectory() {
   return dir;
 }
 
-class Component extends DCLogic {
-  state = {
+function buildInitialState() {
+  const base = {
     directory: buildStaticDirectory(),
-    division: '', 
-    teamCode: '', 
+    division: '',
+    teamCode: '',
     teamLabel: '',
-    stats: null, 
-    loading: false, 
+    stats: null,
+    loading: false,
     syncLabel: 'Ready \u00B7 Instant Standings',
-    pickerOpen: true, 
-    guidelinesOpen: false, 
+    pickerOpen: true,
+    guidelinesOpen: false,
     dirLoaded: true
   };
+  try {
+    const d = localStorage.getItem(CACHE_DIR);
+    if (d) base.directory = JSON.parse(d);
+    const t = localStorage.getItem(CACHE_TIME);
+    if (t) base.syncLabel = t;
+    const s = localStorage.getItem(LAST_TEAM);
+    const saved = s ? JSON.parse(s) : null;
+    if (saved && saved.teamCode) {
+      base.division = saved.division;
+      base.teamCode = saved.teamCode;
+      base.teamLabel = saved.teamLabel;
+      base.pickerOpen = false;
+      base.loading = true;
+      base.syncLabel = 'Syncing team points...';
+    }
+  } catch (e) {}
+  return base;
+}
+
+class Component extends DCLogic {
+  // Read localStorage synchronously into the initial state (rather than in
+  // componentDidMount) so the very first render already reflects a saved
+  // team/loading state - avoids a first-paint flash of the idle picker
+  // prompt while componentDidMount's async setState is still pending.
+  state = buildInitialState();
 
   componentDidMount() {
-    let saved = null;
-    try {
-      const d = localStorage.getItem(CACHE_DIR);
-      const t = localStorage.getItem(CACHE_TIME);
-      if (d) this.setState({ directory: JSON.parse(d), dirLoaded: true });
-      if (t) this.setState({ syncLabel: t });
-      const s = localStorage.getItem(LAST_TEAM);
-      if (s) saved = JSON.parse(s);
-    } catch (e) {}
-
-    if (saved && saved.teamCode) {
-      this.setState({ 
-        division: saved.division, 
-        teamCode: saved.teamCode, 
-        teamLabel: saved.teamLabel, 
-        pickerOpen: false 
-      });
-      this.fetchStats(saved.teamCode);
+    if (this.state.teamCode) {
+      this.fetchStats(this.state.teamCode);
     }
     this.fetchDirectory();
   }
@@ -335,17 +359,17 @@ class Component extends DCLogic {
       done = true;
       clearTimeout(wd);
       clean();
-      if (retry < 2) {
+      if (retry < 3) {
         this.jsonp(endpoint, cb, retry + 1);
       } else {
-        this.setState({ 
-          loading: false, 
-          syncLabel: 'Server warming up - tap Sync' 
+        this.setState({
+          loading: false,
+          syncLabel: 'Server warming up - tap Sync'
         });
       }
     };
 
-    const wd = setTimeout(fail, 15000);
+    const wd = setTimeout(fail, 6000);
 
     window[name] = (data) => {
       if (done) return;
@@ -356,7 +380,7 @@ class Component extends DCLogic {
     };
 
     el = document.createElement('script');
-    el.src = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&_t=' + Date.now();
+    el.src = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&_ts=' + Date.now();
     el.onerror = fail;
     (document.head || document.documentElement).appendChild(el);
   }
@@ -493,7 +517,8 @@ class Component extends DCLogic {
       showTeamChip: !s.pickerOpen && !!s.teamLabel,
       loading: s.loading,
       hasStats: !!s.stats && !s.loading,
-      showIdle: !s.stats && !s.loading,
+      showIdle: !s.stats && !s.loading && !s.teamCode,
+      showReconnect: !s.stats && !s.loading && !!s.teamCode,
       goal,
       total,
       goalSubtitle,
