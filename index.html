@@ -126,7 +126,7 @@
     <sc-if value="{{ loading }}">
       <div style="text-align: center; padding: 40px 0; color: #002D62; font-weight: 600; font-size: 13px;">
         <div style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;"></div>
-        Loading team standings...
+        Connecting to server (waking up)...
       </div>
     </sc-if>
 
@@ -360,7 +360,9 @@ class Component extends DCLogic {
       clearTimeout(wd);
       clean();
       if (retry < 3) {
-        this.jsonp(endpoint, cb, retry + 1);
+        // Cold starts routinely take 8-14s; give the backend a beat before
+        // firing off another request rather than looping instantly.
+        setTimeout(() => this.jsonp(endpoint, cb, retry + 1), 3000);
       } else {
         this.setState({
           loading: false,
@@ -369,7 +371,7 @@ class Component extends DCLogic {
       }
     };
 
-    const wd = setTimeout(fail, 6000);
+    const wd = setTimeout(fail, 20000);
 
     window[name] = (data) => {
       if (done) return;
@@ -399,7 +401,7 @@ class Component extends DCLogic {
 
   fetchStats(teamCode) {
     if (!teamCode) return;
-    this.setState({ loading: true, syncLabel: 'Syncing team points...' });
+    this.setState({ loading: true, syncLabel: 'Connecting to server (waking up)...' });
     this.jsonp(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), (res) => {
       if (!res) { 
         this.setState({ loading: false }); 
