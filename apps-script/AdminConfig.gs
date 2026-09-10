@@ -142,6 +142,28 @@ function getAdminConfigSettings() {
 }
 
 /**
+ * Writes a single Global Dashboard Setting (Columns D/E) by key. Used to keep
+ * control-panel writes and the Admin_Config sheet as one source of truth
+ * instead of forking a second copy in the legacy Settings sheet.
+ */
+function setAdminConfigSetting(key, value) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(ADMIN_CONFIG_SHEET);
+  if (!sheet) return false;
+
+  const lastRow = Math.max(sheet.getLastRow(), 8);
+  const keys = sheet.getRange(3, 4, lastRow - 2, 1).getValues();
+  for (let i = 0; i < keys.length; i++) {
+    if (String(keys[i][0] || '').trim() === key) {
+      sheet.getRange(3 + i, 5).setValue(value);
+      return true;
+    }
+  }
+  sheet.getRange(lastRow + 1, 4, 1, 2).setValues([[key, value]]);
+  return true;
+}
+
+/**
  * Reads late-added coaches from Columns G through I.
  */
 function getSupplementalTeams() {

@@ -50,8 +50,8 @@ function testSheetStructure() {
   if (!sheet) throw new Error("Missing required sheet tab: 'Form Responses 1'");
 
   const lastCol = sheet.getLastColumn();
-  if (lastCol < 13) {
-    throw new Error(`Expected at least 13 columns for the live form schema, but found ${lastCol}`);
+  if (lastCol < 14) {
+    throw new Error(`Expected at least 14 columns for the live form schema, but found ${lastCol}`);
   }
   return true;
 }

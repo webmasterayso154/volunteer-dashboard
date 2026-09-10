@@ -65,6 +65,50 @@ const CAP_SETUP = 5;
 const CAP_PIC = 2;
 const MAX_POSSIBLE_POINTS = 26;
 
+// Flyer point-bucket -> live cap constant map. Consumed by Contract_Tests.gs to
+// verify every bucket promised on the season flyer actually reaches the payload
+// and that the qualification threshold stays mathematically reachable.
+const POINT_CAPS = {
+  preSeasonRefs: CAP_CERTIFIED_REF,
+  matchTrakBonus: CAP_MATCHTRAK_BONUS,
+  onFieldReferee: CAP_ONFIELD_REF,
+  fieldMarshal: CAP_FIELD_MARSHAL,
+  fridaySetup: CAP_SETUP,
+  pictureDay: CAP_PIC
+};
+
+/**
+ * Normalizes a raw form time-slot string (e.g. "8:00 AM", "8:00am", "8:00 am")
+ * into a single canonical form so dedup/collision keys built from it never
+ * split an identical real-world slot into two different keys.
+ */
+function normalizeTimeSlot(value) {
+  return String(value || '').replace(/\s+/g, '').toLowerCase();
+}
+
+/**
+ * Resolves the live point caps for a team's calculation. Admin_Config is the
+ * single source of truth when present (shared with the Board Portal); the
+ * CAP_* constants are only a fallback for a fresh sheet with no Admin_Config
+ * tab yet, so the public dashboard and Board Portal never disagree.
+ */
+function getActiveCaps() {
+  const settings = (typeof getAdminConfigSettings === 'function') ? getAdminConfigSettings() : {};
+  const onFieldRef = Number(settings.RefMaxCap) || CAP_ONFIELD_REF;
+  const fieldMarshal = Number(settings.FieldMarshalCap) || CAP_FIELD_MARSHAL;
+  const setup = Number(settings.FieldSetupCap) || CAP_SETUP;
+  const pic = Number(settings.PictureDayCap) || CAP_PIC;
+  return {
+    onFieldRef: onFieldRef,
+    fieldMarshal: fieldMarshal,
+    setup: setup,
+    pic: pic,
+    certifiedRef: CAP_CERTIFIED_REF,
+    matchtrak: CAP_MATCHTRAK_BONUS,
+    maxPossible: CAP_CERTIFIED_REF + CAP_MATCHTRAK_BONUS + onFieldRef + fieldMarshal + setup + pic
+  };
+}
+
 function doGet(e) {
   const params = (e && e.parameter) ? e.parameter : {};
   const action = params.action;
@@ -118,7 +162,16 @@ function doPost(e) {
       existingKeys[data[i][0]] = i + 1;
     }
 
+    // RefMaxCap / PlayoffThreshold are owned by Admin_Config (shared with the
+    // Board Portal); route those writes there instead of forking a second copy
+    // in the legacy Settings sheet.
+    const ADMIN_CONFIG_OWNED_KEYS = ['RefMaxCap', 'PlayoffThreshold'];
+
     for (const [k, v] of Object.entries(payload)) {
+      if (ADMIN_CONFIG_OWNED_KEYS.indexOf(k) !== -1 && typeof setAdminConfigSetting === 'function') {
+        setAdminConfigSetting(k, v);
+        continue;
+      }
       if (existingKeys[k]) {
         sheet.getRange(existingKeys[k], 2).setValue(v);
       } else {
@@ -185,6 +238,7 @@ function getTeamStatsData(targetTeam) {
   if (!sheet || sheet.getLastRow() < 2) return baseResult;
 
   const rows = sheet.getDataRange().getValues();
+  const caps = getActiveCaps();
   let refPoints = 0;
   let fmPoints = 0;
   let setupPoints = 0;
@@ -236,7 +290,7 @@ function getTeamStatsData(targetTeam) {
     if (rowTeamRef === cleanTarget || (/ref/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
       isMatch = true;
       category = 'Referee Assignment';
-      categoryCap = CAP_ONFIELD_REF;
+      categoryCap = caps.onFieldRef;
       currentCategoryTotal = refPoints;
       timeSlot = refGameTime || 'GameTime';
       if (/nocra|ussf/i.test(refPosition)) {
@@ -245,19 +299,19 @@ function getTeamStatsData(targetTeam) {
     } else if (rowTeamFm === cleanTarget || (/marshal/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
       isMatch = true;
       category = 'Field Marshal Shift';
-      categoryCap = CAP_FIELD_MARSHAL;
+      categoryCap = caps.fieldMarshal;
       currentCategoryTotal = fmPoints;
       timeSlot = fmGameTime || 'ShiftTime';
     } else if (rowTeamSetup === cleanTarget || (/set\s*up/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1)) {
       isMatch = true;
       category = 'Friday Night Field Setup';
-      categoryCap = CAP_SETUP;
+      categoryCap = caps.setup;
       currentCategoryTotal = setupPoints;
       timeSlot = 'FridayNight';
     } else if (/picture/i.test(dutyRaw) && row.indexOf(cleanTarget) !== -1) {
       isMatch = true;
       category = 'Picture Day';
-      categoryCap = CAP_PIC;
+      categoryCap = caps.pic;
       currentCategoryTotal = picPoints;
       timeSlot = 'PicShift';
     }
@@ -271,7 +325,7 @@ function getTeamStatsData(targetTeam) {
         status = 'NOCRA - No Points';
         pts = 0;
       } else {
-        const slotKey = volId + '_' + dateStr + '_' + timeSlot.toLowerCase() + '_' + category;
+        const slotKey = volId + '_' + dateStr + '_' + normalizeTimeSlot(timeSlot) + '_' + category;
 
         // Rule 2: Prevent exact same volunteer from double-submitting for the same match slot
         if (seenVolunteerSlots.has(slotKey)) {
@@ -333,7 +387,7 @@ function getTeamStatsData(targetTeam) {
           note: aNote
         });
       } else if (aType === 'Certified Team Referees') {
-        certRefPoints = Math.min(CAP_CERTIFIED_REF, certRefPoints + aPts);
+        certRefPoints = Math.min(caps.certifiedRef, certRefPoints + aPts);
         audit.push({
           duty: aType,
           date: aDateStr,
@@ -342,7 +396,7 @@ function getTeamStatsData(targetTeam) {
           note: aNote
         });
       } else if (aType === 'MatchTrak Filled by Sep 26') {
-        matchtrakPoints = Math.min(CAP_MATCHTRAK_BONUS, matchtrakPoints + aPts);
+        matchtrakPoints = Math.min(caps.matchtrak, matchtrakPoints + aPts);
         audit.push({
           duty: aType,
           date: aDateStr,
@@ -364,7 +418,7 @@ function getTeamStatsData(targetTeam) {
   }
 
   baseResult.totalPoints = Math.min(
-    MAX_POSSIBLE_POINTS,
+    caps.maxPossible,
     Math.max(0, refPoints + fmPoints + setupPoints + picPoints + certRefPoints + matchtrakPoints + discretionaryAwards)
   );
 
@@ -386,15 +440,26 @@ function getTeamStatsData(targetTeam) {
 
 function getSettingsData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('Settings');
+  const sheet = ss.getSheetByName('Settings');
   const result = { BoardEmail: '', RCEmail: '', RefMaxCap: 10, PlayoffThreshold: 17 };
-  if (!sheet || sheet.getLastRow() < 2) return result;
 
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0]) {
-      result[data[i][0]] = data[i][1];
+  if (sheet && sheet.getLastRow() >= 2) {
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0]) {
+        result[data[i][0]] = data[i][1];
+      }
     }
   }
+
+  // Admin_Config is the single source of truth for shared caps/thresholds (it's
+  // also what the Board Portal reads), so it always overrides whatever value
+  // happens to be sitting in the legacy Settings sheet/control-panel.
+  if (typeof getAdminConfigSettings === 'function') {
+    const adminSettings = getAdminConfigSettings();
+    if (adminSettings.RefMaxCap !== undefined) result.RefMaxCap = adminSettings.RefMaxCap;
+    if (adminSettings.PlayoffThreshold !== undefined) result.PlayoffThreshold = adminSettings.PlayoffThreshold;
+  }
+
   return result;
 }

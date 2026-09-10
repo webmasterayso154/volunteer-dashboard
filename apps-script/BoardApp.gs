@@ -123,7 +123,7 @@ function getBoardDashboardData() {
       }
 
       if (matchedRole && !isNocra) {
-        const slotKey = volId + '_' + dateStr + '_' + slotTime.toLowerCase() + '_' + matchedRole;
+        const slotKey = volId + '_' + dateStr + '_' + normalizeTimeSlot(slotTime) + '_' + matchedRole;
         if (!seenVolunteerSlots.has(slotKey)) {
           seenVolunteerSlots.add(slotKey);
           if (matchedRole === 'ref' && agg.ref < settings.RefMaxCap) agg.ref++;
@@ -145,9 +145,9 @@ function getBoardDashboardData() {
       if (aType.includes('Uniform') || aType.includes('Disqualification')) {
         teamAggregates[aCode].ref = Math.max(0, teamAggregates[aCode].ref + aPts);
       } else if (aType === 'Certified Team Referees') {
-        teamAggregates[aCode].certRef = Math.min(5, teamAggregates[aCode].certRef + aPts);
+        teamAggregates[aCode].certRef = Math.min(CAP_CERTIFIED_REF, teamAggregates[aCode].certRef + aPts);
       } else if (aType === 'MatchTrak Filled by Sep 26') {
-        teamAggregates[aCode].matchtrak = Math.min(2, teamAggregates[aCode].matchtrak + aPts);
+        teamAggregates[aCode].matchtrak = Math.min(CAP_MATCHTRAK_BONUS, teamAggregates[aCode].matchtrak + aPts);
       } else {
         teamAggregates[aCode].awards += aPts;
       }
@@ -156,7 +156,9 @@ function getBoardDashboardData() {
 
   const teamList = allTeams.map(code => {
     const agg = teamAggregates[code] || { ref: 0, fm: 0, setup: 0, pic: 0, certRef: 0, matchtrak: 0, awards: 0 };
-    const total = Math.max(0, Math.min(26, agg.ref + agg.fm + agg.setup + agg.pic + agg.certRef + agg.matchtrak + agg.awards));
+    const maxPossible = Number(settings.RefMaxCap) + Number(settings.FieldMarshalCap) +
+      Number(settings.FieldSetupCap) + Number(settings.PictureDayCap) + CAP_CERTIFIED_REF + CAP_MATCHTRAK_BONUS;
+    const total = Math.max(0, Math.min(maxPossible, agg.ref + agg.fm + agg.setup + agg.pic + agg.certRef + agg.matchtrak + agg.awards));
     const parts = code.split(' - ');
     const division = parts.length >= 3 ? parts[0] + ' - ' + parts[1] : parts[0];
     const coach = parts.length >= 3 ? parts.slice(2).join(' - ') : code;
@@ -226,6 +228,11 @@ function scanSubmissionsForAnomalies() {
     const field = refField || fmField || setupField || 'N/A';
     const time = gameTime || fmTime || 'N/A';
 
+    // Normalized purely for slot/duplicate comparisons; entry.time keeps the raw
+    // display value so "8:00 AM" and "8:00am" still resolve to one slot without
+    // mangling what the board actually sees.
+    const normTime = normalizeTimeSlot(time);
+
     const entry = {
       row: rowNum,
       date: dateStr,
@@ -237,6 +244,7 @@ function scanSubmissionsForAnomalies() {
       teamCode: teamCode,
       field: field,
       time: time,
+      normTime: normTime,
       flags: []
     };
 
@@ -256,7 +264,7 @@ function scanSubmissionsForAnomalies() {
       const priorEntries = submissionsByVolunteer[volKey];
       for (const p of priorEntries) {
         const diffMinutes = Math.abs(parsedTime - p.timestamp) / 60000;
-        if (diffMinutes < 15 && p.role === role && p.time === time) {
+        if (diffMinutes < 15 && p.role === role && p.normTime === normTime) {
           entry.flags.push({
             type: 'RAPID_DUPLICATE',
             severity: 'warning',
@@ -270,9 +278,13 @@ function scanSubmissionsForAnomalies() {
 
     // 3. Conflicting Center Referee Check
     if (/ref/i.test(role) && field !== 'N/A' && time !== 'N/A') {
-      const isCenter = /referee\s*\(ayso\)|center|head/i.test(refPos);
+      // Assistant Referees (Dual ARs) must never be treated as Center Referees, even
+      // though "Assistant Referee (AYSO)" contains the substring "Referee (AYSO)".
+      const isAssistant = /assistant/i.test(refPos);
+      const isCenter = !isAssistant &&
+        (refPos.trim().toLowerCase() === 'referee (ayso)' || /center|head/i.test(refPos));
       if (isCenter) {
-        const slotKey = dateStr + '_' + field.toLowerCase() + '_' + time.toLowerCase();
+        const slotKey = dateStr + '_' + field.toLowerCase() + '_' + normalizeTimeSlot(time);
         if (refCenterSlots[slotKey]) {
           entry.flags.push({
             type: 'SLOT_COLLISION',
