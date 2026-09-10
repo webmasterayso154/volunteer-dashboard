@@ -1,7 +1,8 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><script>if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()))};(function(){const f=window.fetch;window.fetch=function(u,o={}){const s=(typeof u==="string"?u:u.url).includes("?")?"&":"?";return f.call(this,(typeof u==="string"?u:u.url)+s+"_nocache="+Date.now(),{...o,cache:"no-store"})}})();</script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><script>
+    try{for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i);let v=localStorage.getItem(k);if(v&&v.includes("&middot;")){localStorage.setItem(k,v.replaceAll("&middot;","\u00B7"))}}}catch(e){}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()))};(function(){const f=window.fetch;window.fetch=function(u,o={}){const s=(typeof u==="string"?u:u.url).includes("?")?"&":"?";return f.call(this,(typeof u==="string"?u:u.url)+s+"_nocache="+Date.now(),{...o,cache:"no-store"})}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AYSO 154 &middot; Volunteer Standings</title>
@@ -42,7 +43,7 @@
           <span style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(16,185,129,0.7); animation: pulse 1.8s infinite cubic-bezier(0.66,0,0,1);"></span>
           <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ syncLabel }}</span>
         </span>
-        <button type="button" onClick="{{ onSync }}" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" style-hover="background: rgba(255,255,255,0.3);">â†» Sync</button>
+        <button type="button" onClick="{{ onSync }}" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" style-hover="background: rgba(255,255,255,0.3);">&#x21bb;» Sync</button>
       </div>
     </div>
   </header>
@@ -174,7 +175,7 @@
       <sc-if value="{{ guidelinesOpen }}">
         <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 â€“ U19 &amp; EXTRA)</div>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 €“ U19 &amp; EXTRA)</div>
             <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Field Marshal (max 2), Friday Setup (max 5), and Picture Day (max 2).</p>
           </div>
           <div>
@@ -259,7 +260,7 @@ class Component extends DCLogic {
     teamLabel: '',
     stats: null, 
     loading: false, 
-    syncLabel: 'Ready &middot; Instant Standings',
+    syncLabel: 'Ready \u00B7 Instant Standings',
     pickerOpen: true, 
     guidelinesOpen: false, 
     dirLoaded: true
@@ -308,7 +309,7 @@ class Component extends DCLogic {
       } else {
         this.setState({ 
           loading: false, 
-          syncLabel: 'Server warming up â€” tap â†» Sync' 
+          syncLabel: 'Server warming up €” tap &#x21bb;» Sync' 
         });
       }
     };
@@ -501,7 +502,7 @@ class Component extends DCLogic {
       onCoachChange: (e) => {
         const code = e.target.value;
         const t = (this.state.directory[this.state.division] || []).find(x => x.teamCode === code);
-        const label = t ? this.state.division + ' &middot; Coach ' + t.coach : '';
+        const label = t ? this.state.division + ' \u00B7 Coach ' + t.coach : '';
         this.setState({ teamCode: code, teamLabel: label, pickerOpen: !code });
         this.saveTeam(this.state.division, code, label);
         this.fetchStats(code);
