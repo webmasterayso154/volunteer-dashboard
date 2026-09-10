@@ -1,9 +1,33 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
+  <!-- Mobile Anti-Cache Directives -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <script>
+    // 1. Unregister lingering service workers holding old assets
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.unregister());
+      });
+    }
+
+    // 2. Prevent mobile browsers from caching Apps Script data calls
+    (function() {
+      const _nativeFetch = window.fetch;
+      window.fetch = function(url, options = {}) {
+        const target = typeof url === 'string' ? url : (url.url || url.toString());
+        const sep = target.includes('?') ? '&' : '?';
+        const freshUrl = target + sep + '_nocache=' + Date.now();
+        options.cache = 'no-store';
+        return _nativeFetch.call(this, freshUrl, options);
+      };
+    })();
+  </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AYSO 154 · Volunteer Standings</title>
+<title>AYSO 154 Â· Volunteer Standings</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -30,7 +54,7 @@
         <img src="logo.png" alt="AYSO 154" style="height: 34px; width: 34px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; flex-shrink: 0;">
         <span style="display: flex; flex-direction: column; min-width: 0;">
           <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.2px; line-height: 1.15;">Volunteer Standings</span>
-          <span style="font-size: 11px; font-weight: 500; color: #93C5FD;">Fall 2026 · Cypress AYSO Region 154</span>
+          <span style="font-size: 11px; font-weight: 500; color: #93C5FD;">Fall 2026 Â· Cypress AYSO Region 154</span>
         </span>
       </a>
       <a href="https://www.ayso154cypress.org/" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.12); color: #fff; font-size: 12px; font-weight: 600; padding: 8px 11px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); white-space: nowrap; flex-shrink: 0;" style-hover="background: #fff; color: #002D62;">Main Site</a>
@@ -41,7 +65,7 @@
           <span style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(16,185,129,0.7); animation: pulse 1.8s infinite cubic-bezier(0.66,0,0,1);"></span>
           <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ syncLabel }}</span>
         </span>
-        <button type="button" onClick="{{ onSync }}" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" style-hover="background: rgba(255,255,255,0.3);">↻ Sync</button>
+        <button type="button" onClick="{{ onSync }}" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" style-hover="background: rgba(255,255,255,0.3);">â†» Sync</button>
       </div>
     </div>
   </header>
@@ -55,7 +79,7 @@
           <div style="display: flex; flex-direction: column;">
             <label for="divisionSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Division</label>
             <select id="divisionSelect" value="{{ division }}" onChange="{{ onDivisionChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
-              <option value="">Choose division…</option>
+              <option value="">Choose divisionâ€¦</option>
               <sc-for list="{{ divisions }}" as="d">
                 <option value="{{ d }}">{{ d }}</option>
               </sc-for>
@@ -87,7 +111,7 @@
     <sc-if value="{{ loading }}">
       <div style="text-align: center; padding: 40px 0; color: #002D62; font-weight: 600; font-size: 13px;">
         <div style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;"></div>
-        Loading team standings…
+        Loading team standingsâ€¦
       </div>
     </sc-if>
 
@@ -173,7 +197,7 @@
       <sc-if value="{{ guidelinesOpen }}">
         <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
           <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 – U19 &amp; EXTRA)</div>
+            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 â€“ U19 &amp; EXTRA)</div>
             <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Field Marshal (max 2), Friday Setup (max 5), and Picture Day (max 2).</p>
           </div>
           <div>
@@ -194,7 +218,7 @@
     <div style="display: flex; justify-content: center; gap: 14px; margin-bottom: 5px;">
       <a href="https://www.ayso154cypress.org/" style="font-weight: 600;">AYSO 154 Homepage</a>
     </div>
-    <p>American Youth Soccer Organization · Region 154 Cypress, CA</p>
+    <p>American Youth Soccer Organization Â· Region 154 Cypress, CA</p>
   </footer>
 </div>
 </x-dc>
@@ -258,7 +282,7 @@ class Component extends DCLogic {
     teamLabel: '',
     stats: null, 
     loading: false, 
-    syncLabel: 'Ready · Instant Standings',
+    syncLabel: 'Ready Â· Instant Standings',
     pickerOpen: true, 
     guidelinesOpen: false, 
     dirLoaded: true
@@ -307,7 +331,7 @@ class Component extends DCLogic {
       } else {
         this.setState({ 
           loading: false, 
-          syncLabel: 'Server warming up — tap ↻ Sync' 
+          syncLabel: 'Server warming up â€” tap â†» Sync' 
         });
       }
     };
@@ -342,7 +366,7 @@ class Component extends DCLogic {
 
   fetchStats(teamCode) {
     if (!teamCode) return;
-    this.setState({ loading: true, syncLabel: 'Syncing team points…' });
+    this.setState({ loading: true, syncLabel: 'Syncing team pointsâ€¦' });
     this.jsonp(API_URL + '?action=getTeamStats&teamCode=' + encodeURIComponent(teamCode), (res) => {
       if (!res) { 
         this.setState({ loading: false }); 
@@ -455,7 +479,7 @@ class Component extends DCLogic {
       teamLabel: s.teamLabel,
       coaches,
       coachDisabled: coaches.length === 0,
-      coachPlaceholder: coaches.length === 0 ? 'Choose division first…' : 'Choose head coach…',
+      coachPlaceholder: coaches.length === 0 ? 'Choose division firstâ€¦' : 'Choose head coachâ€¦',
       showPicker: s.pickerOpen,
       showTeamChip: !s.pickerOpen && !!s.teamLabel,
       loading: s.loading,
@@ -500,7 +524,7 @@ class Component extends DCLogic {
       onCoachChange: (e) => {
         const code = e.target.value;
         const t = (this.state.directory[this.state.division] || []).find(x => x.teamCode === code);
-        const label = t ? this.state.division + ' · Coach ' + t.coach : '';
+        const label = t ? this.state.division + ' Â· Coach ' + t.coach : '';
         this.setState({ teamCode: code, teamLabel: label, pickerOpen: !code });
         this.saveTeam(this.state.division, code, label);
         this.fetchStats(code);
@@ -511,3 +535,4 @@ class Component extends DCLogic {
 </script>
 </body>
 </html>
+
