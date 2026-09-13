@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
   <img src="logo.png" alt="AYSO Region 154 Cypress" width="110" />
   <h1>⚽ AYSO REGION 154 CYPRESS ⚽</h1>
   <h2>Volunteer Standings & Game Day Hub</h2>
@@ -17,7 +17,7 @@
 | 📱 **Coach Standings** | <a href="https://webmasterayso154.github.io/volunteer-dashboard/" target="_blank" rel="noopener noreferrer"><strong>Open Public Standings Dashboard</strong></a> | Live mobile scoreboard coaches and parents check. |
 | 🎛️ **Board Launchpad** | <a href="https://webmasterayso154.github.io/volunteer-dashboard/control-panel.html" target="_blank" rel="noopener noreferrer"><strong>Open Board Control Panel</strong></a> | Visual portal with one-click cards and weekly checklists. |
 | 📝 **Volunteer Check-In** | <a href="https://docs.google.com/forms/d/e/1FAIpQLSdDPW8Bs7T1v7xYBIzVmHwi7rpx6rrLcqYk83vvVUJo_j5WSQ/viewform" target="_blank" rel="noopener noreferrer"><strong>Open Game Day Check-In Form</strong></a> | Mobile QR destination for refs, marshals, and field setup. |
-| 📋 **Official Response Sheet** | <a href="https://docs.google.com/spreadsheets/d/1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGI998ChVVMypyCk/edit" target="_blank" rel="noopener noreferrer"><strong>Open Master Response Ledger</strong></a> | Google Sheet containing raw Saturday volunteer logs. |
+| 📋 **Official Response Sheet** | <a href="https://docs.google.com/spreadsheets/d/1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g/edit" target="_blank" rel="noopener noreferrer"><strong>Open Master Response Ledger</strong></a> | Google Sheet containing raw Saturday volunteer logs. |
 | 📄 **Executive Google Doc** | <a href="https://docs.google.com/document/d/1pf_y8grOjB3V-1_YEng48GpKu97RFjkkcTwxgiImCTA/edit" target="_blank" rel="noopener noreferrer"><strong>Open Formatted Board Playbook Doc</strong></a> | Live collaborative version for the Executive Board. |
 
 ---
