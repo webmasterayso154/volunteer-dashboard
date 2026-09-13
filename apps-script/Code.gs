@@ -61,9 +61,9 @@ const CAP_CERTIFIED_REF = 5;
 const CAP_MATCHTRAK_BONUS = 2;
 const CAP_ONFIELD_REF = 10;
 const CAP_FIELD_MARSHAL = 2;
-const CAP_SETUP = 5;
+const CAP_SETUP = 1;
 const CAP_PIC = 2;
-const MAX_POSSIBLE_POINTS = 26;
+const MAX_POSSIBLE_POINTS = 22;
 
 // Flyer point-bucket -> live cap constant map. Consumed by Contract_Tests.gs to
 // verify every bucket promised on the season flyer actually reaches the payload

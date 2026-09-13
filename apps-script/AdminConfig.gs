@@ -47,7 +47,7 @@ function setupAdminConfigSheet() {
     ["PlayoffThreshold", 17],
     ["RefMaxCap", 10],
     ["FieldMarshalCap", 2],
-    ["FieldSetupCap", 5],
+    ["FieldSetupCap", 1],
     ["PictureDayCap", 2],
     ["StandingsFrozen", false]
   ];
@@ -121,7 +121,7 @@ function getAdminConfigSettings() {
     PlayoffThreshold: 17,
     RefMaxCap: 10,
     FieldMarshalCap: 2,
-    FieldSetupCap: 5,
+    FieldSetupCap: 1,
     PictureDayCap: 2,
     StandingsFrozen: false
   };

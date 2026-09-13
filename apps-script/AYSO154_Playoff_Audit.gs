@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Cypress AYSO Region 154 — Fall 2026 Volunteer Point Review
  *
  * Deploy this as a standalone Apps Script project. Run setupAuditSystem() once.
@@ -52,7 +52,7 @@ const AUDIT = Object.freeze({
   CATEGORIES: [
     { name: 'Referee (Center / Assistant Referee)', cap: 10, defaultPoints: 1 },
     { name: 'Field Marshal', cap: 2, defaultPoints: 1 },
-    { name: 'Friday Field Setup', cap: 5, defaultPoints: 1 },
+    { name: 'Friday Field Setup', cap: 1, defaultPoints: 1 },
     { name: 'Picture Day / Special Regional Event', cap: 2, defaultPoints: 1 },
     { name: 'Other Board-Approved Assignment', cap: '', defaultPoints: 1 }
   ]

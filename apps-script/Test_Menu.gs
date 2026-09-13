@@ -36,7 +36,7 @@ function menuInspectTeam() {
               `Total Points: ${stats.totalPoints}\n` +
               `Ref Points: ${stats.categories['Referee Assignment']} / 17\n` +
               `FM Points: ${stats.categories['Field Marshal Shift']} / 2\n` +
-              `Setup Points: ${stats.categories['Friday Night Field Setup']} / 5\n` +
+              `Setup Points: ${stats.categories['Friday Night Field Setup']} / 1\n` +
               `Logged Submissions: ${stats.audit.length}`;
   ui.alert("Team Standings Inspection", msg, ui.ButtonSet.OK);
 }
