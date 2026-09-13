@@ -6,7 +6,7 @@
   <title>AYSO Region 154 | Board Operations Hub</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; }
   </style>
 </head>
@@ -25,169 +25,221 @@
           <p class="text-xs text-slate-400">Volunteer Points Operations & Game Day Hub</p>
         </div>
       </div>
-      <a href="index.html" target="_blank" rel="noopener noreferrer" 
-         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-sm transition">
-        ⚽ View Public Dashboard &rarr;
+      <a href="https://webmasterayso154.github.io/volunteer-dashboard/" target="_blank" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors shadow-sm">
+        View Public Dashboard &rarr;
       </a>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="max-w-5xl mx-auto px-4 pt-8 space-y-8">
+  <main class="max-w-5xl mx-auto px-4 mt-8 space-y-10">
 
-    <!-- Mission Control Quick Action Grid -->
-    <div>
-      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Game Day Quick Launch</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
-        <!-- Card 1: Public Standings -->
-        <a href="index.html" target="_blank" rel="noopener noreferrer" 
-           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-red-500 transition flex flex-col justify-between">
-          <div>
-            <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
-              📱
-            </div>
-            <h3 class="font-bold text-slate-900 group-hover:text-red-600 transition text-base">Public Coach Standings</h3>
-            <p class="text-xs text-slate-500 mt-1">Live scoreboard showing team progress toward the 17-point playoff goal.</p>
-          </div>
-          <span class="text-xs font-semibold text-red-600 mt-4 inline-flex items-center gap-1">Open Dashboard &rarr;</span>
-        </a>
-
-        <!-- Card 2: Volunteer Check-In Form -->
-        <a href="https://docs.google.com/forms/d/e/1FAIpQLSdDPW8Bs7T1v7xYBIzVmHwi7rpx6rrLcqYk83vvVUJo_j5WSQ/viewform" target="_blank" rel="noopener noreferrer" 
-           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition flex flex-col justify-between">
-          <div>
-            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
-              📝
-            </div>
-            <h3 class="font-bold text-slate-900 group-hover:text-blue-600 transition text-base">Game Day Check-In Form</h3>
-            <p class="text-xs text-slate-500 mt-1">The live mobile form volunteers scan at fields to log ref shifts and setup.</p>
-          </div>
-          <span class="text-xs font-semibold text-blue-600 mt-4 inline-flex items-center gap-1">Open Check-In Form &rarr;</span>
-        </a>
-
-        <!-- Card 3: Form Responses Sheet -->
-        <a href="https://docs.google.com/spreadsheets/d/1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g/edit" target="_blank" rel="noopener noreferrer" 
-           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-500 transition flex flex-col justify-between">
-          <div>
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
-              📋
-            </div>
-            <h3 class="font-bold text-slate-900 group-hover:text-emerald-600 transition text-base">Official Match Sheet</h3>
-            <p class="text-xs text-slate-500 mt-1">Direct access to Form Responses 1 to review Saturday volunteer entries.</p>
-          </div>
-          <span class="text-xs font-semibold text-emerald-600 mt-4 inline-flex items-center gap-1">Open Responses &rarr;</span>
-        </a>
-
-        <!-- Card 4: Team Awards -->
-        <a href="https://docs.google.com/spreadsheets/d/1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g/edit" target="_blank" rel="noopener noreferrer" 
-           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-500 transition flex flex-col justify-between">
-          <div>
-            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
-              🏅
-            </div>
-            <h3 class="font-bold text-slate-900 group-hover:text-amber-600 transition text-base">Team Awards & Bonus Points</h3>
-            <p class="text-xs text-slate-500 mt-1">Award certified referee bonuses, MatchTrak bonuses, or field adjustments.</p>
-          </div>
-          <span class="text-xs font-semibold text-amber-600 mt-4 inline-flex items-center gap-1">Open Team_Awards &rarr;</span>
-        </a>
-
-        <!-- Card 5: Admin Config & Late Teams -->
-        <a href="https://docs.google.com/spreadsheets/d/1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g/edit#gid=1448287399" target="_blank" rel="noopener noreferrer" 
-           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-purple-500 transition flex flex-col justify-between">
-          <div>
-            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
-              🎛️
-            </div>
-            <h3 class="font-bold text-slate-900 group-hover:text-purple-600 transition text-base">Season Caps & Late Coaches</h3>
-            <p class="text-xs text-slate-500 mt-1">Register supplemental coaches and manage season-end standings lock.</p>
-          </div>
-          <span class="text-xs font-semibold text-purple-600 mt-4 inline-flex items-center gap-1">Open Admin_Config &rarr;</span>
-        </a>
-
-        <!-- Card 6: GitHub Repo Technical Spec -->
-        <a href="https://github.com/webmasterayso154/volunteer-dashboard" target="_blank" rel="noopener noreferrer" 
-           class="group bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-500 transition flex flex-col justify-between">
-          <div>
-            <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition">
-              ⚙️
-            </div>
-            <h3 class="font-bold text-slate-900 group-hover:text-slate-700 transition text-base">Technical Repository</h3>
-            <p class="text-xs text-slate-500 mt-1">Webmaster source code, automated test suite, and contract specs.</p>
-          </div>
-          <span class="text-xs font-semibold text-slate-600 mt-4 inline-flex items-center gap-1">View GitHub &rarr;</span>
-        </a>
-
+    <!-- GAME DAY QUICK LAUNCH -->
+    <section>
+      <div class="mb-4">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">Game Day Quick Launch</h2>
       </div>
-    </div>
-
-    <!-- Executive Board Playbook Section -->
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-      
-            <!-- SECTION 2: MATCHTRAK & FIELD OPERATIONS -->
-      <section class="mb-10">
-        <div class="mb-4">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 uppercase tracking-wider">
-            MatchTrak &amp; Field Operations
-          </span>
-          <h2 class="text-xl font-bold text-slate-800 mt-1">Schedule Ingest &amp; Match Day Engine</h2>
-          <p class="text-xs text-slate-500">Automated four-division match schedule aggregator, field assignments, and referee compliance.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Card 1 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">📱</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Public Coach Standings</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">Live scoreboard showing team progress toward the 17-point playoff goal.</p>
+          </div>
+          <a href="https://docs.google.com/spreadsheets/d/16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv/edit" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            Open Dashboard &rarr;
+          </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Card 1: Schedule Drop Box -->
-          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-            <div>
-              <div class="text-2xl mb-2">📥</div>
-              <h3 class="text-sm font-bold text-slate-900 mb-1">MatchTrak CSV Drop Folder</h3>
-              <p class="text-xs text-slate-500 leading-relaxed mb-4">Shared Google Drive intake folder (<code class="bg-slate-100 px-1 py-0.5 rounded">01_DROP MATCHTRAK</code>). Drag and drop the 4 schedule CSVs here for ingest.</p>
-            </div>
-            <a href="https://drive.google.com/drive/folders/16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
-              Open Drop Folder &rarr;
-            </a>
+        <!-- Card 2 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">📝</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Game Day Check-In Form</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">The live mobile form volunteers scan at fields to log ref shifts and setup.</p>
           </div>
-
-          <!-- Card 2: Weekend Ops Sheet -->
-          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-            <div>
-              <div class="text-2xl mb-2">⚙️</div>
-              <h3 class="text-sm font-bold text-slate-900 mb-1">Weekend Ops Engine</h3>
-              <p class="text-xs text-slate-500 leading-relaxed mb-4">Master Home fixtures, automated Ref Audit triage, and past unreported score tracking.</p>
-            </div>
-            <a href="https://docs.google.com/spreadsheets/d/16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv/edit" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
-              Open Ops Sheet &rarr;
-            </a>
-          </div>
-
-          <!-- Card 3: Setup & Takedown Roster -->
-          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-            <div>
-              <div class="text-2xl mb-2">🥅</div>
-              <h3 class="text-sm font-bold text-slate-900 mb-1">Setup &amp; Takedown Roster</h3>
-              <p class="text-xs text-slate-500 leading-relaxed mb-4">Automated first &amp; last match roster per field showing responsible teams for flags, nets, and lockup.</p>
-            </div>
-            <a href="setup-takedown.html" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
-              Open Roster &rarr;
-            </a>
-          </div>
-
-          <!-- Card 4: Weekend Ops Repo -->
-          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-            <div>
-              <div class="text-2xl mb-2">📦</div>
-              <h3 class="text-sm font-bold text-slate-900 mb-1">Ops Engine Repository</h3>
-              <p class="text-xs text-slate-500 leading-relaxed mb-4">GitHub source code for CSV folder triggers, schedule normalizers, and schema alias mapping.</p>
-            </div>
-            <a href="https://github.com/webmasterayso154" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
-              View Source Code &rarr;
-            </a>
-          </div>
+          <a href="https://docs.google.com/forms" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            Open Check-In Form &rarr;
+          </a>
         </div>
-      </section>
 
-      <div class="border-b border-slate-100 pb-4 flex items-center justify-between">
+        <!-- Card 3 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">📋</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Official Match Sheet</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">Direct access to Form Responses 1 to review Saturday volunteer entries.</p>
+          </div>
+          <a href="https://docs.google.com/spreadsheets" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            Open Responses &rarr;
+          </a>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">🎖️</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Team Awards & Bonus Points</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">Award certified referee bonuses, MatchTrak bonuses, or field adjustments.</p>
+          </div>
+          <a href="https://docs.google.com/spreadsheets" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            Open Team_Awards &rarr;
+          </a>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">🔢</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Season Caps & Late Coaches</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">Register supplemental coaches and manage season-end standings lock.</p>
+          </div>
+          <a href="https://docs.google.com/spreadsheets" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            Open Admin_Config &rarr;
+          </a>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">⚙️</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Technical Repository</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">Webmaster source code, automated test suite, and contract specs.</p>
+          </div>
+          <a href="https://github.com/webmasterayso154/volunteer-dashboard" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            View GitHub &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: MATCHTRAK & FIELD OPERATIONS -->
+    <section>
+      <div class="mb-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 uppercase tracking-wider">
+          MatchTrak &amp; Field Operations
+        </span>
+        <h2 class="text-xl font-bold text-slate-800 mt-1">Schedule Ingest &amp; Match Day Engine</h2>
+        <p class="text-xs text-slate-500">Automated four-division match schedule aggregator, field assignments, and referee compliance.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Card 1 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">📥</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">MatchTrak CSV Drop Folder</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">Shared Google Drive intake folder (<code class="bg-slate-100 px-1 py-0.5 rounded">01_DROP MATCHTRAK</code>). Drag and drop the 4 schedule CSVs here for ingest.</p>
+          </div>
+          <a href="https://drive.google.com/drive/folders/16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            Open Drop Folder &rarr;
+          </a>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">⚙️</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Weekend Ops Engine</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">Master Home fixtures, automated Ref Audit triage, and past unreported score tracking.</p>
+          </div>
+          <a href="https://docs.google.com/spreadsheets/d/16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv/edit" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            Open Ops Sheet &rarr;
+          </a>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">🥅</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Setup &amp; Takedown Roster</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">Automated first &amp; last match roster per field showing responsible teams for flags, nets, and lockup.</p>
+          </div>
+          <a href="setup-takedown.html" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            Open Roster &rarr;
+          </a>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-2xl mb-2">📦</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Ops Engine Repository</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">GitHub source code for CSV folder triggers, schedule normalizers, and schema alias mapping.</p>
+          </div>
+          <a href="https://github.com/webmasterayso154" target="_blank" class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 gap-1">
+            View Source Code &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: MATCHTRAK DIVISION EXPORT URLS -->
+    <section>
+      <div class="mb-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 uppercase tracking-wider">
+          Direct Export Feeds
+        </span>
+        <h2 class="text-xl font-bold text-slate-800 mt-1">MatchTrak Division CSV Endpoints</h2>
+        <p class="text-xs text-slate-500">Direct links to weekly schedule export endpoints. Click to download raw CSVs for drop folder ingestion.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Feed 1 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-xl mb-2 font-mono text-indigo-600">01</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Standard Fall Feed</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4 font-mono truncate">s11e154-26-fall.matchtrak.com</p>
+          </div>
+          <a href="https://s11e154-26-fall.matchtrak.com/11/main.nsf/game-csv-open?openform" target="_blank" class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 gap-1">
+            Download CSV &rarr;
+          </a>
+        </div>
+
+        <!-- Feed 2 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-xl mb-2 font-mono text-indigo-600">02</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Secondary Feed</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4 font-mono truncate">s11e-26-fall.matchtrak.com</p>
+          </div>
+          <a href="https://s11e-26-fall.matchtrak.com/11/main.nsf/game-csv-open?openform" target="_blank" class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 gap-1">
+            Download CSV &rarr;
+          </a>
+        </div>
+
+        <!-- Feed 3 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-xl mb-2 font-mono text-indigo-600">03</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Upper Division Feed</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4 font-mono truncate">s11-26-fall-upper.matchtrak.com</p>
+          </div>
+          <a href="https://s11-26-fall-upper.matchtrak.com/11/main.nsf/game-csv-open?openform" target="_blank" class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 gap-1">
+            Download CSV &rarr;
+          </a>
+        </div>
+
+        <!-- Feed 4 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div class="text-xl mb-2 font-mono text-indigo-600">04</div>
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Extra Program Feed</h3>
+            <p class="text-xs text-slate-500 leading-relaxed mb-4 font-mono truncate">s11-26-fall-extra.matchtrak.com</p>
+          </div>
+          <a href="https://s11-26-fall-extra.matchtrak.com/11/main.nsf/game-csv-open?openform" target="_blank" class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 gap-1">
+            Download CSV &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXECUTIVE BOARD WEEKLY PLAYBOOK -->
+    <section class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
         <div>
-          <h2 class="text-lg sm:text-xl font-bold text-slate-900">🏆 Executive Board Weekly Playbook</h2>
+          <h2 class="text-lg font-bold text-slate-900">🏆 Executive Board Weekly Playbook</h2>
           <p class="text-xs text-slate-500 mt-0.5">Standard operating routine for weekly volunteer tracking</p>
         </div>
         <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
@@ -195,103 +247,96 @@
         </span>
       </div>
 
-      <!-- Weekly Schedule Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
           <div class="flex items-center gap-2">
             <span class="text-base">☕</span>
             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800">Monday Morning</h4>
           </div>
           <p class="text-xs font-semibold text-red-600">Referee Admin or Delegate</p>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Cross-reference Saturday match cards in MatchTrak against <a href="https://docs.google.com/spreadsheets/d/1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g/edit" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">Form Responses 1</a>. Resolve any Center Referee collisions or accidental double-taps.
-          </p>
+          <p class="text-xs text-slate-600 leading-relaxed">Cross-reference Saturday match cards in MatchTrak against Form Responses 1. Resolve any Center Referee collisions or accidental double-taps.</p>
         </div>
 
         <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
           <div class="flex items-center gap-2">
-            <span class="text-base">📱</span>
+            <span class="text-base">🧮</span>
             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800">Tuesday Evening</h4>
           </div>
           <p class="text-xs font-semibold text-blue-600">Coach Admin or Delegate</p>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Check the <a href="index.html" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">Live Dashboard</a> to verify teams are accumulating points accurately toward the 17-point threshold and field coach questions.
-          </p>
+          <p class="text-xs text-slate-600 leading-relaxed">Check the Live Dashboard to verify teams are accumulating points accurately toward the 17-point threshold and field coach questions.</p>
         </div>
 
         <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
           <div class="flex items-center gap-2">
-            <span class="text-base">🥅</span>
+            <span class="text-base">📅</span>
             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800">Friday Afternoon</h4>
           </div>
           <p class="text-xs font-semibold text-emerald-600">Field Director / Webmaster</p>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Verify Friday Night Field Setup QR codes are ready at the storage shed so volunteers can log setup hours (1 pt/hr, up to 5 pts max).
-          </p>
-        </div>
-
-      </div>
-
-      <!-- Point Rules Table -->
-      <div class="pt-2">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Season Category Caps</h3>
-        <div class="overflow-x-auto border border-slate-200 rounded-xl">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-              <tr>
-                <th class="p-3">Volunteer Duty</th>
-                <th class="p-3 text-center">Season Cap</th>
-                <th class="p-3">Rules & Notes</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-slate-700">
-              <tr>
-                <td class="p-3 font-semibold text-slate-900">Playoff Requirement</td>
-                <td class="p-3 text-center font-bold text-red-600">17 pts</td>
-                <td class="p-3">Total points needed for tournament eligibility.</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-semibold text-slate-900">Referee Assignments</td>
-                <td class="p-3 text-center font-bold">10 pts</td>
-                <td class="p-3">On-field referee duty (Dual AR awarded 1 pt each; NOCRA centers earn 0).</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-semibold text-slate-900">Friday Night Setup</td>
-                <td class="p-3 text-center font-bold">5 pts</td>
-                <td class="p-3">1 point per hour shift.</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-semibold text-slate-900">Field Marshal Shifts</td>
-                <td class="p-3 text-center font-bold">2 pts</td>
-                <td class="p-3">Can be completed on same Saturday or separate dates.</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-semibold text-slate-900">Picture Day & Picnic</td>
-                <td class="p-3 text-center font-bold">2 pts</td>
-                <td class="p-3">Volunteer event assistance.</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-semibold text-slate-900">Certified Referee Bonus</td>
-                <td class="p-3 text-center font-bold">5 pts</td>
-                <td class="p-3">Administrative bonus for certified team referees entered in Team_Awards.</td>
-              </tr>
-              <tr>
-                <td class="p-3 font-semibold text-slate-900">MatchTrak Compliance</td>
-                <td class="p-3 text-center font-bold">2 pts</td>
-                <td class="p-3">Awarded for complete MatchTrak rosters by September 26.</td>
-              </tr>
-            </tbody>
-          </table>
+          <p class="text-xs text-slate-600 leading-relaxed">Verify Friday Night Field Setup QR codes are ready at the storage shed so volunteers can log setup hours (1 pt/hr, up to 5 pts max).</p>
         </div>
       </div>
+    </section>
 
-    </div>
+    <!-- SEASON CATEGORY CAPS -->
+    <section class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div class="mb-4">
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Season Category Caps &amp; Rules</h3>
+        <p class="text-xs text-slate-500">Maximum point limits per category for Fall 2026 playoff standings eligibility.</p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-500 font-semibold bg-slate-50">
+              <th class="py-3 px-4">Volunteer Duty</th>
+              <th class="py-3 px-4">Season Cap</th>
+              <th class="py-3 px-4">Rules &amp; Notes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-700">
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-900">Playoff Requirement</td>
+              <td class="py-3 px-4 font-bold text-red-600">17 pts</td>
+              <td class="py-3 px-4 text-slate-500">Total points needed for tournament eligibility.</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-900">Referee Assignments</td>
+              <td class="py-3 px-4 font-semibold text-slate-900">10 pts</td>
+              <td class="py-3 px-4 text-slate-500">On-field referee duty (Dual AR awarded 1 pt each; NOCRA centers earn 0).</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-900">Friday Night Setup</td>
+              <td class="py-3 px-4 font-semibold text-slate-900">5 pts</td>
+              <td class="py-3 px-4 text-slate-500">1 point per hour shift.</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-900">Field Marshal Shifts</td>
+              <td class="py-3 px-4 font-semibold text-slate-900">2 pts</td>
+              <td class="py-3 px-4 text-slate-500">Can be completed on same Saturday or separate dates.</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-900">Picture Day &amp; Picnic</td>
+              <td class="py-3 px-4 font-semibold text-slate-900">2 pts</td>
+              <td class="py-3 px-4 text-slate-500">Volunteer event assistance.</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-900">Certified Referee Bonus</td>
+              <td class="py-3 px-4 font-semibold text-slate-900">5 pts</td>
+              <td class="py-3 px-4 text-slate-500">Administrative bonus for certified team referees entered in Team_Awards.</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-900">MatchTrak Compliance</td>
+              <td class="py-3 px-4 font-semibold text-slate-900">2 pts</td>
+              <td class="py-3 px-4 text-slate-500">Awarded for complete MatchTrak rosters by September 28.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
   </main>
 
-  <!-- Footer -->
-  <footer class="max-w-5xl mx-auto px-4 mt-8 text-center text-xs text-slate-400">
+  <footer class="max-w-5xl mx-auto px-4 mt-12 text-center text-xs text-slate-400">
     AYSO Region 154 Cypress &bull; Technical Operations &bull; Fall 2026
   </footer>
 
