@@ -1,0 +1,95 @@
+$setupPage = @'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AYSO 154 - Field Setup & Takedown Roster</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 24px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .header { background: #1e293b; padding: 24px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #334155; }
+    .header h1 { margin: 0 0 8px 0; font-size: 22px; color: #fff; }
+    .header p { margin: 0; color: #94a3b8; font-size: 14px; }
+    .nav-bar { margin-bottom: 20px; }
+    .nav-link { color: #38bdf8; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+    .table-container { background: #ffffff; color: #1e293b; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { background: #f8fafc; padding: 14px 16px; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+    td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: #f8fafc; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; margin-bottom: 4px; }
+    .badge-setup { background: #dcfce7; color: #166534; }
+    .badge-takedown { background: #fee2e2; color: #991b1b; }
+    .field-name { font-weight: 700; color: #0f172a; white-space: nowrap; }
+    .team-desc { font-weight: 600; color: #1e293b; }
+    .duty-desc { font-size: 12px; color: #64748b; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-bar">
+      <a href="control-panel.html" class="nav-link">&larr; Back to Board Control Panel</a>
+    </div>
+
+    <div class="header">
+      <h1>🥅 Field Setup & Takedown Obligations</h1>
+      <p>Automated match boundaries: <strong>First match teams</strong> assemble nets and place flags; <strong>last match teams</strong> take down nets and return gear to the storage containers.</p>
+    </div>
+
+    <div class="table-container">
+      <table id="rosterTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Field</th>
+            <th>Setup (First Match)</th>
+            <th>Setup Responsible</th>
+            <th>Takedown (Last Match)</th>
+            <th>Takedown Responsible</th>
+          </tr>
+        </thead>
+        <tbody id="rosterBody">
+          <tr>
+            <td>Saturday, 8:00 AM</td>
+            <td class="field-name">Lexington JHS Field 4</td>
+            <td><span class="badge badge-setup">8:00 AM Kickoff</span><br>BU10: Richardson vs Lewis</td>
+            <td><div class="team-desc">Home Team</div><div class="duty-desc">Sets Flags & Net Assembly</div></td>
+            <td><span class="badge badge-takedown">11:45 AM Kickoff</span><br>BU10: Zidan vs Bulatao</td>
+            <td><div class="team-desc">Both Teams</div><div class="duty-desc">Pack Equipment & Lock Boxes</div></td>
+          </tr>
+          <tr>
+            <td>Saturday, 8:00 AM</td>
+            <td class="field-name">Lexington JHS Field 5</td>
+            <td><span class="badge badge-setup">8:00 AM Kickoff</span><br>BU10: Nguyen vs Evango</td>
+            <td><div class="team-desc">Home Team</div><div class="duty-desc">Sets Flags & Net Assembly</div></td>
+            <td><span class="badge badge-takedown">11:45 AM Kickoff</span><br>BU10: Leicht vs Brieger</td>
+            <td><div class="team-desc">Both Teams</div><div class="duty-desc">Pack Equipment & Lock Boxes</div></td>
+          </tr>
+          <tr>
+            <td>Saturday, 8:00 AM</td>
+            <td class="field-name">Lexington JHS Field 6</td>
+            <td><span class="badge badge-setup">8:00 AM Kickoff</span><br>GU10: Corado vs Olsen</td>
+            <td><div class="team-desc">Home Team</div><div class="duty-desc">Sets Flags & Net Assembly</div></td>
+            <td><span class="badge badge-takedown">11:45 AM Kickoff</span><br>GU10: Portalski vs Olmos</td>
+            <td><div class="team-desc">Both Teams</div><div class="duty-desc">Pack Equipment & Lock Boxes</div></td>
+          </tr>
+          <tr>
+            <td>Saturday, 8:00 AM</td>
+            <td class="field-name">Arnold ES Field 10</td>
+            <td><span class="badge badge-setup">8:00 AM Kickoff</span><br>BU12: Marquez vs Tam</td>
+            <td><div class="team-desc">Home Team</div><div class="duty-desc">Sets Flags & Net Assembly</div></td>
+            <td><span class="badge badge-takedown">1:00 PM Kickoff</span><br>BU12: Hicks vs Garcia</td>
+            <td><div class="team-desc">Both Teams</div><div class="duty-desc">Pack Equipment & Lock Boxes</div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
+'@
+
+Set-Content -Path "setup-takedown.html" -Value $setupPage -Encoding UTF8
+Write-Host "Created setup-takedown.html in current working directory." -ForegroundColor Green
