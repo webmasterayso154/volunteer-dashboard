@@ -9,6 +9,26 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; }
   </style>
+  <script>
+    function downloadAllFeeds() {
+      const urls = [
+        "https://s11e154-26-fall.matchtrak.com/11/main.nsf/game-csv-open?openform",
+        "https://s11e-26-fall.matchtrak.com/11/main.nsf/game-csv-open?openform",
+        "https://s11-26-fall-upper.matchtrak.com/11/main.nsf/game-csv-open?openform",
+        "https://s11-26-fall-extra.matchtrak.com/11/main.nsf/game-csv-open?openform"
+      ];
+      urls.forEach((url, index) => {
+        setTimeout(() => {
+          const a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }, index * 400);
+      });
+    }
+  </script>
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased min-h-screen pb-16">
 
@@ -175,63 +195,24 @@
     </section>
 
     <!-- SECTION 3: MATCHTRAK DIVISION EXPORT URLS -->
-    <section>
-      <div class="mb-4">
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 uppercase tracking-wider">
-          Direct Export Feeds
-        </span>
-        <h2 class="text-xl font-bold text-slate-800 mt-1">MatchTrak Division CSV Endpoints</h2>
-        <p class="text-xs text-slate-500">Direct links to weekly schedule export endpoints. Click to download raw CSVs for drop folder ingestion.</p>
+    <section class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 mb-4">
+        <div>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 uppercase tracking-wider mb-1">
+            Direct Export Feeds
+          </span>
+          <h2 class="text-lg font-bold text-slate-900">MatchTrak Schedule Batch Download</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Note: This is the public export view and does not contain referee data. Click once to pull all 4 division feeds simultaneously.</p>
+        </div>
+        <button onclick="downloadAllFeeds()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-3 rounded-xl transition-colors shadow-sm cursor-pointer whitespace-nowrap">
+          📥 Download All 4 Schedule Feeds
+        </button>
       </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Feed 1 -->
-        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div class="text-xl mb-2 font-mono text-indigo-600">01</div>
-            <h3 class="text-sm font-bold text-slate-900 mb-1">Standard Fall Feed</h3>
-            <p class="text-xs text-slate-500 leading-relaxed mb-4 font-mono truncate">s11e154-26-fall.matchtrak.com</p>
-          </div>
-          <a href="https://s11e154-26-fall.matchtrak.com/11/main.nsf/game-csv-open?openform" target="_blank" class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 gap-1">
-            Download CSV &rarr;
-          </a>
-        </div>
-
-        <!-- Feed 2 -->
-        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div class="text-xl mb-2 font-mono text-indigo-600">02</div>
-            <h3 class="text-sm font-bold text-slate-900 mb-1">Secondary Feed</h3>
-            <p class="text-xs text-slate-500 leading-relaxed mb-4 font-mono truncate">s11e-26-fall.matchtrak.com</p>
-          </div>
-          <a href="https://s11e-26-fall.matchtrak.com/11/main.nsf/game-csv-open?openform" target="_blank" class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 gap-1">
-            Download CSV &rarr;
-          </a>
-        </div>
-
-        <!-- Feed 3 -->
-        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div class="text-xl mb-2 font-mono text-indigo-600">03</div>
-            <h3 class="text-sm font-bold text-slate-900 mb-1">Upper Division Feed</h3>
-            <p class="text-xs text-slate-500 leading-relaxed mb-4 font-mono truncate">s11-26-fall-upper.matchtrak.com</p>
-          </div>
-          <a href="https://s11-26-fall-upper.matchtrak.com/11/main.nsf/game-csv-open?openform" target="_blank" class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 gap-1">
-            Download CSV &rarr;
-          </a>
-        </div>
-
-        <!-- Feed 4 -->
-        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div class="text-xl mb-2 font-mono text-indigo-600">04</div>
-            <h3 class="text-sm font-bold text-slate-900 mb-1">Extra Program Feed</h3>
-            <p class="text-xs text-slate-500 leading-relaxed mb-4 font-mono truncate">s11-26-fall-extra.matchtrak.com</p>
-          </div>
-          <a href="https://s11-26-fall-extra.matchtrak.com/11/main.nsf/game-csv-open?openform" target="_blank" class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 gap-1">
-            Download CSV &rarr;
-          </a>
-        </div>
+      <div class="text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1 font-mono">
+        <span>• s11e154-26-fall.matchtrak.com</span>
+        <span>• s11e-26-fall.matchtrak.com</span>
+        <span>• s11-26-fall-upper.matchtrak.com</span>
+        <span>• s11-26-fall-extra.matchtrak.com</span>
       </div>
     </section>
 
