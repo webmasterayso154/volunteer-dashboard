@@ -9,6 +9,10 @@
  * 
  * PROPOSAL REFERENCE: RFC-007 (docs/BOARD_PROPOSALS_REGISTRY.md)
  * 
+ * MATCHTRAK CSV STRUCTURE:
+ * Expected headers: Date, Time, Game #, Division, Field, Home Team, Away Team
+ * Choice Format: "[#<Game #>] <Time> - <Field> | <Division> (<Home> vs <Away>)"
+ * 
  * SAFETY GUARDRAILS:
  * - This script must NEVER be pointed to the live production Google Form.
  * - Production Form ID is hard-blocked by the safety validator below.
@@ -25,8 +29,127 @@ const PRODUCTION_FORM_ID_BLOCKLIST = [
 ];
 
 /**
+ * Normalizes time strings by stripping trailing seconds and standardizing spacing.
+ * Example: '5:30:00 PM' -> '5:30 PM', '8:00:00 AM' -> '8:00 AM', '12:00:00 PM' -> '12:00 PM'
+ * 
+ * @param {string} raw Raw time string
+ * @returns {string} Formatted time string
+ */
+function formatTime(raw) {
+  if (!raw) return '';
+  let str = String(raw).trim();
+  // Strip trailing :00 (or :SS) seconds before AM/PM: e.g. "5:30:00 PM" -> "5:30 PM"
+  str = str.replace(/:(\d{2}):\d{2}(\s*[AP]M)/i, ':$1 $2');
+  // If AM/PM has extra or no spaces, standardize e.g. "5:30PM" -> "5:30 PM"
+  str = str.replace(/(\d{1,2}:\d{2})\s*([AP]M)/i, '$1 $2');
+  // Strip :00 seconds without AM/PM: e.g. "17:30:00" -> "17:30"
+  str = str.replace(/^(\d{1,2}:\d{2}):\d{2}$/, '$1');
+  return str.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Normalizes field strings into standard short names:
+ * e.g., 'E154-Lexington JHS U12 Field 9 Fall 2026' -> 'Lexington Field 9'
+ * e.g., 'E154-Arnold Park U10 Field 10 Fall 2026' -> 'Arnold Field 10'
+ * e.g., 'Arnold - Field #10' -> 'Arnold Field 10'
+ * 
+ * @param {string} raw Raw field string
+ * @returns {string} Formatted field name
+ */
+function formatField(raw) {
+  if (!raw) return '';
+  let str = String(raw).trim();
+
+  const isLexington = /(?:Lexington|LJHS)/i.test(str);
+  const isArnold = /Arnold/i.test(str);
+
+  // Look for "Field #9", "Field 9", "Fld 9", or "#9"
+  const fieldNumMatch = str.match(/(?:Field|Fld)\s*#?\s*(\d+)/i) ||
+                        str.match(/#\s*(\d+)/);
+
+  if (isLexington) {
+    if (fieldNumMatch) return `Lexington Field ${fieldNumMatch[1]}`;
+    return 'Lexington';
+  }
+
+  if (isArnold) {
+    if (fieldNumMatch) return `Arnold Field ${fieldNumMatch[1]}`;
+    return 'Arnold Park';
+  }
+
+  // General cleanup fallback: remove E154-, Fall 202X, Spring 202X
+  str = str.replace(/^E\d+[-_]?/i, '');
+  str = str.replace(/\bFall\s*\d{4}\b/i, '');
+  str = str.replace(/\bSpring\s*\d{4}\b/i, '');
+  str = str.replace(/\s*-\s*/g, ' ');
+  str = str.replace(/#/g, '');
+  return str.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Normalizes division codes into standard format:
+ * e.g., 'BU12' -> '12U-B', 'GU10' -> '10U-G', 'BU08' -> '08U-B', 'BU8' -> '08U-B'
+ * 
+ * @param {string} raw Raw division string or code
+ * @returns {string} Formatted division code
+ */
+function formatDivision(raw) {
+  if (!raw) return '';
+  let str = String(raw).trim();
+
+  // Pattern: BU12, BU10, BU08, BU8 -> 12U-B, 10U-B, 08U-B
+  let match = str.match(/^BU(\d+)$/i);
+  if (match) {
+    const num = match[1].length === 1 ? '0' + match[1] : match[1];
+    return `${num}U-B`;
+  }
+
+  // Pattern: GU12, GU10, GU08, GU8 -> 12U-G, 10U-G, 08U-G
+  match = str.match(/^GU(\d+)$/i);
+  if (match) {
+    const num = match[1].length === 1 ? '0' + match[1] : match[1];
+    return `${num}U-G`;
+  }
+
+  // Pattern: 12UB -> 12U-B, 10UG -> 10U-G
+  match = str.match(/^(\d+)\s*U\s*([BG])$/i);
+  if (match) {
+    const num = match[1].length === 1 ? '0' + match[1] : match[1];
+    return `${num}U-${match[2].toUpperCase()}`;
+  }
+
+  // Pattern: 10U Boys -> 10U-B, 12U Girls -> 12U-G
+  match = str.match(/^(\d+)\s*U\s*(?:-\s*)?(Boys|Girls)$/i);
+  if (match) {
+    const num = match[1].length === 1 ? '0' + match[1] : match[1];
+    const gender = match[2].toUpperCase().startsWith('B') ? 'B' : 'G';
+    return `${num}U-${gender}`;
+  }
+
+  // Pattern: 14UX Boys -> 14UX-B, 10UX Girls -> 10UX-G, 14UXB -> 14UX-B
+  match = str.match(/^(\d+)\s*UX\s*(?:-\s*)?(?:(Boys|Girls)|([BG]))$/i);
+  if (match) {
+    const num = match[1].length === 1 ? '0' + match[1] : match[1];
+    const gender = (match[2] || match[3]).toUpperCase().startsWith('B') ? 'B' : 'G';
+    return `${num}UX-${gender}`;
+  }
+
+  // Pattern: 12U-B, 10U-G, 08U-B (already formatted)
+  match = str.match(/^(\d+)U(?:X)?-([BG])$/i);
+  if (match) {
+    const num = match[1].length === 1 ? '0' + match[1] : match[1];
+    const isX = str.toUpperCase().includes('UX');
+    return `${num}U${isX ? 'X' : ''}-${match[2].toUpperCase()}`;
+  }
+
+  return str;
+}
+
+/**
  * Parses raw schedule rows into sanitized, formatted choice strings:
- * Format: "[Field] Time — Division (Home vs Away)"
+ * Format: "[#<Game #>] <Time> - <Field> | <Division> (<Home> vs <Away>)"
+ * 
+ * Expected headers: Date, Time, Game #, Division, Field, Home Team, Away Team
  * 
  * @param {Array<Array<any>>} scheduleRows 2D array of rows from 'Master_Schedule' tab or CSV
  * @returns {Array<string>} Unique, formatted choice strings
@@ -37,11 +160,12 @@ function buildScheduleDropdownOptions(scheduleRows) {
     return [];
   }
 
-  // Header indexing
+  // Header indexing - support MatchTrak standard headers
   const headers = scheduleRows[0].map(h => String(h || '').trim().toLowerCase());
-  const colTime = headers.findIndex(h => h.includes('time'));
-  const colField = headers.findIndex(h => h.includes('field'));
+  const colGameNum = headers.findIndex(h => h.includes('game #') || h.includes('game#') || h.includes('match') || h === 'game' || h.includes('#'));
+  const colTime = headers.findIndex(h => h === 'time' || h === 'game time' || (h.includes('time') && !h.includes('date')));
   const colDiv = headers.findIndex(h => h.includes('div'));
+  const colField = headers.findIndex(h => h.includes('field'));
   const colHome = headers.findIndex(h => h.includes('home'));
   const colAway = headers.findIndex(h => h.includes('away'));
 
@@ -52,6 +176,7 @@ function buildScheduleDropdownOptions(scheduleRows) {
     const row = scheduleRows[i];
     if (!row || row.length === 0) continue;
 
+    const gameNumRaw = colGameNum !== -1 ? String(row[colGameNum] || '').trim() : '';
     const timeRaw = colTime !== -1 ? String(row[colTime] || '').trim() : '';
     const fieldRaw = colField !== -1 ? String(row[colField] || '').trim() : '';
     const divRaw = colDiv !== -1 ? String(row[colDiv] || '').trim() : '';
@@ -61,7 +186,11 @@ function buildScheduleDropdownOptions(scheduleRows) {
     // Sanitize: Skip if essential game time or field is empty
     if (!timeRaw || !fieldRaw) continue;
 
-    // Build unified string
+    const formattedTime = formatTime(timeRaw);
+    const formattedField = formatField(fieldRaw);
+    const formattedDiv = formatDivision(divRaw);
+
+    // Build matchup segment
     let matchup = '';
     if (homeRaw && awayRaw) {
       matchup = ` (${homeRaw} vs ${awayRaw})`;
@@ -69,8 +198,9 @@ function buildScheduleDropdownOptions(scheduleRows) {
       matchup = ` (${homeRaw || awayRaw})`;
     }
 
-    const divSegment = divRaw ? ` — ${divRaw}` : '';
-    const choiceString = `[${fieldRaw}] ${timeRaw}${divSegment}${matchup}`.trim();
+    const divSegment = formattedDiv ? ` | ${formattedDiv}` : '';
+    const gameTag = gameNumRaw ? `[#${gameNumRaw.replace(/^#/, '')}] ` : '';
+    const choiceString = `${gameTag}${formattedTime} - ${formattedField}${divSegment}${matchup}`.trim();
 
     // Deduplicate exact duplicate match entries
     if (!seenChoices.has(choiceString)) {
@@ -134,7 +264,7 @@ function syncSandboxScheduleDropdown() {
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     const title = item.getTitle().trim();
-    if (title === 'Game Time' || title === 'Match Slot' || title.includes('Game Time / Field')) {
+    if (title === 'Game Time' || title === 'Match Slot' || title.includes('Game Time / Field') || title.includes('Match Schedule')) {
       if (item.getType() === FormApp.ItemType.LIST || item.getType() === FormApp.ItemType.MULTIPLE_CHOICE) {
         targetItem = item;
         break;
@@ -161,6 +291,9 @@ function syncSandboxScheduleDropdown() {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     buildScheduleDropdownOptions,
+    formatTime,
+    formatField,
+    formatDivision,
     SANDBOX_FORM_ID,
     PRODUCTION_FORM_ID_BLOCKLIST
   };
