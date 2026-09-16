@@ -14,7 +14,7 @@
 - [x] Task: Verify board control panel (`control-panel.html`) and setup tracking page (`setup-takedown.html`) (b6743e2)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (b6743e2)
 
-## Phase 3: End-to-End Synthetic Validation & Verification Report
-- [ ] Task: Execute full end-to-end audit run covering raw form submission -> calculation -> client rollup
-- [ ] Task: Compile comprehensive verification findings report and summary
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 3: End-to-End Synthetic Validation & Verification Report [checkpoint: 1841714]
+- [x] Task: Execute full end-to-end audit run covering raw form submission -> calculation -> client rollup (1841714)
+- [x] Task: Compile comprehensive verification findings report and summary (1841714)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (1841714)
