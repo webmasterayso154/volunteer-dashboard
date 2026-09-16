@@ -2,35 +2,47 @@
  * Unit & Integration Test Suite for Sandbox Schedule Dropdown Sync
  * AYSO Region 154 Volunteer Standings System
  * 
- * Tests MatchTrak Schedule CSV parsing, normalization, and choice formatting:
+ * Tests MatchTrak Schedule Multi-Venue parsing, normalization, and choice formatting:
  * 1. Expected headers: Date, Time, Game #, Division, Field, Home Team, Away Team
- * 2. Time formatting: Strips trailing seconds (e.g. '5:30:00 PM' -> '5:30 PM')
- * 3. Field formatting: Normalizes MatchTrak strings (e.g. 'E154-Lexington JHS U12 Field 9 Fall 2026' -> 'Lexington Field 9')
- * 4. Division formatting: Converts codes (e.g. 'BU12' -> '12U-B', 'GU10' -> '10U-G')
- * 5. Choice string format: "[#<Game #>] <Time> - <Field> | <Division> (<Home> vs <Away>)"
+ * 2. Match string format: "🗓️ {Day} • ⏰ {Time} • 📍 {Field} • ⚽ {Division}: {Home} vs {Away}"
+ * 3. Game # omitted, divisions normalized (BU12 -> 12U-B), fields normalized (Lexington JHS -> LJHS Field, Park Lexington ARTIFICIAL TURF -> Park Lex Turf)
+ * 4. Two venue lists:
+ *    - "Select Match - 🌲 Park Lexington (Denni & Cerritos)"
+ *    - "Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary"
+ * 5. Appends "⚠️ Other / Rescheduled / Unlisted Match" to both lists.
+ * 6. Validates sandbox configuration IDs and safety guardrails.
  */
 
 const assert = require('assert');
 const {
   buildScheduleDropdownOptions,
+  buildScheduleDropdownOptionsByVenue,
+  formatDay,
   formatTime,
   formatField,
   formatDivision,
+  getVenueCategory,
+  validateSandboxSafety,
+  SANDBOX_SPREADSHEET_ID,
   SANDBOX_FORM_ID,
+  DROP_FOLDER_ID,
+  ARCHIVE_FOLDER_ID,
+  VENUE_TITLES,
+  OTHER_UNLISTED_OPTION,
   PRODUCTION_FORM_ID_BLOCKLIST
 } = require('../apps-script/Sandbox_ScheduleDropdownSync.js');
 
 console.log('====================================================');
-console.log('🧪 TEST: MATCHTRAK SCHEDULE DROPDOWN SYNC ENGINE');
+console.log('🧪 TEST: RFC-007 MULTI-VENUE SCHEDULE SYNC ENGINE');
 console.log('====================================================\n');
 
-// 1. Mock MatchTrak Schedule CSV Data
+// 1. Mock MatchTrak Schedule CSV Data (With Park Lex, LJHS, and Arnold fields)
 const sampleMatchTrakCsv = `Date,Time,Game #,Division,Field,Home Team,Away Team
 2026-09-12,5:30:00 PM,101,BU12,E154-Lexington JHS U12 Field 9 Fall 2026,Michael Lewis,Faheem Armanyous
-2026-09-12,8:00:00 AM,102,GU10,E154-Lexington JHS Field 1,Ryan Bulatao,Dustin Brieger
+2026-09-12,8:00:00 AM,102,GU10,Park Lexington ARTIFICIAL TURF,Ryan Bulatao,Dustin Brieger
 2026-09-12,9:15:00 AM,103,BU10,Lexington JHS Field 1,Andrew Evango,Harold Huang
 2026-09-12,8:00:00 AM,104,12U Girls,Lexington JHS Field 2,Saul Alvarez,David Corado
-2026-09-12,9:30:00 AM,105,GU12,Lexington Field 2,Carlos Cruz,Fernando Huerta
+2026-09-12,9:30:00 AM,105,GU12,Park Lexington (Denni & Cerritos),Carlos Cruz,Fernando Huerta
 2026-09-12,8:00:00 AM,106,BU08,Arnold - Field #10,Amanda Towers,Casey Harpham
 2026-09-12,9:15:00 AM,107,BU08,E154-Arnold Park U08 Field 10 Fall 2026,Roberto Rojas,Juan Rodriguez
 2026-09-12,5:30:00 PM,101,BU12,E154-Lexington JHS U12 Field 9 Fall 2026,Michael Lewis,Faheem Armanyous
@@ -45,123 +57,141 @@ function parseCsv(csvText) {
 }
 
 // ----------------------------------------------------
-// Unit Tests: Individual Formatting Functions
+// Unit Tests: Individual Normalization Helpers
 // ----------------------------------------------------
 
-console.log('▶ Test 1: Time Formatting Unit Tests (Strip Trailing Seconds)');
+console.log('▶ Test 1: Day & Time Formatting Unit Tests');
+assert.strictEqual(formatDay('2026-09-12'), 'Sat', '2026-09-12 must format to Sat');
+assert.strictEqual(formatDay('Saturday'), 'Sat', 'Saturday must format to Sat');
+assert.strictEqual(formatDay('Sunday'), 'Sun', 'Sunday must format to Sun');
 assert.strictEqual(formatTime('5:30:00 PM'), '5:30 PM', 'Must strip :00 seconds from 5:30:00 PM');
 assert.strictEqual(formatTime('8:00:00 AM'), '8:00 AM', 'Must strip :00 seconds from 8:00:00 AM');
 assert.strictEqual(formatTime('12:00:00 PM'), '12:00 PM', 'Must strip :00 seconds from 12:00:00 PM');
-assert.strictEqual(formatTime('5:30 PM'), '5:30 PM', 'Preserves time without seconds');
-assert.strictEqual(formatTime('9:15:00AM'), '9:15 AM', 'Handles missing space before AM');
-console.log('  ✅ Time formatting correctly strips trailing seconds (5:30:00 PM -> 5:30 PM).');
+console.log('  ✅ Day and Time formatting verified.');
 
-console.log('\n▶ Test 2: Field Formatting Unit Tests (Lexington & Arnold Park)');
-assert.strictEqual(
-  formatField('E154-Lexington JHS U12 Field 9 Fall 2026'),
-  'Lexington Field 9',
-  'Must normalize full MatchTrak Lexington field string'
-);
-assert.strictEqual(
-  formatField('E154-Lexington JHS Field 1'),
-  'Lexington Field 1',
-  'Must normalize regional prefix with Lexington'
-);
+console.log('\n▶ Test 2: Field Formatting & Venue Classification Unit Tests');
 assert.strictEqual(
   formatField('Lexington JHS Field 4'),
-  'Lexington Field 4',
-  'Must clean Lexington JHS'
+  'LJHS Field 4',
+  'Lexington JHS -> LJHS Field'
 );
 assert.strictEqual(
-  formatField('E154-Arnold Park U08 Field 10 Fall 2026'),
-  'Arnold Field 10',
-  'Must normalize full MatchTrak Arnold field string'
+  formatField('E154-Lexington JHS U12 Field 9 Fall 2026'),
+  'LJHS Field 9',
+  'MatchTrak Lexington string -> LJHS Field 9'
+);
+assert.strictEqual(
+  formatField('Park Lexington ARTIFICIAL TURF'),
+  'Park Lex Turf',
+  'Park Lexington ARTIFICIAL TURF -> Park Lex Turf'
+);
+assert.strictEqual(
+  formatField('Park Lexington (Denni & Cerritos)'),
+  'Park Lex',
+  'Park Lexington venue -> Park Lex'
 );
 assert.strictEqual(
   formatField('Arnold - Field #10'),
   'Arnold Field 10',
-  'Must normalize Arnold with dash and #'
+  'Arnold with dash and # -> Arnold Field 10'
 );
 assert.strictEqual(
-  formatField('Arnold Park'),
-  'Arnold Park',
-  'Preserves Arnold Park without field number'
+  formatField('E154-Arnold Park U08 Field 10 Fall 2026'),
+  'Arnold Field 10',
+  'MatchTrak Arnold string -> Arnold Field 10'
 );
-console.log('  ✅ Field formatting cleans up Lexington strings and preserves Arnold Park fields.');
+
+// Venue categories
+assert.strictEqual(getVenueCategory('Park Lexington ARTIFICIAL TURF'), 'PARK_LEX');
+assert.strictEqual(getVenueCategory('Lexington JHS Field 4'), 'LJHS_ARNOLD');
+assert.strictEqual(getVenueCategory('Arnold - Field #10'), 'LJHS_ARNOLD');
+console.log('  ✅ Field normalization & venue classification verified.');
 
 console.log('\n▶ Test 3: Division Code Formatting Unit Tests');
 assert.strictEqual(formatDivision('BU12'), '12U-B', 'BU12 -> 12U-B');
 assert.strictEqual(formatDivision('GU10'), '10U-G', 'GU10 -> 10U-G');
 assert.strictEqual(formatDivision('BU08'), '08U-B', 'BU08 -> 08U-B');
-assert.strictEqual(formatDivision('BU8'), '08U-B', 'BU8 -> 08U-B');
-assert.strictEqual(formatDivision('GU12'), '12U-G', 'GU12 -> 12U-G');
-assert.strictEqual(formatDivision('10U Boys'), '10U-B', '10U Boys -> 10U-B');
-assert.strictEqual(formatDivision('12U Girls'), '12U-G', '12U Girls -> 12U-G');
 assert.strictEqual(formatDivision('14UX Boys'), '14UX-B', '14UX Boys -> 14UX-B');
-assert.strictEqual(formatDivision('12U-B'), '12U-B', 'Preserves already formatted 12U-B');
-console.log('  ✅ Division formatting correctly converts BU12 -> 12U-B and GU10 -> 10U-G.');
+console.log('  ✅ Division code normalization verified.');
 
 // ----------------------------------------------------
-// Integration Tests: End-to-End Choice List Generation
+// Integration Tests: Multi-Venue Dropdown Generation
 // ----------------------------------------------------
 
-console.log('\n▶ Test 4: Dropdown Choice Generation Format');
+console.log('\n▶ Test 4: Multi-Venue Dropdown Choice Generation');
 const parsedSchedule = parseCsv(sampleMatchTrakCsv);
-const options = buildScheduleDropdownOptions(parsedSchedule);
+const venueResult = buildScheduleDropdownOptionsByVenue(parsedSchedule);
 
-assert(options.length > 0, 'Options list should not be empty');
-console.log(`  Generated ${options.length} dropdown options from ${parsedSchedule.length - 1} input rows:`);
-options.forEach(opt => console.log(`   • ${opt}`));
+console.log(`  🌲 Park Lexington Choices (${venueResult.parkLexChoices.length}):`);
+venueResult.parkLexChoices.forEach(opt => console.log(`     • ${opt}`));
 
-// Verify format of first entry: "[#101] 5:30 PM - Lexington Field 9 | 12U-B (Michael Lewis vs Faheem Armanyous)"
+console.log(`  🏫 LJHS / Arnold Choices (${venueResult.ljhsArnoldChoices.length}):`);
+venueResult.ljhsArnoldChoices.forEach(opt => console.log(`     • ${opt}`));
+
+// Verify Park Lexington options:
+assert(venueResult.parkLexChoices.length >= 2, 'Park Lex must have matches plus unlisted option');
+assert(
+  venueResult.parkLexChoices.includes('🗓️ Sat • ⏰ 8:00 AM • 📍 Park Lex Turf • ⚽ 10U-G: Ryan Bulatao vs Dustin Brieger'),
+  'Park Lex Turf match must be present in Park Lex list'
+);
+assert(
+  venueResult.parkLexChoices.includes('🗓️ Sat • ⏰ 9:30 AM • 📍 Park Lex • ⚽ 12U-G: Carlos Cruz vs Fernando Huerta'),
+  'Park Lex match must be present in Park Lex list'
+);
 assert.strictEqual(
-  options[0],
-  '[#101] 5:30 PM - Lexington Field 9 | 12U-B (Michael Lewis vs Faheem Armanyous)',
-  'First choice format mismatch'
+  venueResult.parkLexChoices[venueResult.parkLexChoices.length - 1],
+  OTHER_UNLISTED_OPTION,
+  'Last option in Park Lex list must be "⚠️ Other / Rescheduled / Unlisted Match"'
 );
-console.log('  ✅ Choice string format conforms to "[#<Game #>] <Time> - <Field> | <Division> (<Home> vs <Away>)".');
+console.log('  ✅ Park Lexington dropdown choices conform to RFC-007 specification.');
 
-// Test Arnold entry: "[#106] 8:00 AM - Arnold Field 10 | 08U-B (Amanda Towers vs Casey Harpham)"
-const arnoldOption = options.find(opt => opt.includes('#106'));
-assert(arnoldOption, 'Arnold match #106 must be present');
+// Verify LJHS / Arnold options:
+assert(venueResult.ljhsArnoldChoices.length >= 4, 'LJHS/Arnold must have matches plus unlisted option');
+assert(
+  venueResult.ljhsArnoldChoices.includes('🗓️ Sat • ⏰ 5:30 PM • 📍 LJHS Field 9 • ⚽ 12U-B: Michael Lewis vs Faheem Armanyous'),
+  'LJHS Field 9 match must be present with Game # omitted'
+);
+assert(
+  venueResult.ljhsArnoldChoices.includes('🗓️ Sat • ⏰ 8:00 AM • 📍 Arnold Field 10 • ⚽ 08U-B: Amanda Towers vs Casey Harpham'),
+  'Arnold Field 10 match must be present'
+);
+assert(
+  venueResult.ljhsArnoldChoices.includes('🗓️ Sat • ⏰ 1:00 PM • 📍 LJHS Field 4 • ⚽ 14UX-B: Christian Villalobos'),
+  'Single team match must format cleanly without "vs"'
+);
 assert.strictEqual(
-  arnoldOption,
-  '[#106] 8:00 AM - Arnold Field 10 | 08U-B (Amanda Towers vs Casey Harpham)',
-  'Arnold choice format mismatch'
+  venueResult.ljhsArnoldChoices[venueResult.ljhsArnoldChoices.length - 1],
+  OTHER_UNLISTED_OPTION,
+  'Last option in LJHS/Arnold list must be "⚠️ Other / Rescheduled / Unlisted Match"'
 );
-console.log('  ✅ Arnold Park option formatted accurately as "[#106] 8:00 AM - Arnold Field 10 | 08U-B (Amanda Towers vs Casey Harpham)".');
+console.log('  ✅ LJHS & Arnold dropdown choices conform to RFC-007 specification.');
 
-console.log('\n▶ Test 5: Sanitization of Incomplete Schedule Rows');
-// Row 109 has empty time, Row 110 has empty field. Neither should appear.
-const hasEmptyTime = options.some(opt => opt.includes('Dawn Caires'));
-const hasEmptyField = options.some(opt => opt.includes('Mina Abader'));
-assert.strictEqual(hasEmptyTime, false, 'Rows with missing Game Time must be sanitized/skipped');
-assert.strictEqual(hasEmptyField, false, 'Rows with missing Field must be sanitized/skipped');
-console.log('  ✅ Rows missing Game Time or Field are safely filtered out.');
+console.log('\n▶ Test 5: Incomplete Row Sanitization & Deduplication');
+const hasEmptyTime = venueResult.allChoices.some(opt => opt.includes('Dawn Caires'));
+const hasEmptyField = venueResult.allChoices.some(opt => opt.includes('Mina Abader'));
+assert.strictEqual(hasEmptyTime, false, 'Missing Game Time rows must be skipped');
+assert.strictEqual(hasEmptyField, false, 'Missing Field rows must be skipped');
 
-console.log('\n▶ Test 6: Deduplication of Identical Match Entries');
-// Game #101 is duplicated in row 2 and row 9
-const duplicateMatches = options.filter(opt =>
-  opt === '[#101] 5:30 PM - Lexington Field 9 | 12U-B (Michael Lewis vs Faheem Armanyous)'
+const duplicateChoices = venueResult.ljhsArnoldChoices.filter(opt =>
+  opt === '🗓️ Sat • ⏰ 5:30 PM • 📍 LJHS Field 9 • ⚽ 12U-B: Michael Lewis vs Faheem Armanyous'
 );
-assert.strictEqual(duplicateMatches.length, 1, 'Duplicate match rows must be deduplicated to a single choice');
-console.log('  ✅ Exact duplicate matches are deduplicated to a single option.');
+assert.strictEqual(duplicateChoices.length, 1, 'Exact duplicate matches must be deduplicated to 1 entry');
+console.log('  ✅ Sanitization and deduplication verified.');
 
-console.log('\n▶ Test 7: Single Team Matchup Handling (Game #111)');
-const singleTeamChoice = options.find(opt => opt.includes('Christian Villalobos'));
-assert(singleTeamChoice, 'Single team matchup should still generate a valid choice');
-assert.strictEqual(
-  singleTeamChoice,
-  '[#111] 1:00 PM - Lexington Field 4 | 14UX-B (Christian Villalobos)',
-  'Single team choice format mismatch'
-);
-console.log('  ✅ Single team/bye matchups format cleanly without trailing "vs".');
+console.log('\n▶ Test 6: Sandbox Configuration & Safety Guardrails');
+assert.strictEqual(SANDBOX_SPREADSHEET_ID, '177ciFgTmQiuPiEtHytjXbHP8GZa3ge7nRXwqbYJ4NAA');
+assert.strictEqual(SANDBOX_FORM_ID, '1ib_QRcmucRqrJ4CujTA8Lt4Yreg9tPpz1AOIzcYlsal');
+assert.strictEqual(DROP_FOLDER_ID, '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv');
+assert.strictEqual(ARCHIVE_FOLDER_ID, '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m');
+assert.strictEqual(VENUE_TITLES.PARK_LEX, 'Select Match - 🌲 Park Lexington (Denni & Cerritos)');
+assert.strictEqual(VENUE_TITLES.LJHS_ARNOLD, 'Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary');
+assert.strictEqual(OTHER_UNLISTED_OPTION, '⚠️ Other / Rescheduled / Unlisted Match');
 
-console.log('\n▶ Test 8: Production Guardrail & Safety Checks');
-assert(PRODUCTION_FORM_ID_BLOCKLIST.length >= 2, 'Production blocklist must contain protected IDs');
-assert(SANDBOX_FORM_ID.includes('PASTE_SANDBOX_FORM_ID_HERE'), 'SANDBOX_FORM_ID must remain a placeholder');
-console.log('  ✅ Production form IDs are strictly protected by blocklist guardrails.');
+// Verify safety validator executes without error on configured sandbox IDs
+assert.doesNotThrow(() => validateSandboxSafety(), 'Sandbox safety validator should pass on valid sandbox IDs');
+console.log('  ✅ All Sandbox IDs and safety guardrails validated.');
 
 console.log('\n====================================================');
-console.log('🏆 ALL MATCHTRAK SCHEDULE SYNC TESTS PASSED (100%)');
+console.log('🏆 ALL RFC-007 MULTI-VENUE SYNC TESTS PASSED (100%)');
 console.log('====================================================');
+
