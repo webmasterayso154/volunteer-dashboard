@@ -14,6 +14,7 @@ This registry documents proposed system enhancements, field additions, and polic
 | **RFC-004** | Dual-Slot Same-Day AR Policy Clarification | Policy Rule | Medium | Reaffirm policy on volunteers claiming 2+ AR slots/day | Next Board Meeting |
 | **RFC-005** | NOCRA Auto-Notification Workflow | Operations | Low | Approve automated email notice for non-credited refs | Spring 2027 |
 | **RFC-006** | End-of-Season Playoff Tiebreaker Protocol | Standings Policy | Medium | Formalize point tiebreakers (Setup vs. Ref balance) | Fall Playoffs |
+| **RFC-007** | Unified Schedule Dropdown Sync Sandbox | Form UX & Automation | Medium | Review sandbox testing results for schedule dropdown | Spring 2027 / Post-Season |
 
 ---
 
@@ -33,3 +34,9 @@ This registry documents proposed system enhancements, field additions, and polic
 * **Current State:** Minor typographic variances exist across legacy spreadsheet rosters ("Brennan" vs. "Brennen").
 * **Proposed Change:** Standardize all references to "Brennen Portalski" across `Season_Master_Ledger` and SportsConnect rosters.
 * **Impact:** Zero points impact; prevents future lookup misses during automated script syncs.
+
+### RFC-007: Unified Schedule Dropdown Sync (Sandbox Proposal)
+* **Current State:** Referees and volunteers currently type free-text times (e.g. "8", "8:00 AM", "8am") and select fields manually, requiring normalization and manual audit cross-referencing on Saturday afternoons.
+* **Proposed Change:** In an isolated sandbox environment (`apps-script/Sandbox_ScheduleDropdownSync.js`), test dynamically syncing weekly MatchTrak schedules from a `Master_Schedule` tab into a single unified dropdown question: `[Field] Time — Division (Home vs Away)`.
+* **Impact:** Eliminates typos, prevents conflicting time slot entries, and accelerates Saturday game card reconciliation.
+* **Status:** Sandbox Prototype & Offline Tests Complete (`test/test_schedule_sync.js`). Production deployment blocked pending formal board vote and sign-off.

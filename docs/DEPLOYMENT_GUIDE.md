@@ -1,4 +1,4 @@
-﻿# Cypress AYSO Region 154 Volunteer Point Review
+# Cypress AYSO Region 154 Volunteer Point Review
 
 This package creates the Fall 2026 Google Form, response workbook, normalized audit queue, shift-level review table, team-status table, administrative dashboard, audit log, notifications, and deadline controls.
 
@@ -130,3 +130,35 @@ Do not use **Resolved** as both a decision and a workflow state. The package kee
 - [ ] Dashboard formulas display correctly
 - [ ] Tent/referee record owners assigned for November 7–10
 - [ ] Respondent URL shared only in the closed leadership WhatsApp groups
+
+---
+
+## Sandbox Schedule Dropdown Testing Protocol
+
+This isolated protocol tests dynamic schedule dropdown synchronization (`apps-script/Sandbox_ScheduleDropdownSync.js`) without impacting production check-in forms or master spreadsheets.
+
+### 1. Safety Pre-Conditions
+- **DO NOT** modify the production Google Form or production Google Sheet.
+- Verify that `apps-script/Sandbox_ScheduleDropdownSync.js` has `SANDBOX_FORM_ID` set to a dedicated test Form ID and that the production ID blocklist remains active.
+
+### 2. Sandbox Setup Steps
+1. Create a temporary/duplicate Google Form with a dropdown (List) item titled `"Game Time"`.
+2. In your test Google Sheet, create a tab named `Master_Schedule` with columns:
+   `MatchID | Date | Game Time | Field | Division | Home | Away`
+3. Paste sample Saturday match rows into `Master_Schedule`.
+4. Open the Apps Script editor attached to your test sheet and add `Sandbox_ScheduleDropdownSync.js`.
+5. Set `const SANDBOX_FORM_ID = '<YOUR_TEST_FORM_ID>';`.
+6. Run `syncSandboxScheduleDropdown()`.
+
+### 3. Verification & Acceptance Criteria
+- [ ] Open the test Google Form preview and confirm the `"Game Time"` question displays formatted choice strings:
+  `[Field] Time — Division (Home vs Away)`
+- [ ] Confirm exact duplicate match slots are deduplicated.
+- [ ] Confirm rows with missing game time or field are safely skipped without throwing runtime exceptions.
+- [ ] Confirm production blocklist triggers an error if pointed to live form IDs.
+
+### 4. Local Test Suite Execution
+Run the offline unit and parsing test suite:
+```bash
+node test/test_schedule_sync.js
+```
