@@ -1,11 +1,11 @@
 # Implementation Plan: End-to-End Form Ingestion & Standings Verification
 
-## Phase 1: Ingestion & Formula Contract Audit (Apps Script / Sheet Engine)
-- [ ] Task: Audit and verify Apps Script test runner (`Test_Suite.gs`, `Contract_Tests.gs`) against master sheet schema
-- [ ] Task: Verify mock ingestion test fixtures for 3 team dropdown columns, role parsing, and canonical team IDs
-- [ ] Task: Validate point calculation logic and category caps (10-pt Ref, 5-pt Setup, 2-pt Marshal, 2-pt Picture, 5-pt Bonus, 17-pt Target)
-- [ ] Task: Validate referee anomaly rules (Dual AR 1 pt each, NOCRA 0 pt exclusion, Center Ref conflict detection)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 1: Ingestion & Formula Contract Audit (Apps Script / Sheet Engine) [checkpoint: 9a9f7f4]
+- [x] Task: Audit and verify Apps Script test runner (`Test_Suite.gs`, `Contract_Tests.gs`) against master sheet schema (9a9f7f4)
+- [x] Task: Verify mock ingestion test fixtures for 3 team dropdown columns, role parsing, and canonical team IDs (9a9f7f4)
+- [x] Task: Validate point calculation logic and category caps (10-pt Ref, 5-pt Setup, 2-pt Marshal, 2-pt Picture, 5-pt Bonus, 17-pt Target) (9a9f7f4)
+- [x] Task: Validate referee anomaly rules (Dual AR 1 pt each, NOCRA 0 pt exclusion, Center Ref conflict detection) (9a9f7f4)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (9a9f7f4)
 
 ## Phase 2: Client Transport & Standings Rollup Verification (Frontend UI)
 - [ ] Task: Validate `support.js` dual-transport parser with test CSV and GViz payloads
