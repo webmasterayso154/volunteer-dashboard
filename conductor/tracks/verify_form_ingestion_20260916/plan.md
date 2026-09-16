@@ -7,12 +7,12 @@
 - [x] Task: Validate referee anomaly rules (Dual AR 1 pt each, NOCRA 0 pt exclusion, Center Ref conflict detection) (9a9f7f4)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (9a9f7f4)
 
-## Phase 2: Client Transport & Standings Rollup Verification (Frontend UI)
-- [ ] Task: Validate `support.js` dual-transport parser with test CSV and GViz payloads
-- [ ] Task: Verify client-side `localStorage` caching, cache expiry, and manual sync recovery
-- [ ] Task: Verify public dashboard (`index.html`) table rendering, mobile responsiveness, search filters, and modal duty breakdowns
-- [ ] Task: Verify board control panel (`control-panel.html`) and setup tracking page (`setup-takedown.html`)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 2: Client Transport & Standings Rollup Verification (Frontend UI) [checkpoint: b6743e2]
+- [x] Task: Validate `support.js` dual-transport parser with test CSV and GViz payloads (b6743e2)
+- [x] Task: Verify client-side `localStorage` caching, cache expiry, and manual sync recovery (b6743e2)
+- [x] Task: Verify public dashboard (`index.html`) table rendering, mobile responsiveness, search filters, and modal duty breakdowns (b6743e2)
+- [x] Task: Verify board control panel (`control-panel.html`) and setup tracking page (`setup-takedown.html`) (b6743e2)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (b6743e2)
 
 ## Phase 3: End-to-End Synthetic Validation & Verification Report
 - [ ] Task: Execute full end-to-end audit run covering raw form submission -> calculation -> client rollup
