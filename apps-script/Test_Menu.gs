@@ -4,6 +4,8 @@
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('⚽ AYSO 154 Test Tools')
+    .addItem('📊 Run Audit & Sync Ledger', 'runAuditAndSyncLedger')
+    .addSeparator()
     .addItem('▶ Run System Diagnostics', 'menuRunDiagnostics')
     .addSeparator()
     .addItem('➕ Inject Demo Game Day Submissions', 'menuInjectData')
