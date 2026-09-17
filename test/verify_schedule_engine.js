@@ -36,8 +36,16 @@ assert.strictEqual(CONFIG.VENUE_TITLES.PARK_LEX, 'Select Match - 🌲 Park Lexin
 assert.strictEqual(CONFIG.VENUE_TITLES.LUTHER, 'Select Match - 🏫 Luther Elementary');
 assert.strictEqual(CONFIG.VENUE_TITLES.LJHS_ARNOLD, 'Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary');
 assert.strictEqual(CONFIG.DASHBOARD_URL, 'https://webmasterayso154.github.io/volunteer-dashboard/', 'Dashboard URL mismatch');
-assert(CONFIG.FORM_DESCRIPTION_BANNER.includes('https://webmasterayso154.github.io/volunteer-dashboard/'), 'Form description banner must contain Dashboard URL');
-assert(CONFIG.CONFIRMATION_MESSAGE.includes('https://webmasterayso154.github.io/volunteer-dashboard/'), 'Form confirmation message must contain Dashboard URL');
+assert.strictEqual(
+  CONFIG.FORM_DESCRIPTION,
+  "🙌 Game day happens because of YOU! ⚽\nThank you for volunteering your time for our players and community today.\n\nQuick Steps for New Volunteers:\n1. Enter your name and role.\n2. Pick your field venue and select your match from the dropdown.\n3. Submit to log your points!\n\n📊 View live team points on the Volunteer Standings Dashboard: https://webmasterayso154.github.io/volunteer-dashboard/",
+  'Form description mismatch'
+);
+assert.strictEqual(
+  CONFIG.CONFIRMATION_MESSAGE,
+  "⚽ Thanks for checking in! 🙌\n\nYou can track live team standings and volunteer points on the Volunteer Dashboard here:\nhttps://webmasterayso154.github.io/volunteer-dashboard/",
+  'Confirmation message mismatch'
+);
 console.log('  ✅ Production configuration constants verified.');
 
 // ----------------------------------------------------
@@ -207,7 +215,120 @@ assert(venueValues[2][0].includes('Lexington Junior High'));
 
 console.log('  ✅ Executive Summary sheet generator and formulas verified.');
 
+// ----------------------------------------------------
+// Test 7: Form Dynamic Routing Restoration & Reopening
+// ----------------------------------------------------
+console.log('\n▶ Test 7: Form Dynamic Routing Restoration & Reopening');
+const mockFormItems = [
+  {
+    title: 'Game Time',
+    type: 0, // TEXT
+    getTitle: function() { return this.title; },
+    getType: function() { return this.type; }
+  },
+  {
+    title: 'Volunteer Name',
+    type: 0, // TEXT
+    getTitle: function() { return this.title; },
+    getType: function() { return this.type; }
+  },
+  {
+    title: 'Select Match - 🌲 Park Lexington (Denni & Cerritos)',
+    type: 1, // LIST
+    choices: [],
+    getTitle: function() { return this.title; },
+    getType: function() { return this.type; },
+    asListItem: function() {
+      const self = this;
+      return { setChoiceValues: (c) => { self.choices = c; } };
+    }
+  }
+];
+
+let formAccepting = false;
+let formDescription = '';
+let formConfirmation = '';
+
+const mockForm = {
+  getItems: () => [...mockFormItems],
+  deleteItem: (index) => {
+    mockFormItems.splice(index, 1);
+  },
+  addListItem: () => {
+    const item = {
+      title: '',
+      type: 1,
+      choices: [],
+      getTitle: function() { return this.title; },
+      getType: function() { return this.type; },
+      setTitle: function(t) { this.title = t; return this; },
+      setChoiceValues: function(c) { this.choices = c; return this; },
+      setRequired: function(r) { return this; },
+      asListItem: function() {
+        const self = this;
+        return { setChoiceValues: (c) => { self.choices = c; } };
+      }
+    };
+    mockFormItems.push(item);
+    return item;
+  },
+  setDescription: (d) => { formDescription = d; },
+  setConfirmationMessage: (c) => { formConfirmation = c; },
+  setAcceptingResponses: (b) => { formAccepting = b; }
+};
+
+// Global mocks for FormApp & SpreadsheetApp
+global.FormApp = {
+  ItemType: { TEXT: 0, LIST: 1, CHECKBOX: 2, MULTIPLE_CHOICE: 3, TIME: 4, DATETIME: 5 },
+  openById: () => mockForm,
+  getActiveForm: () => mockForm
+};
+
+global.SpreadsheetApp = {
+  openById: () => ({
+    getSheetByName: (name) => ({
+      getDataRange: () => ({
+        getValues: () => [
+          ['Date', 'Time', 'Field', 'Division', 'Home Team', 'Away Team'],
+          ['2026-09-19', '8:00 AM', 'Park Lexington ARTIFICIAL TURF', '10U-B', 'Coach A', 'Coach B'],
+          ['2026-09-19', '9:15 AM', 'Lexington JHS Field 1', '10U-G', 'Coach C', 'Coach D']
+        ]
+      })
+    })
+  })
+};
+
+const { syncContainerFormSchedule } = require('../apps-script/ScheduleSyncEngine.gs');
+syncContainerFormSchedule();
+
+// Verify legacy field was deleted
+const legacyItem = mockFormItems.find(i => i.title.toLowerCase().includes('game time'));
+assert.strictEqual(legacyItem, undefined, 'Legacy manual Game Time text item must be permanently deleted');
+
+// Verify Park Lex dropdown was updated
+const parkLexItem = mockFormItems.find(i => i.title.includes('Park Lexington'));
+assert(parkLexItem, 'Park Lexington dropdown question must exist');
+assert(parkLexItem.choices.length > 1, 'Park Lex dropdown must have choices populated');
+
+// Verify Luther dropdown was created (with zero-game warning fallback)
+const lutherItem = mockFormItems.find(i => i.title.includes('Luther Elementary'));
+assert(lutherItem, 'Luther Elementary dropdown question must exist');
+assert(lutherItem.choices.includes(CONFIG.LUTHER_ZERO_GAMES_OPTION), 'Luther must have zero-game fallback choice');
+
+// Verify LJHS/Arnold dropdown was created
+const ljhsItem = mockFormItems.find(i => i.title.includes('Lexington Junior High') || i.title.includes('Arnold'));
+assert(ljhsItem, 'LJHS/Arnold dropdown question must exist');
+assert(ljhsItem.choices.length > 1, 'LJHS/Arnold dropdown must have choices populated');
+
+// Verify form metadata
+assert.strictEqual(formDescription, CONFIG.FORM_DESCRIPTION, 'Form description must be locked');
+assert.strictEqual(formConfirmation, CONFIG.CONFIRMATION_MESSAGE, 'Form confirmation message must be locked');
+
+// Verify form is open
+assert.strictEqual(formAccepting, true, 'Form must be set to accepting responses (true)');
+console.log('  ✅ Dynamic routing restoration, legacy field cleanup, and form reopening verified.');
+
 console.log('\n================================================================');
-console.log('🏆 PRODUCTION ENGINES & EXECUTIVE SUMMARY VERIFIED (100% SUCCESS)');
+console.log('🏆 PRODUCTION ENGINES & FORM SYNC VERIFIED (100% SUCCESS)');
 console.log('================================================================');
 

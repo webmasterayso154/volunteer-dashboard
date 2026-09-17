@@ -29,7 +29,8 @@ const CONFIG = {
   ARCHIVE_FOLDER_ID: '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m',
   DASHBOARD_URL: 'https://webmasterayso154.github.io/volunteer-dashboard/',
   FORM_DESCRIPTION_BANNER: '📊 Track live team standings and volunteer points: https://webmasterayso154.github.io/volunteer-dashboard/',
-  CONFIRMATION_MESSAGE: 'Thank you for submitting! You can track live volunteer standings and team points on the Volunteer Dashboard here: https://webmasterayso154.github.io/volunteer-dashboard/',
+  FORM_DESCRIPTION: "🙌 Game day happens because of YOU! ⚽\nThank you for volunteering your time for our players and community today.\n\nQuick Steps for New Volunteers:\n1. Enter your name and role.\n2. Pick your field venue and select your match from the dropdown.\n3. Submit to log your points!\n\n📊 View live team points on the Volunteer Standings Dashboard: https://webmasterayso154.github.io/volunteer-dashboard/",
+  CONFIRMATION_MESSAGE: "⚽ Thanks for checking in! 🙌\n\nYou can track live team standings and volunteer points on the Volunteer Dashboard here:\nhttps://webmasterayso154.github.io/volunteer-dashboard/",
   VENUE_TITLES: {
     PARK_LEX: 'Select Match - 🌲 Park Lexington (Denni & Cerritos)',
     LUTHER: 'Select Match - 🏫 Luther Elementary',
@@ -97,150 +98,115 @@ function formatTime(rawTime) {
     return Utilities.formatDate(rawTime, CONFIG.TIMEZONE, 'h:mm a');
   }
 
-  let timeStr = String(rawTime || '')
-    .replace(/:(\d{2}):\d{2}\s*([AP]M)/i, ':$1 $2')
-    .replace(/^(\d{1,2}:\d{2}):\d{2}$/, '$1')
-    .replace(/(\d{1,2}:\d{2})\s*([AP]M)/i, '$1 $2')
-    .trim();
+  let timeStr = String(rawTime || '').trim();
+  timeStr = timeStr.replace(/(\d{1,2}:\d{2}):\d{2}/, '$1');
+  timeStr = timeStr.replace(/\s*([AaPp][Mm])/, ' $1').toUpperCase();
   return timeStr;
 }
 
 /**
- * Normalizes field strings into standard short names:
- * e.g., 'Lexington JHS Field 4' -> 'LJHS Field 4'
- * e.g., 'E154-Lexington JHS U12 Field 9 Fall 2026' -> 'LJHS Field 9'
- * e.g., 'Park Lexington ARTIFICIAL TURF' -> 'Park Lex Turf'
- * e.g., 'Arnold - Field #10' -> 'Arnold Field 10'
- * e.g., 'Luther Elementary School U10 Field 1 Fall 2026' -> 'Luther Field 1'
- * e.g., 'Luther Elementary School U8 Field 1' -> 'Luther Field 1'
+ * Standardizes venue/field names.
+ * Maps Luther U8/U10 fields to 'Luther Field 1', 'Luther Field 2', etc.
  * 
- * @param {string} rawField Raw field string
- * @returns {string} Formatted field name
+ * @param {string} rawField Raw field name
+ * @returns {string} Clean standardized field name
  */
 function formatField(rawField) {
   if (!rawField) return '';
-  let str = String(rawField).trim();
+  const f = String(rawField).trim();
 
-  // 1. Check for Park Lexington (Denni & Cerritos / Turf / Grass)
-  if (/Park\s*Lex/i.test(str) || /Denni\s*&\s*Cerritos/i.test(str) || /Turf/i.test(str)) {
-    if (/turf|artificial/i.test(str)) return 'Park Lex Turf';
-    if (/grass/i.test(str)) return 'Park Lex Grass';
-    const numMatch = str.match(/(?:Field|Fld)\s*#?\s*(\d+)/i) || str.match(/#\s*(\d+)/);
-    if (numMatch) return `Park Lex Field ${numMatch[1]}`;
+  // Luther Elementary School mappings
+  if (/luther/i.test(f)) {
+    const numMatch = f.match(/field\s*#?\s*(\d+)/i);
+    return numMatch ? `Luther Field ${numMatch[1]}` : 'Luther Field';
+  }
+
+  // Park Lexington
+  if (/park lex/i.test(f) || /denni/i.test(f)) {
+    if (/turf/i.test(f) || /art/i.test(f)) return 'Park Lex Turf';
+    if (/grass/i.test(f)) return 'Park Lex Grass';
     return 'Park Lex';
   }
 
-  // 2. Check for Luther Elementary (U8 / U10 / ES)
-  if (/Luther/i.test(str)) {
-    const numMatch = str.match(/(?:Field|Fld)\s*#?\s*(\d+)/i) || str.match(/#\s*(\d+)/);
-    if (numMatch) return `Luther Field ${numMatch[1]}`;
-    return 'Luther Field';
+  // Lexington JHS
+  if (/lexington|ljhs/i.test(f)) {
+    const numMatch = f.match(/field\s*#?\s*(\d+)/i);
+    return numMatch ? `LJHS Field ${numMatch[1]}` : 'LJHS';
   }
 
-  // 3. Check for Lexington Junior High (LJHS)
-  if (/(?:Lexington|LJHS)/i.test(str)) {
-    const numMatch = str.match(/(?:Field|Fld)\s*#?\s*(\d+)/i) || str.match(/#\s*(\d+)/);
-    if (numMatch) return `LJHS Field ${numMatch[1]}`;
-    return 'LJHS Field';
+  // Arnold Elementary
+  if (/arnold/i.test(f)) {
+    const numMatch = f.match(/field\s*#?\s*(\d+)/i);
+    return numMatch ? `Arnold Field ${numMatch[1]}` : 'Arnold';
   }
 
-  // 4. Check for Arnold Elementary / Arnold Park
-  if (/Arnold/i.test(str)) {
-    const numMatch = str.match(/(?:Field|Fld)\s*#?\s*(\d+)/i) || str.match(/#\s*(\d+)/);
-    if (numMatch) return `Arnold Field ${numMatch[1]}`;
-    return 'Arnold Field';
-  }
-
-  // Fallback cleanup
-  str = str.replace(/^E\d+[-_]?/i, '');
-  str = str.replace(/\bFall\s*\d{4}\b/i, '');
-  str = str.replace(/\bSpring\s*\d{4}\b/i, '');
-  str = str.replace(/\s*-\s*/g, ' ');
-  str = str.replace(/#/g, '');
-  return str.replace(/\s+/g, ' ').trim();
+  return f;
 }
 
 /**
- * Normalizes division codes into standard format (e.g. 'BU12' -> '12U-B', 'GU10' -> '10U-G').
+ * Normalizes division format (e.g. 'BU12' -> '12U-B', '10U Boys' -> '10U-B').
  * 
- * @param {string} raw Raw division string or code
- * @returns {string} Formatted division code
+ * @param {string} rawDiv Raw division string
+ * @returns {string} Normalized division tag
  */
-function formatDivision(raw) {
-  if (!raw) return '';
-  let str = String(raw).trim();
+function formatDivision(rawDiv) {
+  if (!rawDiv) return '';
+  const d = String(rawDiv).trim();
 
-  // Pattern: BU12, BU10, BU08, BU8 -> 12U-B, 10U-B, 08U-B
-  let match = str.match(/^BU(\d+)$/i);
+  let match = d.match(/^([BGbg])(?:U|u)?(\d{1,2})/);
   if (match) {
-    const num = match[1].length === 1 ? '0' + match[1] : match[1];
-    return `${num}U-B`;
-  }
-
-  // Pattern: GU12, GU10, GU08, GU8 -> 12U-G, 10U-G, 08U-G
-  match = str.match(/^GU(\d+)$/i);
-  if (match) {
-    const num = match[1].length === 1 ? '0' + match[1] : match[1];
-    return `${num}U-G`;
-  }
-
-  // Pattern: 12UB -> 12U-B, 10UG -> 10U-G
-  match = str.match(/^(\d+)\s*U\s*([BG])$/i);
-  if (match) {
-    const num = match[1].length === 1 ? '0' + match[1] : match[1];
-    return `${num}U-${match[2].toUpperCase()}`;
-  }
-
-  // Pattern: 10U Boys -> 10U-B, 12U Girls -> 12U-G
-  match = str.match(/^(\d+)\s*U\s*(?:-\s*)?(Boys|Girls)$/i);
-  if (match) {
-    const num = match[1].length === 1 ? '0' + match[1] : match[1];
-    const gender = match[2].toUpperCase().startsWith('B') ? 'B' : 'G';
+    const gender = match[1].toUpperCase();
+    const num = match[2].padStart(2, '0');
     return `${num}U-${gender}`;
   }
 
-  // Pattern: 14UX Boys -> 14UX-B, 10UX Girls -> 10UX-G, 14UXB -> 14UX-B
-  match = str.match(/^(\d+)\s*UX\s*(?:-\s*)?(?:(Boys|Girls)|([BG]))$/i);
+  match = d.match(/^(\d{1,2})(?:U|u)?\s*([BGbg])/);
   if (match) {
-    const num = match[1].length === 1 ? '0' + match[1] : match[1];
-    const gender = (match[2] || match[3]).toUpperCase().startsWith('B') ? 'B' : 'G';
+    const num = match[1].padStart(2, '0');
+    const gender = match[2].toUpperCase();
+    return `${num}U-${gender}`;
+  }
+
+  match = d.match(/^(\d{1,2})UX\s*([BGbg])/i);
+  if (match) {
+    const num = match[1].padStart(2, '0');
+    const gender = match[2].toUpperCase();
     return `${num}UX-${gender}`;
   }
 
-  // Pattern: 12U-B, 10U-G, 08U-B (already formatted)
-  match = str.match(/^(\d+)U(?:X)?-([BG])$/i);
-  if (match) {
-    const num = match[1].length === 1 ? '0' + match[1] : match[1];
-    const isX = str.toUpperCase().includes('UX');
-    return `${num}U${isX ? 'X' : ''}-${match[2].toUpperCase()}`;
-  }
-
-  return str;
+  return d;
 }
 
 /**
- * Normalizes team name by stripping regional prefixes (e.g. '01-E154-' or 'E154-').
+ * Strips prefix codes from team names (e.g. '01-E154-Faheem Armanyous' -> 'Faheem Armanyous').
  * 
- * @param {string} rawTeam Raw coach or team string
- * @returns {string} Clean team string
+ * @param {string} rawTeam Raw coach / team name
+ * @returns {string} Clean coach name
  */
 function formatTeam(rawTeam) {
   if (!rawTeam) return '';
-  return String(rawTeam).replace(/^(\d+-)?E\d+-/, '').trim();
+  let t = String(rawTeam).trim();
+  t = t.replace(/^\d+[-_]/, '');
+  t = t.replace(/^E154[-_]/i, '');
+  return t.trim();
 }
 
 /**
- * Determines venue classification for a given field string.
+ * Classifies a raw field string into one of the three venue categories:
+ * - 'PARK_LEX'
+ * - 'LUTHER'
+ * - 'LJHS_ARNOLD'
  * 
- * @param {string} rawField Raw or formatted field string
- * @returns {'PARK_LEX'|'LUTHER'|'LJHS_ARNOLD'} Venue category
+ * @param {string} rawField Field string from MatchTrak
+ * @returns {'PARK_LEX'|'LUTHER'|'LJHS_ARNOLD'} Venue category identifier
  */
 function getVenueCategory(rawField) {
-  const str = String(rawField || '').toLowerCase();
-  if (str.includes('park lexington') || str.includes('park lex') || str.includes('turf') || str.includes('denni & cerritos')) {
+  if (!rawField) return 'LJHS_ARNOLD';
+  const f = String(rawField).trim().toLowerCase();
+  if (f.includes('park lex') || f.includes('denni') || f.includes('cerritos')) {
     return 'PARK_LEX';
   }
-  if (str.includes('luther')) {
+  if (f.includes('luther')) {
     return 'LUTHER';
   }
   return 'LJHS_ARNOLD';
@@ -360,21 +326,34 @@ function buildScheduleDropdownOptionsByVenue(scheduleData) {
  * @returns {boolean} True if all headers exist, throws error otherwise
  */
 function validateScheduleHeaders(parsedData) {
-  if (!parsedData || parsedData.length < 2) {
-    throw new Error(`Ingest aborted: Schedule contains insufficient rows (${parsedData ? parsedData.length : 0}).`);
+  if (!parsedData || parsedData.length === 0) {
+    throw new Error("CSV dataset is empty.");
   }
-  const headers = parsedData[0].map(h => String(h || '').trim());
-  for (let req of CONFIG.REQUIRED_HEADERS) {
-    const hasHeader = headers.some(h => h.toLowerCase() === req.toLowerCase());
-    if (!hasHeader) {
-      throw new Error(`Ingest aborted: Missing required MatchTrak column header -> '${req}'. Headers present: [${headers.join(', ')}]`);
-    }
+  const headers = parsedData[0].map(h => String(h || '').trim().toLowerCase());
+
+  const hasDate = headers.some(h => /date|day/i.test(h));
+  const hasTime = headers.some(h => /time/i.test(h));
+  const hasField = headers.some(h => /field/i.test(h));
+  const hasDiv = headers.some(h => /div/i.test(h));
+  const hasHome = headers.some(h => /home/i.test(h));
+  const hasAway = headers.some(h => /away/i.test(h));
+
+  const missing = [];
+  if (!hasDate) missing.push('Date');
+  if (!hasTime) missing.push('Time');
+  if (!hasField) missing.push('Field');
+  if (!hasDiv) missing.push('Division');
+  if (!hasHome) missing.push('Home Team');
+  if (!hasAway) missing.push('Away Team');
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required MatchTrak column header(s): ${missing.join(', ')}`);
   }
   return true;
 }
 
 // ============================================================================
-// FORM SYNC & DRIVE AUTO-INGEST PIPELINE
+// AUTOMATION & FORM SYNCHRONIZATION PIPELINE
 // ============================================================================
 
 /**
@@ -382,14 +361,21 @@ function validateScheduleHeaders(parsedData) {
  * 1. Park Lexington
  * 2. Luther Elementary (with zero-game warning fallback)
  * 3. LJHS / Arnold
+ * 
+ * Permanently removes legacy manual "Game Time" text fields, guarantees the 3-venue
+ * dropdown questions exist, locks in the official form metadata, and reopens the form.
  */
 function syncContainerFormSchedule() {
   let form;
   if (typeof FormApp !== 'undefined') {
     try {
-      form = FormApp.getActiveForm() || FormApp.openById(CONFIG.PRODUCTION_FORM_ID);
-    } catch (e) {
       form = FormApp.openById(CONFIG.PRODUCTION_FORM_ID);
+    } catch (e) {
+      try {
+        form = FormApp.getActiveForm();
+      } catch (e2) {
+        if (typeof Logger !== 'undefined') Logger.log("Error opening form: " + e.message);
+      }
     }
   }
 
@@ -415,52 +401,117 @@ function syncContainerFormSchedule() {
     return;
   }
 
-  // Distribute to all three venue form questions
+  // Iterate backwards through items to safely delete legacy fields or rebuild invalid questions
   const items = form.getItems();
-  let parkLexUpdated = false;
-  let lutherUpdated = false;
-  let ljhsUpdated = false;
+  let parkLexItem = null;
+  let lutherItem = null;
+  let ljhsItem = null;
 
-  for (let item of items) {
-    const title = item.getTitle().toLowerCase();
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    const title = item.getTitle().trim();
+    const lower = title.toLowerCase();
+    const type = item.getType();
 
-    if (item.getType() === FormApp.ItemType.LIST || item.getType() === FormApp.ItemType.CHECKBOX || item.getType() === FormApp.ItemType.MULTIPLE_CHOICE) {
-      let target;
-      if (item.getType() === FormApp.ItemType.LIST) target = item.asListItem();
-      else if (item.getType() === FormApp.ItemType.CHECKBOX) target = item.asCheckboxItem();
-      else if (item.getType() === FormApp.ItemType.MULTIPLE_CHOICE) target = item.asMultipleChoiceItem();
+    // 1. Permanently remove legacy manual "Game Time" / "Match Time" text/time fields
+    const isLegacyManualTime = (type === FormApp.ItemType.TEXT || type === FormApp.ItemType.TIME || type === FormApp.ItemType.DATETIME) &&
+      (lower.includes('game time') || lower.includes('match time') || lower === 'game time' || lower === 'match time');
+    
+    if (isLegacyManualTime) {
+      if (typeof Logger !== 'undefined') Logger.log(`Deleting legacy manual time field: "${title}" (Index ${i})`);
+      form.deleteItem(i);
+      continue;
+    }
 
-      if (title.includes('park lex')) {
-        target.setChoiceValues(parkLexMatches);
-        parkLexUpdated = true;
-      } else if (title.includes('luther')) {
-        target.setChoiceValues(lutherMatches);
-        lutherUpdated = true;
-      } else if (title.includes('arnold') || title.includes('ljhs') || (title.includes('lexington') && !title.includes('park'))) {
-        target.setChoiceValues(ljhsArnoldMatches);
-        ljhsUpdated = true;
+    // 2. Identify 3-Venue dropdown questions
+    if (lower.includes('park lex')) {
+      if (type === FormApp.ItemType.LIST || type === FormApp.ItemType.CHECKBOX || type === FormApp.ItemType.MULTIPLE_CHOICE) {
+        parkLexItem = item;
+      } else {
+        if (typeof Logger !== 'undefined') Logger.log(`Replacing invalid type (${type}) for Park Lex item with dropdown.`);
+        form.deleteItem(i);
+      }
+    } else if (lower.includes('luther')) {
+      if (type === FormApp.ItemType.LIST || type === FormApp.ItemType.CHECKBOX || type === FormApp.ItemType.MULTIPLE_CHOICE) {
+        lutherItem = item;
+      } else {
+        if (typeof Logger !== 'undefined') Logger.log(`Replacing invalid type (${type}) for Luther item with dropdown.`);
+        form.deleteItem(i);
+      }
+    } else if (lower.includes('arnold') || lower.includes('ljhs') || (lower.includes('lexington') && !lower.includes('park'))) {
+      if (type === FormApp.ItemType.LIST || type === FormApp.ItemType.CHECKBOX || type === FormApp.ItemType.MULTIPLE_CHOICE) {
+        ljhsItem = item;
+      } else {
+        if (typeof Logger !== 'undefined') Logger.log(`Replacing invalid type (${type}) for LJHS/Arnold item with dropdown.`);
+        form.deleteItem(i);
       }
     }
   }
 
-  if (!parkLexUpdated && typeof Logger !== 'undefined') Logger.log("Warning: Park Lexington form question not found.");
-  if (!lutherUpdated && typeof Logger !== 'undefined') Logger.log("Warning: Luther Elementary form question not found.");
-  if (!ljhsUpdated && typeof Logger !== 'undefined') Logger.log("Warning: LJHS / Arnold form question not found.");
+  // 3. Update or create Park Lexington question
+  if (parkLexItem) {
+    if (parkLexItem.getType() === FormApp.ItemType.LIST) parkLexItem.asListItem().setChoiceValues(parkLexMatches);
+    else if (parkLexItem.getType() === FormApp.ItemType.CHECKBOX) parkLexItem.asCheckboxItem().setChoiceValues(parkLexMatches);
+    else if (parkLexItem.getType() === FormApp.ItemType.MULTIPLE_CHOICE) parkLexItem.asMultipleChoiceItem().setChoiceValues(parkLexMatches);
+    if (typeof Logger !== 'undefined') Logger.log(`Updated Park Lexington dropdown with ${parkLexMatches.length} choices.`);
+  } else {
+    const newItem = form.addListItem();
+    newItem.setTitle(CONFIG.VENUE_TITLES.PARK_LEX);
+    newItem.setChoiceValues(parkLexMatches);
+    newItem.setRequired(false);
+    if (typeof Logger !== 'undefined') Logger.log(`Created Park Lexington dropdown question with ${parkLexMatches.length} choices.`);
+  }
 
-  // Update form description banner and post-submission confirmation message
+  // 4. Update or create Luther Elementary question
+  if (lutherItem) {
+    if (lutherItem.getType() === FormApp.ItemType.LIST) lutherItem.asListItem().setChoiceValues(lutherMatches);
+    else if (lutherItem.getType() === FormApp.ItemType.CHECKBOX) lutherItem.asCheckboxItem().setChoiceValues(lutherMatches);
+    else if (lutherItem.getType() === FormApp.ItemType.MULTIPLE_CHOICE) lutherItem.asMultipleChoiceItem().setChoiceValues(lutherMatches);
+    if (typeof Logger !== 'undefined') Logger.log(`Updated Luther Elementary dropdown with ${lutherMatches.length} choices.`);
+  } else {
+    const newItem = form.addListItem();
+    newItem.setTitle(CONFIG.VENUE_TITLES.LUTHER);
+    newItem.setChoiceValues(lutherMatches);
+    newItem.setRequired(false);
+    if (typeof Logger !== 'undefined') Logger.log(`Created Luther Elementary dropdown question with ${lutherMatches.length} choices.`);
+  }
+
+  // 5. Update or create LJHS / Arnold question
+  if (ljhsItem) {
+    if (ljhsItem.getType() === FormApp.ItemType.LIST) ljhsItem.asListItem().setChoiceValues(ljhsArnoldMatches);
+    else if (ljhsItem.getType() === FormApp.ItemType.CHECKBOX) ljhsItem.asCheckboxItem().setChoiceValues(ljhsArnoldMatches);
+    else if (ljhsItem.getType() === FormApp.ItemType.MULTIPLE_CHOICE) ljhsItem.asMultipleChoiceItem().setChoiceValues(ljhsArnoldMatches);
+    if (typeof Logger !== 'undefined') Logger.log(`Updated LJHS / Arnold dropdown with ${ljhsArnoldMatches.length} choices.`);
+  } else {
+    const newItem = form.addListItem();
+    newItem.setTitle(CONFIG.VENUE_TITLES.LJHS_ARNOLD);
+    newItem.setChoiceValues(ljhsArnoldMatches);
+    newItem.setRequired(false);
+    if (typeof Logger !== 'undefined') Logger.log(`Created LJHS / Arnold dropdown question with ${ljhsArnoldMatches.length} choices.`);
+  }
+
+  // 6. Hardcode UI metadata (Description & Confirmation message)
   try {
-    let desc = form.getDescription() || '';
-    if (!desc.includes(CONFIG.DASHBOARD_URL)) {
-      desc = desc ? `${CONFIG.FORM_DESCRIPTION_BANNER}\n\n${desc}` : CONFIG.FORM_DESCRIPTION_BANNER;
-      form.setDescription(desc);
-    }
+    form.setDescription(CONFIG.FORM_DESCRIPTION);
     form.setConfirmationMessage(CONFIG.CONFIRMATION_MESSAGE);
     if (typeof Logger !== 'undefined') {
-      Logger.log("Updated Form description banner and post-submission confirmation message with Dashboard URL.");
+      Logger.log("Locked in official Form description and post-submission confirmation message.");
     }
   } catch (brandErr) {
     if (typeof Logger !== 'undefined') {
       Logger.log(`Warning updating form branding/confirmation: ${brandErr.message}`);
+    }
+  }
+
+  // 7. Reopen Form: guarantee form is open and accepting responses
+  try {
+    form.setAcceptingResponses(true);
+    if (typeof Logger !== 'undefined') {
+      Logger.log("Reopened form: setAcceptingResponses(true) verified.");
+    }
+  } catch (respErr) {
+    if (typeof Logger !== 'undefined') {
+      Logger.log(`Warning enabling form responses: ${respErr.message}`);
     }
   }
 }
