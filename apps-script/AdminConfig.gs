@@ -4,6 +4,8 @@
  */
 
 const ADMIN_CONFIG_SHEET = "Admin_Config";
+const PRODUCTION_SHEET_ID = "1NZpCVuOiBHHQ1hUBxNjN4SHNB_ahGI998ChVVMpyPCk";
+const PRODUCTION_FORM_ID = "1gIenxzkQeBGcbJZrt_ujp9WTfXg_1HUD_BgHDjLS3cI";
 
 /**
  * Run this function once from the Apps Script editor to build and format the sheet.
