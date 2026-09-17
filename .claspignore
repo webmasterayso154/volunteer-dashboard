@@ -1,0 +1,2 @@
+# Ignore isolated sandbox environment files during production clasp push
+Sandbox_ScheduleDropdownSync.js

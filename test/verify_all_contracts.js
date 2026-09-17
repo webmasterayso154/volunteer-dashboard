@@ -16,9 +16,16 @@ const codeGsPath = path.join(__dirname, '../apps-script/Code.gs');
 const codeGsContent = fs.readFileSync(codeGsPath, 'utf8');
 
 // Extract MASTER_TEAMS
-const masterTeamsMatch = codeGsContent.match(/const MASTER_TEAMS = \[([\s\S]*?)\];/);
-assert(masterTeamsMatch, 'MASTER_TEAMS array must exist in Code.gs');
-const MASTER_TEAMS = eval('[' + masterTeamsMatch[1] + ']');
+let MASTER_TEAMS;
+try {
+  MASTER_TEAMS = require('../apps-script/Code.gs').MASTER_TEAMS;
+} catch (e) {
+  const masterTeamsMatch = codeGsContent.match(/(?:const|var)\s+MASTER_TEAMS\s*=\s*(?:\([^)]+\)\s*\?\s*MASTER_TEAMS\s*:\s*)?\[([\s\S]*?)\];/);
+  if (masterTeamsMatch) {
+    MASTER_TEAMS = eval('[' + masterTeamsMatch[1] + ']');
+  }
+}
+assert(MASTER_TEAMS && MASTER_TEAMS.length > 0, 'MASTER_TEAMS array must exist in Code.gs');
 
 // Test 1: MASTER_TEAMS format check
 console.log('▶ Test 1: Verify MASTER_TEAMS Roster Schema Integrity');

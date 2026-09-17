@@ -20,7 +20,7 @@
 // ============================================================================
 // PRODUCTION CONFIGURATION CONSTANTS
 // ============================================================================
-const CONFIG = {
+var CONFIG = (typeof CONFIG !== 'undefined') ? CONFIG : {
   VERSION: 'v1.6.0-RFC007',
   TIMEZONE: 'America/Los_Angeles',
   PRODUCTION_SHEET_ID: '1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g',

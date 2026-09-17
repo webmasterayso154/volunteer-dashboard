@@ -21,7 +21,7 @@
 // ============================================================================
 // PRODUCTION CONFIGURATION CONSTANTS
 // ============================================================================
-const CONFIG = {
+var CONFIG = (typeof CONFIG !== 'undefined') ? CONFIG : {
   VERSION: 'v1.6.0-RFC007',
   TIMEZONE: 'America/Los_Angeles',
   PRODUCTION_SHEET_ID: '1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g',
@@ -38,7 +38,7 @@ const CONFIG = {
   REQUIRED_HEADERS: ['Date', 'Time', 'Field', 'Division', 'Home Team', 'Away Team']
 };
 
-const MASTER_TEAMS = [
+var MASTER_TEAMS = (typeof MASTER_TEAMS !== 'undefined') ? MASTER_TEAMS : [
   "Playground - Playground",
   "05U - Boys - Stefan Colvey", "05U - Boys - Casey Harpham", "05U - Boys - Ryan Loza", "05U - Boys - Ankit Vasa", "05U - Boys - Greg Weber",
   "05U - Girls - Priscilla Alvardo", "05U - Girls - Tim Bouahom", "05U - Girls - Ramzi Nasr", "05U - Girls - Saul Ruiz",
@@ -65,7 +65,7 @@ const MASTER_TEAMS = [
   "19U - Boys - Jennifer Deselm", "19U - Girls - Josh Palafox"
 ];
 
-const LJHS_FIELDS = [
+var LJHS_FIELDS = (typeof LJHS_FIELDS !== 'undefined') ? LJHS_FIELDS : [
   "LJHS - Field #1", "LJHS - Field #2", "LJHS - Field #3",
   "LJHS - Field #4", "LJHS - Field #5", "LJHS - Field #6",
   "LJHS - Field #7", "LJHS - Field #8",
@@ -73,15 +73,15 @@ const LJHS_FIELDS = [
 ];
 
 // Official 2026 Season Point Caps
-const CAP_CERTIFIED_REF = 5;
-const CAP_MATCHTRAK_BONUS = 2;
-const CAP_ONFIELD_REF = 10;
-const CAP_FIELD_MARSHAL = 2;
-const CAP_SETUP = 1;
-const CAP_PIC = 2;
-const MAX_POSSIBLE_POINTS = 22;
+var CAP_CERTIFIED_REF = 5;
+var CAP_MATCHTRAK_BONUS = 2;
+var CAP_ONFIELD_REF = 10;
+var CAP_FIELD_MARSHAL = 2;
+var CAP_SETUP = 1;
+var CAP_PIC = 2;
+var MAX_POSSIBLE_POINTS = 22;
 
-const POINT_CAPS = {
+var POINT_CAPS = (typeof POINT_CAPS !== 'undefined') ? POINT_CAPS : {
   preSeasonRefs: CAP_CERTIFIED_REF,
   matchTrakBonus: CAP_MATCHTRAK_BONUS,
   onFieldReferee: CAP_ONFIELD_REF,

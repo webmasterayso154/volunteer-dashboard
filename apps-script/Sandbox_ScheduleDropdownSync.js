@@ -19,25 +19,27 @@
  * ============================================================================
  */
 
-const SANDBOX_SHEET_ID = '177ciFgTmQiuPiEtHytjXbHP8GZa3ge7nRXwqbYJ4NAA';
-const SANDBOX_SPREADSHEET_ID = SANDBOX_SHEET_ID; // alias
-const SANDBOX_FORM_ID = '1ib_QRcmucRqrJ4CujTA8Lt4Yreg9tPpz1AOIzcYlsal';
-const DROP_FOLDER_ID = '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv';
-const ARCHIVE_FOLDER_ID = '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m';
-const TARGET_TIMEZONE = 'America/Los_Angeles';
+var SANDBOX_SHEET_ID = '177ciFgTmQiuPiEtHytjXbHP8GZa3ge7nRXwqbYJ4NAA';
+var SANDBOX_SPREADSHEET_ID = SANDBOX_SHEET_ID; // alias
+var SANDBOX_FORM_ID = '1ib_QRcmucRqrJ4CujTA8Lt4Yreg9tPpz1AOIzcYlsal';
+var SANDBOX_DROP_FOLDER_ID = '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv';
+var DROP_FOLDER_ID = (typeof DROP_FOLDER_ID !== 'undefined') ? DROP_FOLDER_ID : SANDBOX_DROP_FOLDER_ID;
+var SANDBOX_ARCHIVE_FOLDER_ID = '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m';
+var ARCHIVE_FOLDER_ID = (typeof ARCHIVE_FOLDER_ID !== 'undefined') ? ARCHIVE_FOLDER_ID : SANDBOX_ARCHIVE_FOLDER_ID;
+var TARGET_TIMEZONE = 'America/Los_Angeles';
 
 // Venue Form Question Titles & Constants
-const VENUE_TITLES = {
+var VENUE_TITLES = (typeof VENUE_TITLES !== 'undefined') ? VENUE_TITLES : {
   PARK_LEX: 'Select Match - 🌲 Park Lexington (Denni & Cerritos)',
   LUTHER: 'Select Match - 🏫 Luther Elementary',
   LJHS_ARNOLD: 'Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary'
 };
 
-const LUTHER_ZERO_GAMES_OPTION = '⚠️ No games scheduled at Luther this week';
-const OTHER_UNLISTED_OPTION = '⚠️ Other / Rescheduled / Unlisted Match';
+var LUTHER_ZERO_GAMES_OPTION = (typeof LUTHER_ZERO_GAMES_OPTION !== 'undefined') ? LUTHER_ZERO_GAMES_OPTION : '⚠️ No games scheduled at Luther this week';
+var OTHER_UNLISTED_OPTION = (typeof OTHER_UNLISTED_OPTION !== 'undefined') ? OTHER_UNLISTED_OPTION : '⚠️ Other / Rescheduled / Unlisted Match';
 
 // Production Blocklist for safety checks
-const PRODUCTION_FORM_ID_BLOCKLIST = [
+var PRODUCTION_FORM_ID_BLOCKLIST = [
   '1FAIpQLSdDPW8Bs7T1v7xYBIzVmHwi7rpx6rrLcqYk83vvVUJo_j5WSQ',
   '1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g'
 ];
@@ -404,7 +406,7 @@ function validateSandboxSafety() {
  * 2. Luther Elementary (with zero-game warning fallback)
  * 3. LJHS / Arnold
  */
-function syncContainerFormSchedule() {
+function sandboxSyncContainerFormSchedule() {
   validateSandboxSafety();
 
   let form;
@@ -472,11 +474,11 @@ function syncContainerFormSchedule() {
 }
 
 /**
- * Universal watcher function triggered by time-driven timer.
+ * Universal watcher function triggered by time-driven timer for sandbox.
  * Automatically finds the newest CSV drop, validates headers, updates Master Schedule,
- * and executes syncContainerFormSchedule() to update all 3 venue dropdowns.
+ * and executes sandboxSyncContainerFormSchedule() to update all 3 venue dropdowns.
  */
-function autoIngestWeeklySchedule() {
+function sandboxAutoIngestWeeklySchedule() {
   validateSandboxSafety();
 
   const dropFolder = DriveApp.getFolderById(DROP_FOLDER_ID);
@@ -529,7 +531,7 @@ function autoIngestWeeklySchedule() {
   }
 
   // Execute form venue synchronization
-  syncContainerFormSchedule();
+  sandboxSyncContainerFormSchedule();
   if (typeof Logger !== 'undefined') {
     Logger.log("Sandbox form venue dropdowns synchronized successfully.");
   }
@@ -555,8 +557,10 @@ if (typeof module !== 'undefined' && module.exports) {
     formatTeam,
     getVenueCategory,
     validateSandboxSafety,
-    autoIngestWeeklySchedule,
-    syncContainerFormSchedule,
+    autoIngestWeeklySchedule: sandboxAutoIngestWeeklySchedule,
+    syncContainerFormSchedule: sandboxSyncContainerFormSchedule,
+    sandboxAutoIngestWeeklySchedule,
+    sandboxSyncContainerFormSchedule,
     SANDBOX_SHEET_ID,
     SANDBOX_SPREADSHEET_ID,
     SANDBOX_FORM_ID,
