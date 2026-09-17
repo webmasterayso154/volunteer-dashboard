@@ -27,13 +27,13 @@ console.log('▶ Test 1: Production Configuration Verification');
 assert.strictEqual(CONFIG.VERSION, 'v1.6.0-RFC007', 'Version must be v1.6.0-RFC007');
 assert.strictEqual(CONFIG.TIMEZONE, 'America/Los_Angeles', 'Timezone must be locked to Pacific');
 assert.strictEqual(CONFIG.PRODUCTION_SHEET_ID, '1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g', 'Production Sheet ID mismatch');
-assert.strictEqual(CONFIG.PRODUCTION_FORM_ID, '1FAIpQLSdDPW8Bs7T1v7xYBIzVmHwi7rpx6rrLcqYk83vvVUJo_j5WSQ', 'Production Form ID mismatch');
+assert.strictEqual(CONFIG.PRODUCTION_FORM_ID, '1gIenxzkQeBGcbJZrt_ujp9WTfXg_1HUD_BgHDjLS3cI', 'Production Form ID mismatch');
 assert.strictEqual(CONFIG.DROP_FOLDER_ID, '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv', 'Drop Folder ID mismatch');
 assert.strictEqual(CONFIG.ARCHIVE_FOLDER_ID, '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m', 'Archive Folder ID mismatch');
 assert.strictEqual(CONFIG.VENUE_TITLES.PARK_LEX, 'Select Match - 🌲 Park Lexington (Denni & Cerritos)');
 assert.strictEqual(CONFIG.VENUE_TITLES.LUTHER, 'Select Match - 🏫 Luther Elementary');
 assert.strictEqual(CONFIG.VENUE_TITLES.LJHS_ARNOLD, 'Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary');
-assert.strictEqual(CONFIG.LUTHER_ZERO_GAMES_OPTION, '⚠️ No games scheduled at Luther this week');
+assert.strictEqual(CONFIG.LUTHER_ZERO_GAMES_OPTION, '⚠️ No games currently scheduled at Luther Elementary');
 assert.strictEqual(CONFIG.OTHER_UNLISTED_OPTION, '⚠️ Other / Rescheduled / Unlisted Match');
 console.log('  ✅ Production configuration constants verified.');
 

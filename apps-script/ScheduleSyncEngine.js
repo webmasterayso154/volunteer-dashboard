@@ -24,7 +24,7 @@ const CONFIG = {
   VERSION: 'v1.6.0-RFC007',
   TIMEZONE: 'America/Los_Angeles',
   PRODUCTION_SHEET_ID: '1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g',
-  PRODUCTION_FORM_ID: '1FAIpQLSdDPW8Bs7T1v7xYBIzVmHwi7rpx6rrLcqYk83vvVUJo_j5WSQ',
+  PRODUCTION_FORM_ID: '1gIenxzkQeBGcbJZrt_ujp9WTfXg_1HUD_BgHDjLS3cI',
   DROP_FOLDER_ID: '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv',
   ARCHIVE_FOLDER_ID: '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m',
   VENUE_TITLES: {
@@ -32,7 +32,7 @@ const CONFIG = {
     LUTHER: 'Select Match - 🏫 Luther Elementary',
     LJHS_ARNOLD: 'Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary'
   },
-  LUTHER_ZERO_GAMES_OPTION: '⚠️ No games scheduled at Luther this week',
+  LUTHER_ZERO_GAMES_OPTION: '⚠️ No games currently scheduled at Luther Elementary',
   OTHER_UNLISTED_OPTION: '⚠️ Other / Rescheduled / Unlisted Match',
   REQUIRED_HEADERS: ['Date', 'Time', 'Field', 'Division', 'Home Team', 'Away Team']
 };
