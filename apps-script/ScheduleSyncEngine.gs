@@ -99,6 +99,18 @@ function formatTime(rawTime) {
   }
 
   let timeStr = String(rawTime || '').trim();
+
+  // Handle 24-hour military time format (e.g. 13:00:00 or 17:30)
+  const milMatch = timeStr.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (milMatch) {
+    let hour = parseInt(milMatch[1], 10);
+    const min = milMatch[2];
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    if (hour > 12) hour -= 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${min} ${ampm}`;
+  }
+
   timeStr = timeStr.replace(/(\d{1,2}:\d{2}):\d{2}/, '$1');
   timeStr = timeStr.replace(/\s*([AaPp][Mm])/, ' $1').toUpperCase();
   return timeStr;
