@@ -2,17 +2,24 @@
  * Automatically creates an administrative menu inside Google Sheets when opened.
  */
 function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  ui.createMenu('⚽ AYSO 154 Test Tools')
-    .addItem('📊 Run Audit & Sync Ledger', 'runAuditAndSyncLedger')
-    .addSeparator()
-    .addItem('▶ Run System Diagnostics', 'menuRunDiagnostics')
-    .addSeparator()
-    .addItem('➕ Inject Demo Game Day Submissions', 'menuInjectData')
-    .addItem('🗑️ Purge All Demo & Test Data', 'menuPurgeData')
-    .addSeparator()
-    .addItem('🔍 Inspect Test Team Stats (Faheem Armanyous)', 'menuInspectTeam')
-    .addToUi();
+  try {
+    const ui = SpreadsheetApp.getUi();
+    ui.createMenu('⚽ AYSO 154 Board Tools')
+      .addItem('📊 Run Audit & Sync Ledger', 'runAuditAndSyncLedger')
+      .addItem('📈 Build / Refresh Executive Summary Tab', 'setupExecutiveSummarySheet')
+      .addItem('⚙️ Setup Admin Config Sheet', 'setupAdminConfigSheet')
+      .addItem('🔄 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
+      .addSeparator()
+      .addItem('▶ Run System Diagnostics', 'menuRunDiagnostics')
+      .addSeparator()
+      .addItem('➕ Inject Demo Game Day Submissions', 'menuInjectData')
+      .addItem('🗑️ Purge All Demo & Test Data', 'menuPurgeData')
+      .addSeparator()
+      .addItem('🔍 Inspect Test Team Stats (Faheem Armanyous)', 'menuInspectTeam')
+      .addToUi();
+  } catch (e) {
+    Logger.log('onOpen skipped in non-interactive context: ' + e.message);
+  }
 }
 
 function menuRunDiagnostics() {

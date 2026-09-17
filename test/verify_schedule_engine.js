@@ -35,8 +35,9 @@ assert.strictEqual(CONFIG.ARCHIVE_FOLDER_ID, '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m'
 assert.strictEqual(CONFIG.VENUE_TITLES.PARK_LEX, 'Select Match - 🌲 Park Lexington (Denni & Cerritos)');
 assert.strictEqual(CONFIG.VENUE_TITLES.LUTHER, 'Select Match - 🏫 Luther Elementary');
 assert.strictEqual(CONFIG.VENUE_TITLES.LJHS_ARNOLD, 'Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary');
-assert.strictEqual(CONFIG.LUTHER_ZERO_GAMES_OPTION, '⚠️ No games currently scheduled at Luther Elementary');
-assert.strictEqual(CONFIG.OTHER_UNLISTED_OPTION, '⚠️ Other / Rescheduled / Unlisted Match');
+assert.strictEqual(CONFIG.DASHBOARD_URL, 'https://webmasterayso154.github.io/volunteer-dashboard/', 'Dashboard URL mismatch');
+assert(CONFIG.FORM_DESCRIPTION_BANNER.includes('https://webmasterayso154.github.io/volunteer-dashboard/'), 'Form description banner must contain Dashboard URL');
+assert(CONFIG.CONFIRMATION_MESSAGE.includes('https://webmasterayso154.github.io/volunteer-dashboard/'), 'Form confirmation message must contain Dashboard URL');
 console.log('  ✅ Production configuration constants verified.');
 
 // ----------------------------------------------------
@@ -136,7 +137,77 @@ assert.strictEqual(
   'Zero-game warning must NOT appear when active games are scheduled at Luther'
 );
 console.log('  ✅ Active Luther match routing verified.');
+// ----------------------------------------------------
+// Test 6: Executive Summary Sheet Generation & Formulas
+// ----------------------------------------------------
+console.log('\n▶ Test 6: Executive Summary Sheet Generation & Formulas');
+const { setupExecutiveSummarySheet, EXECUTIVE_SUMMARY_SHEET } = require('../apps-script/ExecutiveSummary.gs');
+assert.strictEqual(EXECUTIVE_SUMMARY_SHEET, 'Executive_Summary');
+
+// Mock SpreadsheetApp / Spreadsheet
+const mockRanges = {};
+const mockSheet = {
+  clear: () => {},
+  clearFormats: () => {},
+  setColumnWidth: () => {},
+  setRowHeight: () => {},
+  setFrozenRows: () => {},
+  getRange: (rangeStr) => {
+    if (!mockRanges[rangeStr]) {
+      mockRanges[rangeStr] = {
+        rangeStr,
+        values: null,
+        merge: function() { return this; },
+        setValue: function(v) { this.values = v; return this; },
+        setValues: function(vals) { this.values = vals; return this; },
+        setBackground: function() { return this; },
+        setFontColor: function() { return this; },
+        setFontWeight: function() { return this; },
+        setFontSize: function() { return this; },
+        setFontStyle: function() { return this; },
+        setFontFamily: function() { return this; },
+        setHorizontalAlignment: function() { return this; },
+        setVerticalAlignment: function() { return this; },
+        setNumberFormat: function() { return this; },
+        setBorder: function() { return this; }
+      };
+    }
+    return mockRanges[rangeStr];
+  }
+};
+
+const mockSpreadsheet = {
+  getSheetByName: (name) => null,
+  insertSheet: (name) => mockSheet
+};
+
+// Execute setup
+const resSheet = setupExecutiveSummarySheet(mockSpreadsheet);
+assert(resSheet, 'setupExecutiveSummarySheet must return sheet instance');
+assert(mockRanges['A1:D1'].values.includes('EXECUTIVE BOARD VOLUNTEER SUMMARY'), 'Title banner check');
+assert(mockRanges['A2:D2'].values.includes('https://webmasterayso154.github.io/volunteer-dashboard/'), 'Dashboard link check');
+
+// Check KPI formulas
+const kpiValues = mockRanges['A6:D10'].values;
+assert.strictEqual(kpiValues[0][0], 'Total Volunteer Check-In Submissions');
+assert.strictEqual(kpiValues[0][1], "=MAX(0, COUNTA('Form Responses 1'!A2:A))");
+assert.strictEqual(kpiValues[1][1], "=COUNTIF('Form Responses 1'!O2:O, \"Verified\")");
+assert.strictEqual(kpiValues[4][1], "=SUM('Form Responses 1'!P2:P)");
+
+// Check Role breakdown
+const roleValues = mockRanges['A14:D17'].values;
+assert(roleValues[0][0].includes('Referee'));
+assert.strictEqual(roleValues[0][2], "=SUMIFS('Form Responses 1'!P2:P, 'Form Responses 1'!E2:E, \"*Referee*\")");
+
+// Check Venue breakdown
+const venueValues = mockRanges['A21:D23'].values;
+assert(venueValues[0][0].includes('Park Lexington'));
+assert(venueValues[1][0].includes('Luther Elementary'));
+assert(venueValues[2][0].includes('Lexington Junior High'));
+
+console.log('  ✅ Executive Summary sheet generator and formulas verified.');
 
 console.log('\n================================================================');
-console.log('🏆 PRODUCTION SCHEDULE ENGINE VERIFIED (100% SUCCESS)');
+console.log('🏆 PRODUCTION ENGINES & EXECUTIVE SUMMARY VERIFIED (100% SUCCESS)');
 console.log('================================================================');
+

@@ -27,6 +27,9 @@ const CONFIG = {
   PRODUCTION_FORM_ID: '1gIenxzkQeBGcbJZrt_ujp9WTfXg_1HUD_BgHDjLS3cI',
   DROP_FOLDER_ID: '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv',
   ARCHIVE_FOLDER_ID: '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m',
+  DASHBOARD_URL: 'https://webmasterayso154.github.io/volunteer-dashboard/',
+  FORM_DESCRIPTION_BANNER: '📊 Track live team standings and volunteer points: https://webmasterayso154.github.io/volunteer-dashboard/',
+  CONFIRMATION_MESSAGE: 'Thank you for submitting! You can track live volunteer standings and team points on the Volunteer Dashboard here: https://webmasterayso154.github.io/volunteer-dashboard/',
   VENUE_TITLES: {
     PARK_LEX: 'Select Match - 🌲 Park Lexington (Denni & Cerritos)',
     LUTHER: 'Select Match - 🏫 Luther Elementary',
@@ -443,6 +446,23 @@ function syncContainerFormSchedule() {
   if (!parkLexUpdated && typeof Logger !== 'undefined') Logger.log("Warning: Park Lexington form question not found.");
   if (!lutherUpdated && typeof Logger !== 'undefined') Logger.log("Warning: Luther Elementary form question not found.");
   if (!ljhsUpdated && typeof Logger !== 'undefined') Logger.log("Warning: LJHS / Arnold form question not found.");
+
+  // Update form description banner and post-submission confirmation message
+  try {
+    let desc = form.getDescription() || '';
+    if (!desc.includes(CONFIG.DASHBOARD_URL)) {
+      desc = desc ? `${CONFIG.FORM_DESCRIPTION_BANNER}\n\n${desc}` : CONFIG.FORM_DESCRIPTION_BANNER;
+      form.setDescription(desc);
+    }
+    form.setConfirmationMessage(CONFIG.CONFIRMATION_MESSAGE);
+    if (typeof Logger !== 'undefined') {
+      Logger.log("Updated Form description banner and post-submission confirmation message with Dashboard URL.");
+    }
+  } catch (brandErr) {
+    if (typeof Logger !== 'undefined') {
+      Logger.log(`Warning updating form branding/confirmation: ${brandErr.message}`);
+    }
+  }
 }
 
 /**
