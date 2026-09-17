@@ -35,7 +35,7 @@ const {
   LUTHER_ZERO_GAMES_OPTION,
   OTHER_UNLISTED_OPTION,
   PRODUCTION_FORM_ID_BLOCKLIST
-} = require('../apps-script/Sandbox_ScheduleDropdownSync.js');
+} = require('../archive/sandbox/Sandbox_ScheduleDropdownSync.js');
 
 console.log('====================================================');
 console.log('🧪 TEST: RFC-007 3-VENUE SCHEDULE SYNC ENGINE (v1.5.0)');
