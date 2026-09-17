@@ -2,7 +2,7 @@
  * ============================================================================
  * AYSO REGION 154 - PRODUCTION SCHEDULE & DRIVE INGEST ENGINE (v1.6.0-RFC007)
  * ============================================================================
- * File: ScheduleSyncEngine.js
+ * File: ScheduleSyncEngine.gs
  * Version: v1.6.0-RFC007
  * Description: Hardened production schedule ingestion and form synchronization
  *              engine with strict 3-venue routing (Park Lexington, LJHS/Arnold,
@@ -20,7 +20,7 @@
 // ============================================================================
 // PRODUCTION CONFIGURATION CONSTANTS
 // ============================================================================
-var CONFIG = (typeof CONFIG !== 'undefined') ? CONFIG : {
+const CONFIG = {
   VERSION: 'v1.6.0-RFC007',
   TIMEZONE: 'America/Los_Angeles',
   PRODUCTION_SHEET_ID: '1vsnueCf-5ZWTOcUXDVqcdcHp59VFjPZ6ra1-Y2TsN8g',

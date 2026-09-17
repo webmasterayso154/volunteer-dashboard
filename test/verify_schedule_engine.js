@@ -4,6 +4,8 @@
  */
 
 const assert = require('assert');
+require.extensions['.gs'] = require.extensions['.js'];
+
 const {
   CONFIG,
   buildScheduleDropdownOptionsByVenue,
@@ -14,7 +16,7 @@ const {
   formatDivision,
   formatTeam,
   getVenueCategory
-} = require('../apps-script/ScheduleSyncEngine.js');
+} = require('../apps-script/ScheduleSyncEngine.gs');
 
 console.log('================================================================');
 console.log('🚀 PRODUCTION VERIFICATION: SCHEDULE SYNC ENGINE (v1.6.0-RFC007)');
