@@ -328,7 +328,63 @@ assert.strictEqual(formConfirmation, CONFIG.CONFIRMATION_MESSAGE, 'Form confirma
 assert.strictEqual(formAccepting, true, 'Form must be set to accepting responses (true)');
 console.log('  ✅ Dynamic routing restoration, legacy field cleanup, and form reopening verified.');
 
+// ----------------------------------------------------
+// Test 8: Multi-MIME Schedule File Ingestion (Google Sheets & CSV)
+// ----------------------------------------------------
+console.log('\n▶ Test 8: Multi-MIME Schedule File Ingestion (Google Sheets & CSV)');
+const { extractDataFromFile } = require('../apps-script/ScheduleSyncEngine.gs');
+
+global.MimeType = {
+  GOOGLE_SHEETS: 'application/vnd.google-apps.spreadsheet',
+  CSV: 'text/csv'
+};
+
+global.Utilities = {
+  parseCsv: (str) => str.trim().split('\n').map(l => l.split(',').map(c => c.trim())),
+  formatDate: (d, tz, fmt) => 'Sat'
+};
+
+// Mock CSV File (without .csv extension, e.g. games-09162026-02589)
+const mockCsvFile = {
+  getName: () => 'games-09162026-02589',
+  getMimeType: () => 'text/plain',
+  getId: () => 'file-123',
+  getBlob: () => ({
+    getDataAsString: () => 'Date,Time,Field,Division,Home Team,Away Team\n2026-09-19,8:00 AM,Park Lexington Turf,10U-B,Coach A,Coach B'
+  })
+};
+
+const csvData = extractDataFromFile(mockCsvFile);
+assert.strictEqual(csvData.length, 2, 'CSV data must parse 2 rows');
+assert.strictEqual(csvData[0][0], 'Date');
+assert.strictEqual(csvData[1][0], '2026-09-19');
+
+// Mock Google Sheet File
+const mockSheetFile = {
+  getName: () => 'games-09162026-02589',
+  getMimeType: () => 'application/vnd.google-apps.spreadsheet',
+  getId: () => 'sheet-123'
+};
+
+global.SpreadsheetApp.openById = (id) => ({
+  getSheets: () => [{
+    getName: () => 'Sheet1',
+    getDataRange: () => ({
+      getDisplayValues: () => [
+        ['Date', 'Time', 'Field', 'Division', 'Home Team', 'Away Team'],
+        ['2026-09-19', '9:15 AM', 'Luther Field 1', '08U-B', 'Coach C', 'Coach D']
+      ]
+    })
+  }]
+});
+
+const sheetData = extractDataFromFile(mockSheetFile);
+assert.strictEqual(sheetData.length, 2, 'Google Sheet data must extract 2 rows');
+assert.strictEqual(sheetData[1][2], 'Luther Field 1');
+console.log('  ✅ Multi-MIME file extraction (Google Sheets and raw CSV/text) verified.');
+
 console.log('\n================================================================');
-console.log('🏆 PRODUCTION ENGINES & FORM SYNC VERIFIED (100% SUCCESS)');
+console.log('🏆 ALL PRODUCTION ENGINES, MULTI-MIME INGEST & SYNC VERIFIED (100%)');
 console.log('================================================================');
+
 

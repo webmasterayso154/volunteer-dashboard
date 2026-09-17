@@ -357,6 +357,45 @@ function validateScheduleHeaders(parsedData) {
 // ============================================================================
 
 /**
+ * Reads 2D data rows from a file in Drive (handling Google Sheets, CSV, text, octet-stream).
+ * 
+ * @param {GoogleAppsScript.Drive.File} file 
+ * @returns {Array<Array<any>>} Parsed 2D array of rows
+ */
+function extractDataFromFile(file) {
+  const mime = file.getMimeType();
+  const name = file.getName();
+  if (typeof Logger !== 'undefined') {
+    Logger.log(`[extractDataFromFile] Processing file: "${name}" (MIME: "${mime}", ID: ${file.getId()})`);
+  }
+
+  // 1. Handle Google Spreadsheet
+  if (mime === MimeType.GOOGLE_SHEETS || mime === 'application/vnd.google-apps.spreadsheet') {
+    const ss = SpreadsheetApp.openById(file.getId());
+    const sheet = ss.getSheets()[0];
+    const range = sheet.getDataRange();
+    const data = (typeof range.getDisplayValues === 'function') ? range.getDisplayValues() : range.getValues();
+    if (typeof Logger !== 'undefined') {
+      Logger.log(`[extractDataFromFile] Read ${data.length} row(s) from Google Sheet "${name}" (Sheet: "${sheet.getName()}")`);
+    }
+    return data;
+  }
+
+  // 2. Handle CSV / Plain Text / Binary / Octet-Stream
+  const blob = file.getBlob();
+  const content = blob.getDataAsString('UTF-8') || blob.getDataAsString();
+  if (!content || !content.trim()) {
+    throw new Error(`Schedule file "${name}" is empty.`);
+  }
+
+  const parsedData = Utilities.parseCsv(content);
+  if (typeof Logger !== 'undefined') {
+    Logger.log(`[extractDataFromFile] Parsed ${parsedData.length} row(s) from CSV text file "${name}"`);
+  }
+  return parsedData;
+}
+
+/**
  * Parses Master Schedule and populates all 3 multi-venue form questions:
  * 1. Park Lexington
  * 2. Luther Elementary (with zero-game warning fallback)
@@ -364,8 +403,68 @@ function validateScheduleHeaders(parsedData) {
  * 
  * Permanently removes legacy manual "Game Time" text fields, guarantees the 3-venue
  * dropdown questions exist, locks in the official form metadata, and reopens the form.
+ * 
+ * @param {Array<Array<any>>} [optionalScheduleData] Optional 2D array of schedule data to sync directly
  */
-function syncContainerFormSchedule() {
+function syncContainerFormSchedule(optionalScheduleData) {
+  if (typeof Logger !== 'undefined') {
+    Logger.log("==========================================================");
+    Logger.log("🚀 STARTING SCHEDULE SYNC ENGINE & FORM DROPDOWN UPDATE");
+    Logger.log(`Target Form ID: ${CONFIG.PRODUCTION_FORM_ID}`);
+    Logger.log(`Target Sheet ID: ${CONFIG.PRODUCTION_SHEET_ID}`);
+    Logger.log("==========================================================");
+  }
+
+  let data = optionalScheduleData;
+
+  // 1. If no in-memory data provided, check if any pending files are waiting in DROP_FOLDER_ID!
+  if (!data && typeof DriveApp !== 'undefined') {
+    try {
+      const dropFolder = DriveApp.getFolderById(CONFIG.DROP_FOLDER_ID);
+      const fileIter = dropFolder.getFiles();
+      if (fileIter.hasNext()) {
+        if (typeof Logger !== 'undefined') {
+          Logger.log("Found pending file(s) in drop folder during syncContainerFormSchedule. Initiating autoIngestWeeklySchedule...");
+        }
+        autoIngestWeeklySchedule();
+        return;
+      }
+    } catch (dropErr) {
+      if (typeof Logger !== 'undefined') {
+        Logger.log(`Note on drop folder pre-check: ${dropErr.message}`);
+      }
+    }
+  }
+
+  // 2. If still no data, load Master Schedule tab from production sheet
+  if (!data) {
+    const ss = SpreadsheetApp.openById(CONFIG.PRODUCTION_SHEET_ID);
+    const scheduleSheet = ss.getSheetByName('Master Schedule') || ss.getSheetByName('Master_Schedule');
+    if (!scheduleSheet) throw new Error("Could not find 'Master Schedule' tab in production sheet.");
+
+    const range = scheduleSheet.getDataRange();
+    data = (typeof range.getDisplayValues === 'function') ? range.getDisplayValues() : range.getValues();
+    if (data.length <= 1) {
+      throw new Error("Master Schedule tab has no data rows to sync.");
+    }
+  }
+
+  if (typeof Logger !== 'undefined') {
+    Logger.log(`Schedule dataset contains ${data.length} total rows (including header).`);
+    Logger.log(`Headers: [${data[0].join(', ')}]`);
+  }
+
+  const { parkLexMatches, lutherMatches, ljhsArnoldMatches } = buildScheduleDropdownOptionsByVenue(data);
+
+  if (typeof Logger !== 'undefined') {
+    Logger.log(`🌲 Park Lexington Choices: ${parkLexMatches.length}`);
+    Logger.log(`🏫 Luther Elementary Choices: ${lutherMatches.length}`);
+    Logger.log(`🏫 LJHS / Arnold Choices: ${ljhsArnoldMatches.length}`);
+    Logger.log(`Sample Park Lex Choice: ${parkLexMatches[0] || 'none'}`);
+    Logger.log(`Sample Luther Choice: ${lutherMatches[0] || 'none'}`);
+    Logger.log(`Sample LJHS/Arnold Choice: ${ljhsArnoldMatches[0] || 'none'}`);
+  }
+
   let form;
   if (typeof FormApp !== 'undefined') {
     try {
@@ -379,30 +478,24 @@ function syncContainerFormSchedule() {
     }
   }
 
-  const ss = SpreadsheetApp.openById(CONFIG.PRODUCTION_SHEET_ID);
-  const scheduleSheet = ss.getSheetByName('Master Schedule') || ss.getSheetByName('Master_Schedule');
-  if (!scheduleSheet) throw new Error("Could not find 'Master Schedule' tab in production sheet.");
-
-  const data = scheduleSheet.getDataRange().getValues();
-  if (data.length <= 1) {
-    throw new Error("Master Schedule tab has no data rows to sync.");
-  }
-
-  const { parkLexMatches, lutherMatches, ljhsArnoldMatches } = buildScheduleDropdownOptionsByVenue(data);
-
-  if (typeof Logger !== 'undefined') {
-    Logger.log(`🌲 Park Lexington Choices: ${parkLexMatches.length}`);
-    Logger.log(`🏫 Luther Elementary Choices: ${lutherMatches.length}`);
-    Logger.log(`🏫 LJHS / Arnold Choices: ${ljhsArnoldMatches.length}`);
-  }
-
   if (!form) {
     if (typeof Logger !== 'undefined') Logger.log("Form instance not available in this execution context.");
     return;
   }
 
-  // Iterate backwards through items to safely delete legacy fields or rebuild invalid questions
+  if (typeof Logger !== 'undefined') {
+    Logger.log(`Successfully opened Google Form: "${form.getTitle()}" (ID: ${form.getId()})`);
+  }
+
+  // 3. Inspect and log all existing form items
   const items = form.getItems();
+  if (typeof Logger !== 'undefined') {
+    Logger.log(`Form currently contains ${items.length} item(s):`);
+    items.forEach((it, idx) => {
+      Logger.log(`  [${idx}] Title: "${it.getTitle()}", Type: ${it.getType()}`);
+    });
+  }
+
   let parkLexItem = null;
   let lutherItem = null;
   let ljhsItem = null;
@@ -424,78 +517,78 @@ function syncContainerFormSchedule() {
     }
 
     // 2. Identify 3-Venue dropdown questions
-    if (lower.includes('park lex')) {
+    if (lower.includes('park lex') || lower.includes('denni') || lower.includes('cerritos')) {
       if (type === FormApp.ItemType.LIST || type === FormApp.ItemType.CHECKBOX || type === FormApp.ItemType.MULTIPLE_CHOICE) {
         parkLexItem = item;
       } else {
-        if (typeof Logger !== 'undefined') Logger.log(`Replacing invalid type (${type}) for Park Lex item with dropdown.`);
+        if (typeof Logger !== 'undefined') Logger.log(`Deleting non-dropdown Park Lex item (Type ${type}) to recreate as dropdown.`);
         form.deleteItem(i);
       }
     } else if (lower.includes('luther')) {
       if (type === FormApp.ItemType.LIST || type === FormApp.ItemType.CHECKBOX || type === FormApp.ItemType.MULTIPLE_CHOICE) {
         lutherItem = item;
       } else {
-        if (typeof Logger !== 'undefined') Logger.log(`Replacing invalid type (${type}) for Luther item with dropdown.`);
+        if (typeof Logger !== 'undefined') Logger.log(`Deleting non-dropdown Luther item (Type ${type}) to recreate as dropdown.`);
         form.deleteItem(i);
       }
     } else if (lower.includes('arnold') || lower.includes('ljhs') || (lower.includes('lexington') && !lower.includes('park'))) {
       if (type === FormApp.ItemType.LIST || type === FormApp.ItemType.CHECKBOX || type === FormApp.ItemType.MULTIPLE_CHOICE) {
         ljhsItem = item;
       } else {
-        if (typeof Logger !== 'undefined') Logger.log(`Replacing invalid type (${type}) for LJHS/Arnold item with dropdown.`);
+        if (typeof Logger !== 'undefined') Logger.log(`Deleting non-dropdown LJHS/Arnold item (Type ${type}) to recreate as dropdown.`);
         form.deleteItem(i);
       }
     }
   }
 
-  // 3. Update or create Park Lexington question
+  // 4. Update or create Park Lexington question
   if (parkLexItem) {
     if (parkLexItem.getType() === FormApp.ItemType.LIST) parkLexItem.asListItem().setChoiceValues(parkLexMatches);
     else if (parkLexItem.getType() === FormApp.ItemType.CHECKBOX) parkLexItem.asCheckboxItem().setChoiceValues(parkLexMatches);
     else if (parkLexItem.getType() === FormApp.ItemType.MULTIPLE_CHOICE) parkLexItem.asMultipleChoiceItem().setChoiceValues(parkLexMatches);
-    if (typeof Logger !== 'undefined') Logger.log(`Updated Park Lexington dropdown with ${parkLexMatches.length} choices.`);
+    if (typeof Logger !== 'undefined') Logger.log(`✅ Updated existing Park Lexington dropdown with ${parkLexMatches.length} choices.`);
   } else {
     const newItem = form.addListItem();
     newItem.setTitle(CONFIG.VENUE_TITLES.PARK_LEX);
     newItem.setChoiceValues(parkLexMatches);
     newItem.setRequired(false);
-    if (typeof Logger !== 'undefined') Logger.log(`Created Park Lexington dropdown question with ${parkLexMatches.length} choices.`);
+    if (typeof Logger !== 'undefined') Logger.log(`✅ Created new Park Lexington dropdown question with ${parkLexMatches.length} choices.`);
   }
 
-  // 4. Update or create Luther Elementary question
+  // 5. Update or create Luther Elementary question
   if (lutherItem) {
     if (lutherItem.getType() === FormApp.ItemType.LIST) lutherItem.asListItem().setChoiceValues(lutherMatches);
     else if (lutherItem.getType() === FormApp.ItemType.CHECKBOX) lutherItem.asCheckboxItem().setChoiceValues(lutherMatches);
     else if (lutherItem.getType() === FormApp.ItemType.MULTIPLE_CHOICE) lutherItem.asMultipleChoiceItem().setChoiceValues(lutherMatches);
-    if (typeof Logger !== 'undefined') Logger.log(`Updated Luther Elementary dropdown with ${lutherMatches.length} choices.`);
+    if (typeof Logger !== 'undefined') Logger.log(`✅ Updated existing Luther Elementary dropdown with ${lutherMatches.length} choices.`);
   } else {
     const newItem = form.addListItem();
     newItem.setTitle(CONFIG.VENUE_TITLES.LUTHER);
     newItem.setChoiceValues(lutherMatches);
     newItem.setRequired(false);
-    if (typeof Logger !== 'undefined') Logger.log(`Created Luther Elementary dropdown question with ${lutherMatches.length} choices.`);
+    if (typeof Logger !== 'undefined') Logger.log(`✅ Created new Luther Elementary dropdown question with ${lutherMatches.length} choices.`);
   }
 
-  // 5. Update or create LJHS / Arnold question
+  // 6. Update or create LJHS / Arnold question
   if (ljhsItem) {
     if (ljhsItem.getType() === FormApp.ItemType.LIST) ljhsItem.asListItem().setChoiceValues(ljhsArnoldMatches);
     else if (ljhsItem.getType() === FormApp.ItemType.CHECKBOX) ljhsItem.asCheckboxItem().setChoiceValues(ljhsArnoldMatches);
     else if (ljhsItem.getType() === FormApp.ItemType.MULTIPLE_CHOICE) ljhsItem.asMultipleChoiceItem().setChoiceValues(ljhsArnoldMatches);
-    if (typeof Logger !== 'undefined') Logger.log(`Updated LJHS / Arnold dropdown with ${ljhsArnoldMatches.length} choices.`);
+    if (typeof Logger !== 'undefined') Logger.log(`✅ Updated existing LJHS / Arnold dropdown with ${ljhsArnoldMatches.length} choices.`);
   } else {
     const newItem = form.addListItem();
     newItem.setTitle(CONFIG.VENUE_TITLES.LJHS_ARNOLD);
     newItem.setChoiceValues(ljhsArnoldMatches);
     newItem.setRequired(false);
-    if (typeof Logger !== 'undefined') Logger.log(`Created LJHS / Arnold dropdown question with ${ljhsArnoldMatches.length} choices.`);
+    if (typeof Logger !== 'undefined') Logger.log(`✅ Created new LJHS / Arnold dropdown question with ${ljhsArnoldMatches.length} choices.`);
   }
 
-  // 6. Hardcode UI metadata (Description & Confirmation message)
+  // 7. Hardcode UI metadata (Description & Confirmation message)
   try {
     form.setDescription(CONFIG.FORM_DESCRIPTION);
     form.setConfirmationMessage(CONFIG.CONFIRMATION_MESSAGE);
     if (typeof Logger !== 'undefined') {
-      Logger.log("Locked in official Form description and post-submission confirmation message.");
+      Logger.log("✅ Locked in official Form description and post-submission confirmation message.");
     }
   } catch (brandErr) {
     if (typeof Logger !== 'undefined') {
@@ -503,51 +596,93 @@ function syncContainerFormSchedule() {
     }
   }
 
-  // 7. Reopen Form: guarantee form is open and accepting responses
+  // 8. Reopen Form: guarantee form is open and accepting responses
   try {
     form.setAcceptingResponses(true);
     if (typeof Logger !== 'undefined') {
-      Logger.log("Reopened form: setAcceptingResponses(true) verified.");
+      Logger.log("✅ Reopened form: setAcceptingResponses(true) verified.");
     }
   } catch (respErr) {
     if (typeof Logger !== 'undefined') {
       Logger.log(`Warning enabling form responses: ${respErr.message}`);
     }
   }
+
+  if (typeof Logger !== 'undefined') {
+    Logger.log("==========================================================");
+    Logger.log("🏆 SYNC CONTAINER FORM SCHEDULE COMPLETED SUCCESSFULLY");
+    Logger.log("==========================================================");
+  }
 }
 
 /**
  * Universal watcher function triggered by time-driven timer.
- * Automatically finds the newest CSV drop, validates headers, creates backup snapshot,
- * updates Master Schedule, logs audit record, and syncs all 3 venue dropdowns.
+ * Automatically finds the newest CSV or Google Sheet drop in DROP_FOLDER_ID,
+ * validates headers, creates backup snapshot, updates Master Schedule,
+ * logs audit record, and syncs all 3 venue dropdowns.
  */
 function autoIngestWeeklySchedule() {
+  if (typeof Logger !== 'undefined') {
+    Logger.log("==========================================================");
+    Logger.log("📥 AUTO INGEST WEEKLY SCHEDULE: STARTING PIPELINE");
+    Logger.log(`Drop Folder ID: ${CONFIG.DROP_FOLDER_ID}`);
+    Logger.log(`Archive Folder ID: ${CONFIG.ARCHIVE_FOLDER_ID}`);
+    Logger.log("==========================================================");
+  }
+
   const dropFolder = DriveApp.getFolderById(CONFIG.DROP_FOLDER_ID);
   const archiveFolder = DriveApp.getFolderById(CONFIG.ARCHIVE_FOLDER_ID);
-  const files = dropFolder.getFilesByType(MimeType.CSV);
+  
+  // Get ALL files regardless of mimeType or file extension
+  const fileIter = dropFolder.getFiles();
+  const fileList = [];
+  while (fileIter.hasNext()) {
+    fileList.push(fileIter.next());
+  }
 
-  if (!files.hasNext()) {
-    if (typeof Logger !== 'undefined') Logger.log("No CSV schedule files found in drop folder. Pipeline idle.");
+  if (fileList.length === 0) {
+    if (typeof Logger !== 'undefined') {
+      Logger.log("No schedule files found in drop folder. Checking existing Master Schedule tab in production sheet.");
+    }
+    syncContainerFormSchedule();
     return;
   }
 
-  // Gather all CSV files and sort by creation time (newest first)
-  const fileList = [];
-  while (files.hasNext()) {
-    fileList.push(files.next());
-  }
-  fileList.sort((a, b) => b.getDateCreated().getTime() - a.getDateCreated().getTime());
-
-  const latestFile = fileList[0];
   if (typeof Logger !== 'undefined') {
-    Logger.log(`Processing newest schedule drop: ${latestFile.getName()} (Created: ${latestFile.getDateCreated()})`);
+    Logger.log(`Found ${fileList.length} file(s) in drop folder:`);
+    fileList.forEach((f, idx) => {
+      Logger.log(`  [${idx}] "${f.getName()}" (MIME: ${f.getMimeType()}, Size: ${f.getSize()} bytes, Created: ${f.getDateCreated()})`);
+    });
   }
 
-  const csvContent = latestFile.getBlob().getDataAsString();
-  const parsedData = Utilities.parseCsv(csvContent);
+  // Sort newest first
+  fileList.sort((a, b) => b.getDateCreated().getTime() - a.getDateCreated().getTime());
+  const latestFile = fileList[0];
 
-  // Validate headers and rows
+  if (typeof Logger !== 'undefined') {
+    Logger.log(`🎯 Processing newest file: "${latestFile.getName()}" (ID: ${latestFile.getId()})`);
+  }
+
+  const parsedData = extractDataFromFile(latestFile);
+  if (!parsedData || parsedData.length <= 1) {
+    throw new Error(`File "${latestFile.getName()}" contains no schedule rows.`);
+  }
+
+  // Validate headers
   validateScheduleHeaders(parsedData);
+
+  // Extract and log distinct dates found across data rows
+  const headers = parsedData[0].map(h => String(h || '').trim());
+  const dateIdx = headers.findIndex(h => /date|day/i.test(h));
+  if (dateIdx !== -1) {
+    const datesFound = new Set();
+    for (let i = 1; i < parsedData.length; i++) {
+      if (parsedData[i][dateIdx]) datesFound.add(String(parsedData[i][dateIdx]).trim());
+    }
+    if (typeof Logger !== 'undefined') {
+      Logger.log(`Extracted ${datesFound.size} distinct match date(s): ${[...datesFound].join(', ')}`);
+    }
+  }
 
   const ss = SpreadsheetApp.openById(CONFIG.PRODUCTION_SHEET_ID);
   let scheduleSheet = ss.getSheetByName('Master Schedule') || ss.getSheetByName('Master_Schedule');
@@ -571,14 +706,11 @@ function autoIngestWeeklySchedule() {
   scheduleSheet.clearContents();
   scheduleSheet.getRange(1, 1, parsedData.length, parsedData[0].length).setValues(parsedData);
   if (typeof Logger !== 'undefined') {
-    Logger.log(`Successfully wrote ${parsedData.length - 1} match rows to Master Schedule.`);
+    Logger.log(`Successfully wrote ${parsedData.length - 1} match rows to Master Schedule tab.`);
   }
 
-  // Execute form venue synchronization
-  syncContainerFormSchedule();
-  if (typeof Logger !== 'undefined') {
-    Logger.log("Production form venue dropdowns synchronized successfully.");
-  }
+  // Execute form venue synchronization with newly parsed rows
+  syncContainerFormSchedule(parsedData);
 
   // Record audit log entry in Schedule_Sync_Log
   let logSheet = ss.getSheetByName('Schedule_Sync_Log');
@@ -599,9 +731,21 @@ function autoIngestWeeklySchedule() {
   ]);
 
   // Archive processed file to prevent duplicate processing
-  latestFile.moveTo(archiveFolder);
+  try {
+    latestFile.moveTo(archiveFolder);
+    if (typeof Logger !== 'undefined') {
+      Logger.log(`Archived "${latestFile.getName()}" to processed archive folder.`);
+    }
+  } catch (archErr) {
+    if (typeof Logger !== 'undefined') {
+      Logger.log(`Note: File archive move skipped (${archErr.message}). Continuing.`);
+    }
+  }
+
   if (typeof Logger !== 'undefined') {
-    Logger.log(`Archived ${latestFile.getName()} to processed archive folder.`);
+    Logger.log("==========================================================");
+    Logger.log("🏆 AUTO INGEST & FORM SYNC PIPELINE SUCCEEDED (100% COMPLETE)");
+    Logger.log("==========================================================");
   }
 }
 
@@ -619,6 +763,7 @@ if (typeof module !== 'undefined' && module.exports) {
     formatDivision,
     formatTeam,
     getVenueCategory,
+    extractDataFromFile,
     autoIngestWeeklySchedule,
     syncContainerFormSchedule
   };
