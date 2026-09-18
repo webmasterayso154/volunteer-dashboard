@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <script>
 (function () {
-  var APP_BUILD_ID = 'build_20260917a';
+  var APP_BUILD_ID = 'build_20260918a';
   try {
     if (localStorage.getItem('ayso_app_build') !== APP_BUILD_ID) {
       localStorage.clear();
@@ -344,13 +344,6 @@ class Component extends DCLogic {
     this.fetchDirectory();
   }
 
-  // Fetch-first transport: Apps Script's /exec endpoint 302-redirects, and a
-  // dynamic <script> tag sends ambient Google session cookies along with it.
-  // Users signed into multiple Google accounts trip Apps Script's multi-login
-  // handling, which returns an HTML account-chooser page instead of JS/JSON -
-  // Chrome then blocks it as CORB. fetch() with credentials omitted sends no
-  // cookies, so the redirect resolves to the real JSON response every time.
-  // JSONP script-tag injection is kept only as the offline/error fallback.
   request(endpoint, cb) {
     this.fetchRequest(endpoint, (data) => {
       if (data) {
@@ -413,8 +406,6 @@ class Component extends DCLogic {
       clearTimeout(wd);
       clean();
       if (retry < 3) {
-        // Cold starts routinely take 8-14s; give the backend a beat before
-        // firing off another request rather than looping instantly.
         setTimeout(() => this.jsonp(endpoint, cb, retry + 1), 3000);
       } else {
         this.setState({
@@ -474,8 +465,9 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
-    const isPlayground = s.division.includes('Playground');
-    const isU5U6 = s.division.startsWith('05U') || s.division.startsWith('06U');
+    const isPlayground = (s.division + ' ' + s.teamCode).toUpperCase().includes('PLAYGROUND');
+    const isU5U6 = /^(05U|06U|5U|6U)/i.test((s.division || '').trim()) || /^(05U|06U|5U|6U)/i.test((s.teamCode || '').trim());
+    const isU8 = /^(08U|8U)/i.test((s.division || '').trim()) || /^(08U|8U)/i.test((s.teamCode || '').trim());
     
     // Set division-specific target goals
     let goal = this.props.pointsGoal ?? 17;
@@ -532,11 +524,16 @@ class Component extends DCLogic {
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
       ];
     } else {
-      const isU8 = s.division.startsWith('08U') || s.division.startsWith('8U');
+      // Treat as Saturday setup if division is U8 or if backend returned Saturday setup points
+      const useSatSetup = isU8 || (cats['Saturday Field Setup'] !== undefined && cats['Saturday Field Setup'] > 0);
       activeCats = [
         { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
         { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
-        { key: isU8 ? 'Saturday Field Setup' : 'Friday Night Field Setup', label: isU8 ? 'Saturday Field Setup / Takedown' : 'Friday Night Setup', cap: 5 },
+        { 
+          key: useSatSetup ? 'Saturday Field Setup' : 'Friday Night Field Setup', 
+          label: useSatSetup ? 'Saturday Field Setup / Takedown' : 'Friday Night Setup', 
+          cap: 5 
+        },
         { key: 'Picture Day', label: 'Picture Day & Silent Weekend', cap: 2 }
       ];
     }
@@ -585,7 +582,16 @@ class Component extends DCLogic {
       pillFg,
       goalCaption,
       categories: activeCats.map(c => {
-        const v = cats[c.key] || 0;
+        // Fall back to alternate key variants if one returns 0/undefined
+        let v = cats[c.key];
+        if (v === undefined) {
+          if (c.key === 'Saturday Field Setup') v = cats['Friday Night Setup'] || cats['Friday Night Field Setup'] || 0;
+          else if (c.key === 'Friday Night Field Setup') v = cats['Friday Night Setup'] || 0;
+          else if (c.key === 'Referee Assignment') v = cats['Referee (On-Field)'] || 0;
+          else if (c.key === 'Field Marshal Shift') v = cats['Field Marshal'] || 0;
+          else if (c.key === 'Picture Day') v = cats['Picture Picnic Day'] || 0;
+          else v = 0;
+        }
         return { 
           label: c.label, 
           val: v, 
