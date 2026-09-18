@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
 (function () {
-  var APP_BUILD_ID = 'build_20260918a';
+  var APP_BUILD_ID = 'build_20260918_force_v3';
   try {
     if (localStorage.getItem('ayso_app_build') !== APP_BUILD_ID) {
       localStorage.clear();
@@ -22,13 +22,14 @@
     });
   }
 
+  // Intercept all network fetches and append anti-caching millisecond tokens
   var origFetch = window.fetch;
   if (origFetch) {
     window.fetch = function (input, init) {
       init = init || {};
       var url = typeof input === 'string' ? input : input.url;
       var sep = url.indexOf('?') >= 0 ? '&' : '?';
-      var busted = url + sep + '_ts=' + Date.now();
+      var busted = url + sep + '_nc=' + Date.now() + '_' + Math.random().toString(36).substring(7);
       var target = typeof input === 'string' ? busted : new Request(busted, input);
       return origFetch.call(this, target, Object.assign({}, init, { cache: 'no-store' }));
     };
@@ -38,9 +39,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AYSO 154 - Volunteer Standings</title>
 <style>
-  /* Hide the raw x-dc template markup (every sc-if branch is present
-     unconditionally in the static HTML) so it never flashes on screen
-     between initial parse and boot() replacing it with the rendered app. */
   x-dc { display: none; }
 </style>
 <script src="./support.js"></script>
@@ -331,10 +329,6 @@ function buildInitialState() {
 }
 
 class Component extends DCLogic {
-  // Read localStorage synchronously into the initial state (rather than in
-  // componentDidMount) so the very first render already reflects a saved
-  // team/loading state - avoids a first-paint flash of the idle picker
-  // prompt while componentDidMount's async setState is still pending.
   state = buildInitialState();
 
   componentDidMount() {
@@ -355,7 +349,7 @@ class Component extends DCLogic {
   }
 
   fetchRequest(endpoint, cb, retry = 0) {
-    const url = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + '_ts=' + Date.now();
+    const url = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + '_ts=' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
     fetch(url, {
       method: 'GET',
       credentials: 'omit',
@@ -426,7 +420,7 @@ class Component extends DCLogic {
     };
 
     el = document.createElement('script');
-    el.src = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&_ts=' + Date.now();
+    el.src = endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&_ts=' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
     el.onerror = fail;
     (document.head || document.documentElement).appendChild(el);
   }
@@ -465,9 +459,11 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
-    const isPlayground = (s.division + ' ' + s.teamCode).toUpperCase().includes('PLAYGROUND');
-    const isU5U6 = /^(05U|06U|5U|6U)/i.test((s.division || '').trim()) || /^(05U|06U|5U|6U)/i.test((s.teamCode || '').trim());
-    const isU8 = /^(08U|8U)/i.test((s.division || '').trim()) || /^(08U|8U)/i.test((s.teamCode || '').trim());
+    const combinedString = ((s.division || '') + ' ' + (s.teamCode || '') + ' ' + (s.teamLabel || '')).toUpperCase();
+    
+    const isPlayground = combinedString.includes('PLAYGROUND');
+    const isU5U6 = combinedString.includes('05U') || combinedString.includes('06U') || /\b(5U|6U)\b/.test(combinedString);
+    const isU8 = combinedString.includes('08U') || /\b8U\b/.test(combinedString);
     
     // Set division-specific target goals
     let goal = this.props.pointsGoal ?? 17;
@@ -523,17 +519,19 @@ class Component extends DCLogic {
         { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
       ];
-    } else {
-      // Treat as Saturday setup if division is U8 or if backend returned Saturday setup points
-      const useSatSetup = isU8 || (cats['Saturday Field Setup'] !== undefined && cats['Saturday Field Setup'] > 0);
+    } else if (isU8) {
+      // Force U8 to display Saturday Field Setup unconditionally
       activeCats = [
         { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
         { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
-        { 
-          key: useSatSetup ? 'Saturday Field Setup' : 'Friday Night Field Setup', 
-          label: useSatSetup ? 'Saturday Field Setup / Takedown' : 'Friday Night Setup', 
-          cap: 5 
-        },
+        { key: 'Saturday Field Setup', label: 'Saturday Field Setup', cap: 5 },
+        { key: 'Picture Day', label: 'Picture Day & Silent Weekend', cap: 2 }
+      ];
+    } else {
+      activeCats = [
+        { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
+        { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
         { key: 'Picture Day', label: 'Picture Day & Silent Weekend', cap: 2 }
       ];
     }
@@ -582,15 +580,22 @@ class Component extends DCLogic {
       pillFg,
       goalCaption,
       categories: activeCats.map(c => {
-        // Fall back to alternate key variants if one returns 0/undefined
+        // Robust fallback: retrieve from Saturday Setup, Friday Setup, or legacy key
         let v = cats[c.key];
-        if (v === undefined) {
-          if (c.key === 'Saturday Field Setup') v = cats['Friday Night Setup'] || cats['Friday Night Field Setup'] || 0;
-          else if (c.key === 'Friday Night Field Setup') v = cats['Friday Night Setup'] || 0;
-          else if (c.key === 'Referee Assignment') v = cats['Referee (On-Field)'] || 0;
-          else if (c.key === 'Field Marshal Shift') v = cats['Field Marshal'] || 0;
-          else if (c.key === 'Picture Day') v = cats['Picture Picnic Day'] || 0;
-          else v = 0;
+        if (v === undefined || v === 0) {
+          if (c.key === 'Saturday Field Setup') {
+            v = cats['Saturday Field Setup'] || cats['Friday Night Setup'] || cats['Friday Night Field Setup'] || 0;
+          } else if (c.key === 'Friday Night Field Setup') {
+            v = cats['Friday Night Setup'] || cats['Friday Night Field Setup'] || 0;
+          } else if (c.key === 'Referee Assignment') {
+            v = cats['Referee (On-Field)'] || cats['Referee Assignment'] || 0;
+          } else if (c.key === 'Field Marshal Shift') {
+            v = cats['Field Marshal'] || cats['Field Marshal Shift'] || 0;
+          } else if (c.key === 'Picture Day') {
+            v = cats['Picture Picnic Day'] || cats['Picture Day'] || 0;
+          } else {
+            v = 0;
+          }
         }
         return { 
           label: c.label, 
