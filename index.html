@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <script>
 (function () {
-  var APP_BUILD_ID = 'build_20260910a';
+  var APP_BUILD_ID = 'build_20260917a';
   try {
     if (localStorage.getItem('ayso_app_build') !== APP_BUILD_ID) {
       localStorage.clear();
@@ -222,7 +222,7 @@
         <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
           <div>
             <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 - U19 &amp; EXTRA)</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Field Marshal (max 2), Friday Setup (max 5), and Picture Day (max 2).</p>
+            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Field Marshal (max 2), Friday Setup (Saturday for U8) (max 5), and Picture Day (max 2).</p>
           </div>
           <div>
             <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">U5 &amp; U6 Divisions</div>
@@ -527,15 +527,16 @@ class Component extends DCLogic {
       ];
     } else if (isU5U6) {
       activeCats = [
-        { key: 'Friday Night Field Setup', label: 'Saturday Field Setup / Takedown', cap: 5 },
+        { key: 'Saturday Field Setup', label: 'Saturday Field Setup / Takedown', cap: 5 },
         { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
       ];
     } else {
+      const isU8 = s.division.startsWith('08U') || s.division.startsWith('8U');
       activeCats = [
         { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
         { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
-        { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
+        { key: isU8 ? 'Saturday Field Setup' : 'Friday Night Field Setup', label: isU8 ? 'Saturday Field Setup / Takedown' : 'Friday Night Setup', cap: 5 },
         { key: 'Picture Day', label: 'Picture Day & Silent Weekend', cap: 2 }
       ];
     }
@@ -624,4 +625,3 @@ class Component extends DCLogic {
 </script>
 </body>
 </html>
-
