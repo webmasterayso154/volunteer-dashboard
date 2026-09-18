@@ -7,7 +7,12 @@
 <meta http-equiv="Expires" content="0">
 <script>
 (function () {
+  // Bump together with the ?v= query on the support.js <script> tag below —
+  // that query string is what actually forces mobile browsers/CDNs to fetch
+  // a new copy of the runtime instead of reusing a disk-cached one.
   var APP_BUILD_ID = 'build_20260918_force_v3';
+  var RELOAD_GUARD = 'ayso_reload_guard';
+
   try {
     if (localStorage.getItem('ayso_app_build') !== APP_BUILD_ID) {
       localStorage.clear();
@@ -21,6 +26,33 @@
       regs.forEach(function (r) { r.unregister(); });
     });
   }
+  if (window.caches && caches.keys) {
+    caches.keys().then(function (names) {
+      names.forEach(function (n) { caches.delete(n); });
+    });
+  }
+
+  // The meta Cache-Control tags above are advisory only — mobile Safari/Chrome
+  // disk cache and the GitHub Pages/Fastly edge can still hand back a stale
+  // index.html on first load. Re-fetch this document bypassing cache and, if
+  // its build id disagrees with the one we just booted from, do a single
+  // self-healing reload. RELOAD_GUARD prevents that from looping.
+  try {
+    if (sessionStorage.getItem(RELOAD_GUARD)) {
+      sessionStorage.removeItem(RELOAD_GUARD);
+    } else {
+      fetch(location.pathname + '?_freshness=' + Date.now(), { cache: 'no-store' })
+        .then(function (res) { return res.text(); })
+        .then(function (html) {
+          var m = html.match(/APP_BUILD_ID\s*=\s*'([^']+)'/);
+          if (m && m[1] !== APP_BUILD_ID) {
+            sessionStorage.setItem(RELOAD_GUARD, '1');
+            window.location.replace(location.pathname + '?_b=' + Date.now());
+          }
+        })
+        .catch(function () {});
+    }
+  } catch (e) {}
 
   // Intercept all network fetches and append anti-caching millisecond tokens
   var origFetch = window.fetch;
@@ -41,7 +73,7 @@
 <style>
   x-dc { display: none; }
 </style>
-<script src="./support.js"></script>
+<script src="./support.js?v=build_20260918_force_v3"></script>
 </head>
 <body>
 <x-dc>
