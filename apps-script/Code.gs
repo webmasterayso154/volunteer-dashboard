@@ -197,7 +197,7 @@ function getTeamStatsData(targetTeam) {
     totalPoints: 0,
     categories: {
       'Certified Team Referees': 0,
-      'MatchTrak Filled by Sep 26': 0,
+      'Early Ref Scheduling Incentive': 0,
       'Referee (On-Field)': 0,
       'Referee Assignment': 0,
       'Field Marshal': 0,
@@ -372,7 +372,7 @@ function getTeamStatsData(targetTeam) {
           points: aPts,
           note: aNote
         });
-      } else if (aType === 'MatchTrak Filled by Sep 26') {
+      } else if (aType === 'Early Ref Scheduling Incentive') {
         matchtrakPoints = Math.min(caps.matchtrak, matchtrakPoints + aPts);
         audit.push({
           duty: aType,
@@ -400,7 +400,7 @@ function getTeamStatsData(targetTeam) {
   );
 
   baseResult.categories['Certified Team Referees'] = certRefPoints;
-  baseResult.categories['MatchTrak Filled by Sep 26'] = matchtrakPoints;
+  baseResult.categories['Early Ref Scheduling Incentive'] = matchtrakPoints;
   baseResult.categories['Referee (On-Field)'] = refPoints;
   baseResult.categories['Referee Assignment'] = refPoints;
   baseResult.categories['Field Marshal'] = fmPoints;

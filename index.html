@@ -1,283 +1,401 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<script>
-(function () {
-  // Bump together with the ?v= query on the support.js <script> tag below —
-  // that query string is what actually forces mobile browsers/CDNs to fetch
-  // a new copy of the runtime instead of reusing a disk-cached one.
-  var APP_BUILD_ID = 'build_20260922_v1';
-  var RELOAD_GUARD = 'ayso_reload_guard';
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    (function () {
+      // Bump together with the ?v= query on the support.js <script> tag below —
+      // that query string is what actually forces mobile browsers/CDNs to fetch
+      // a new copy of the runtime instead of reusing a disk-cached one.
+      var APP_BUILD_ID = 'build_20260928_v1';
+      var RELOAD_GUARD = 'ayso_reload_guard';
 
-  try {
-    if (localStorage.getItem('ayso_app_build') !== APP_BUILD_ID) {
-      localStorage.clear();
-      sessionStorage.clear();
-      localStorage.setItem('ayso_app_build', APP_BUILD_ID);
+      try {
+        if (localStorage.getItem('ayso_app_build') !== APP_BUILD_ID) {
+          localStorage.clear();
+          sessionStorage.clear();
+          localStorage.setItem('ayso_app_build', APP_BUILD_ID);
+        }
+      } catch (e) { }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) { r.unregister(); });
+        });
+      }
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (names) {
+          names.forEach(function (n) { caches.delete(n); });
+        });
+      }
+
+      // The meta Cache-Control tags above are advisory only — mobile Safari/Chrome
+      // disk cache and the GitHub Pages/Fastly edge can still hand back a stale
+      // index.html on first load. Re-fetch this document bypassing cache and, if
+      // its build id disagrees with the one we just booted from, do a single
+      // self-healing reload. RELOAD_GUARD prevents that from looping.
+      try {
+        if (sessionStorage.getItem(RELOAD_GUARD)) {
+          sessionStorage.removeItem(RELOAD_GUARD);
+        } else {
+          fetch(location.pathname + '?_freshness=' + Date.now(), { cache: 'no-store' })
+            .then(function (res) { return res.text(); })
+            .then(function (html) {
+              var m = html.match(/APP_BUILD_ID\s*=\s*'([^']+)'/);
+              if (m && m[1] !== APP_BUILD_ID) {
+                sessionStorage.setItem(RELOAD_GUARD, '1');
+                window.location.replace(location.pathname + '?_b=' + Date.now());
+              }
+            })
+            .catch(function () { });
+        }
+      } catch (e) { }
+
+      // Intercept all network fetches and append anti-caching millisecond tokens
+      var origFetch = window.fetch;
+      if (origFetch) {
+        window.fetch = function (input, init) {
+          init = init || {};
+          var url = typeof input === 'string' ? input : input.url;
+          var sep = url.indexOf('?') >= 0 ? '&' : '?';
+          var busted = url + sep + '_nc=' + Date.now() + '_' + Math.random().toString(36).substring(7);
+          var target = typeof input === 'string' ? busted : new Request(busted, input);
+          return origFetch.call(this, target, Object.assign({}, init, { cache: 'no-store' }));
+        };
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AYSO 154 - Volunteer Standings</title>
+  <style>
+    x-dc {
+      display: none;
     }
-  } catch (e) {}
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function (regs) {
-      regs.forEach(function (r) { r.unregister(); });
-    });
-  }
-  if (window.caches && caches.keys) {
-    caches.keys().then(function (names) {
-      names.forEach(function (n) { caches.delete(n); });
-    });
-  }
-
-  // The meta Cache-Control tags above are advisory only — mobile Safari/Chrome
-  // disk cache and the GitHub Pages/Fastly edge can still hand back a stale
-  // index.html on first load. Re-fetch this document bypassing cache and, if
-  // its build id disagrees with the one we just booted from, do a single
-  // self-healing reload. RELOAD_GUARD prevents that from looping.
-  try {
-    if (sessionStorage.getItem(RELOAD_GUARD)) {
-      sessionStorage.removeItem(RELOAD_GUARD);
-    } else {
-      fetch(location.pathname + '?_freshness=' + Date.now(), { cache: 'no-store' })
-        .then(function (res) { return res.text(); })
-        .then(function (html) {
-          var m = html.match(/APP_BUILD_ID\s*=\s*'([^']+)'/);
-          if (m && m[1] !== APP_BUILD_ID) {
-            sessionStorage.setItem(RELOAD_GUARD, '1');
-            window.location.replace(location.pathname + '?_b=' + Date.now());
-          }
-        })
-        .catch(function () {});
-    }
-  } catch (e) {}
-
-  // Intercept all network fetches and append anti-caching millisecond tokens
-  var origFetch = window.fetch;
-  if (origFetch) {
-    window.fetch = function (input, init) {
-      init = init || {};
-      var url = typeof input === 'string' ? input : input.url;
-      var sep = url.indexOf('?') >= 0 ? '&' : '?';
-      var busted = url + sep + '_nc=' + Date.now() + '_' + Math.random().toString(36).substring(7);
-      var target = typeof input === 'string' ? busted : new Request(busted, input);
-      return origFetch.call(this, target, Object.assign({}, init, { cache: 'no-store' }));
-    };
-  }
-})();
-</script>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AYSO 154 - Volunteer Standings</title>
-<style>
-  x-dc { display: none; }
-</style>
-<script src="./support.js?v=build_20260922_v1"></script>
+  </style>
+  <script src="./support.js?v=build_20260928_v1"></script>
 </head>
+
 <body>
-<x-dc>
-<helmet>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F4F6F9; color: #111827; -webkit-font-smoothing: antialiased; line-height: 1.4; }
-  a { color: #002D62; text-decoration: none; }
-  a:hover { color: #C8102E; }
-  select { font-family: inherit; }
-  @keyframes pulse { to { box-shadow: 0 0 0 6px rgba(16,185,129,0); } }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
-</helmet>
-<div style="min-height: 100vh; display: flex; flex-direction: column; background: #F4F6F9;">
+  <x-dc>
+    <helmet>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+      <style>
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
 
-  <header style="position: sticky; top: 0; z-index: 100; background: linear-gradient(135deg, #001A38 0%, #002D62 100%); border-bottom: 3px solid #C8102E; color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
-    <div style="max-width: 720px; margin: 0 auto; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-      <a href="https://www.ayso154cypress.org/" style="display: flex; align-items: center; gap: 10px; color: #fff; min-width: 0;">
-        <img src="logo.png" alt="AYSO 154" style="height: 34px; width: 34px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; flex-shrink: 0;">
-        <span style="display: flex; flex-direction: column; min-width: 0;">
-          <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.2px; line-height: 1.15;">Volunteer Standings</span>
-          <span style="font-size: 11px; font-weight: 500; color: #93C5FD;">Fall 2026 - Cypress AYSO Region 154</span>
-        </span>
-      </a>
-      <a href="https://www.ayso154cypress.org/" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.12); color: #fff; font-size: 12px; font-weight: 600; padding: 8px 11px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); white-space: nowrap; flex-shrink: 0;" style-hover="background: #fff; color: #002D62;">Main Site</a>
-    </div>
-    <div style="background: rgba(0,0,0,0.22);">
-      <div style="max-width: 720px; margin: 0 auto; padding: 5px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: #CBD5E1;">
-        <span style="display: inline-flex; align-items: center; gap: 6px; min-width: 0;">
-          <span style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(16,185,129,0.7); animation: pulse 1.8s infinite cubic-bezier(0.66,0,0,1);"></span>
-          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ syncLabel }}</span>
-        </span>
-        <button type="button" onClick="{{ onSync }}" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" style-hover="background: rgba(255,255,255,0.3);">Sync</button>
-      </div>
-    </div>
-  </header>
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          background: #F4F6F9;
+          color: #111827;
+          -webkit-font-smoothing: antialiased;
+          line-height: 1.4;
+        }
 
-  <main style="flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 12px 12px 28px 12px;">
+        a {
+          color: #002D62;
+          text-decoration: none;
+        }
 
-    <sc-if value="{{ showPicker }}">
-      <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
-        <div style="font-size: 13px; font-weight: 700; color: #002D62; margin-bottom: 12px;">Find your team</div>
-        <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
-          <div style="display: flex; flex-direction: column;">
-            <label for="divisionSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Division</label>
-            <select id="divisionSelect" value="{{ division }}" onChange="{{ onDivisionChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
-              <option value="">Choose division...</option>
-              <sc-for list="{{ divisions }}" as="d">
-                <option value="{{ d }}">{{ d }}</option>
-              </sc-for>
-            </select>
+        a:hover {
+          color: #C8102E;
+        }
+
+        select {
+          font-family: inherit;
+        }
+
+        @keyframes pulse {
+          to {
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+          }
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      </style>
+    </helmet>
+    <div style="min-height: 100vh; display: flex; flex-direction: column; background: #F4F6F9;">
+
+      <header
+        style="position: sticky; top: 0; z-index: 100; background: linear-gradient(135deg, #001A38 0%, #002D62 100%); border-bottom: 3px solid #C8102E; color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
+        <div
+          style="max-width: 720px; margin: 0 auto; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <a href="https://www.ayso154cypress.org/"
+            style="display: flex; align-items: center; gap: 10px; color: #fff; min-width: 0;">
+            <img src="logo.png" alt="AYSO 154"
+              style="height: 34px; width: 34px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; flex-shrink: 0;">
+            <span style="display: flex; flex-direction: column; min-width: 0;">
+              <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.2px; line-height: 1.15;">Volunteer
+                Standings</span>
+              <span style="font-size: 11px; font-weight: 500; color: #93C5FD;">Fall 2026 - Cypress AYSO Region
+                154</span>
+            </span>
+          </a>
+          <a href="https://www.ayso154cypress.org/"
+            style="display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.12); color: #fff; font-size: 12px; font-weight: 600; padding: 8px 11px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); white-space: nowrap; flex-shrink: 0;"
+            style-hover="background: #fff; color: #002D62;">Main Site</a>
+        </div>
+        <div style="background: rgba(0,0,0,0.22);">
+          <div
+            style="max-width: 720px; margin: 0 auto; padding: 5px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: #CBD5E1;">
+            <span style="display: inline-flex; align-items: center; gap: 6px; min-width: 0;">
+              <span
+                style="width: 7px; height: 7px; background: #10B981; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(16,185,129,0.7); animation: pulse 1.8s infinite cubic-bezier(0.66,0,0,1);"></span>
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ syncLabel }}</span>
+            </span>
+            <button type="button" onClick="{{ onSync }}"
+              style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; flex-shrink: 0;"
+              style-hover="background: rgba(255,255,255,0.3);">Sync</button>
           </div>
-          <div style="display: flex; flex-direction: column;">
-            <label for="coachSelect" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Head Coach</label>
-            <select id="coachSelect" value="{{ teamCode }}" disabled="{{ coachDisabled }}" onChange="{{ onCoachChange }}" style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
-              <option value="">{{ coachPlaceholder }}</option>
-              <sc-for list="{{ coaches }}" as="c">
-                <option value="{{ c.teamCode }}">{{ c.label }}</option>
-              </sc-for>
-            </select>
-          </div>
         </div>
-      </div>
-    </sc-if>
+      </header>
 
-    <sc-if value="{{ showTeamChip }}">
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid #E5E7EB; border-radius: 10px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
-        <span style="display: flex; flex-direction: column; min-width: 0;">
-          <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6B7280;">Your team</span>
-          <span style="font-size: 15px; font-weight: 700; color: #002D62; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ teamLabel }}</span>
-        </span>
-        <button type="button" onClick="{{ onChangeTeam }}" style="background: #F3F4F6; border: 1px solid #E5E7EB; color: #002D62; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0;" style-hover="background: #E5E7EB;">Change</button>
-      </div>
-    </sc-if>
+      <main style="flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 12px 12px 28px 12px;">
 
-    <sc-if value="{{ loading }}">
-      <div style="text-align: center; padding: 40px 0; color: #002D62; font-weight: 600; font-size: 13px;">
-        <div style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;"></div>
-        Connecting to server (waking up)...
-      </div>
-    </sc-if>
-
-    <sc-if value="{{ showIdle }}">
-      <div style="background: #fff; border: 1px dashed #D1D5DB; border-radius: 12px; padding: 28px 20px; text-align: center;">
-        <div style="font-size: 14px; font-weight: 700; color: #002D62; margin-bottom: 6px;">Pick a division and coach</div>
-        <p style="font-size: 12px; color: #6B7280; max-width: 32ch; margin: 0 auto; text-wrap: pretty;">We'll remember your team on this device so it loads automatically next time.</p>
-      </div>
-    </sc-if>
-
-    <sc-if value="{{ showReconnect }}">
-      <div style="background: #fff; border: 1px dashed #D1D5DB; border-radius: 12px; padding: 28px 20px; text-align: center;">
-        <div style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;"></div>
-        <div style="font-size: 14px; font-weight: 700; color: #002D62; margin-bottom: 6px;">Reconnecting to standings...</div>
-        <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto 12px auto; text-wrap: pretty;">The server may still be waking up. We'll keep retrying automatically, or tap Sync above.</p>
-        <button type="button" onClick="{{ onSync }}" style="background: #F3F4F6; border: 1px solid #E5E7EB; color: #002D62; font-size: 12px; font-weight: 600; padding: 9px 14px; border-radius: 8px; cursor: pointer;" style-hover="background: #E5E7EB;">Retry now</button>
-      </div>
-    </sc-if>
-
-    <sc-if value="{{ hasStats }}">
-      <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 18px 16px 16px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
-        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px;">
-          <span style="display: flex; align-items: baseline; gap: 8px;">
-            <span style="font-size: 52px; font-weight: 800; color: #002D62; line-height: 0.9; letter-spacing: -2px;">{{ total }}</span>
-            <span style="font-size: 15px; font-weight: 600; color: #6B7280;">{{ goalSubtitle }}</span>
-          </span>
-          <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 10px; border-radius: 20px; white-space: nowrap; background: {{ pillBg }}; color: {{ pillFg }};">{{ pillText }}</span>
-        </div>
-        <div style="height: 12px; border-radius: 999px; background: #EEF1F5; overflow: hidden;">
-          <div style="height: 100%; border-radius: 999px; background: {{ barColor }}; width: {{ totalPct }}; transition: width 0.6s cubic-bezier(0.22,1,0.36,1);"></div>
-        </div>
-        <p style="font-size: 12px; color: #6B7280; margin-top: 8px; text-wrap: pretty;">{{ goalCaption }}</p>
-      </div>
-
-      <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
-        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 12px;">Points by category</div>
-        <div style="display: flex; flex-direction: column; gap: 14px;">
-          <sc-for list="{{ categories }}" as="cat">
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
-                <span style="font-size: 13px; font-weight: 600; color: #111827;">{{ cat.label }}</span>
-                <span style="font-size: 13px; font-weight: 700; color: #002D62;">{{ cat.val }}<span style="font-weight: 500; color: #9CA3AF;"> / {{ cat.cap }}</span></span>
+        <sc-if value="{{ showPicker }}">
+          <div
+            style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
+            <div style="font-size: 13px; font-weight: 700; color: #002D62; margin-bottom: 12px;">Find your team</div>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+              <div style="display: flex; flex-direction: column;">
+                <label for="divisionSelect"
+                  style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Division</label>
+                <select id="divisionSelect" value="{{ division }}" onChange="{{ onDivisionChange }}"
+                  style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
+                  <option value="">Choose division...</option>
+                  <sc-for list="{{ divisions }}" as="d">
+                    <option value="{{ d }}">{{ d }}</option>
+                  </sc-for>
+                </select>
               </div>
-              <div style="height: 6px; border-radius: 999px; background: #EEF1F5; overflow: hidden;">
-                <div style="height: 100%; border-radius: 999px; background: {{ cat.color }}; width: {{ cat.pct }}; transition: width 0.6s cubic-bezier(0.22,1,0.36,1);"></div>
+              <div style="display: flex; flex-direction: column;">
+                <label for="coachSelect"
+                  style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 6px;">Head
+                  Coach</label>
+                <select id="coachSelect" value="{{ teamCode }}" disabled="{{ coachDisabled }}"
+                  onChange="{{ onCoachChange }}"
+                  style="width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; font-weight: 500; border: 1px solid #E5E7EB; border-radius: 8px; background: #fff; color: #111827; cursor: pointer; outline: none;">
+                  <option value="">{{ coachPlaceholder }}</option>
+                  <sc-for list="{{ coaches }}" as="c">
+                    <option value="{{ c.teamCode }}">{{ c.label }}</option>
+                  </sc-for>
+                </select>
               </div>
             </div>
-          </sc-for>
-        </div>
-      </div>
-
-      <sc-if value="{{ showLog }}">
-        <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; overflow: hidden;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #F3F4F6;">
-            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #002D62;">Check-in log</span>
-            <span style="font-size: 11px; font-weight: 500; color: #6B7280;">{{ auditCount }}</span>
           </div>
-          <sc-if value="{{ hasAudit }}">
-            <div style="display: flex; flex-direction: column;">
-              <sc-for list="{{ audit }}" as="row">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; border-bottom: 1px solid #F3F4F6;">
-                  <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
-                    <span style="font-size: 13px; font-weight: 600; color: #111827;">{{ row.duty }}</span>
-                    <span style="font-size: 11px; color: #6B7280;">{{ row.date }}</span>
-                  </span>
-                  <span style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                    <span style="font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 5px; background: {{ row.badgeBg }}; color: {{ row.badgeFg }};">{{ row.status }}</span>
-                    <span style="font-size: 14px; font-weight: 800; color: #002D62; min-width: 28px; text-align: right;">{{ row.pts }}</span>
-                  </span>
+        </sc-if>
+
+        <sc-if value="{{ showTeamChip }}">
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid #E5E7EB; border-radius: 10px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
+            <span style="display: flex; flex-direction: column; min-width: 0;">
+              <span
+                style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6B7280;">Your
+                team</span>
+              <span
+                style="font-size: 15px; font-weight: 700; color: #002D62; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{
+                teamLabel }}</span>
+            </span>
+            <button type="button" onClick="{{ onChangeTeam }}"
+              style="background: #F3F4F6; border: 1px solid #E5E7EB; color: #002D62; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0;"
+              style-hover="background: #E5E7EB;">Change</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ loading }}">
+          <div style="text-align: center; padding: 40px 0; color: #002D62; font-weight: 600; font-size: 13px;">
+            <div
+              style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;">
+            </div>
+            Connecting to server (waking up)...
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showIdle }}">
+          <div
+            style="background: #fff; border: 1px dashed #D1D5DB; border-radius: 12px; padding: 28px 20px; text-align: center;">
+            <div style="font-size: 14px; font-weight: 700; color: #002D62; margin-bottom: 6px;">Pick a division and
+              coach</div>
+            <p style="font-size: 12px; color: #6B7280; max-width: 32ch; margin: 0 auto; text-wrap: pretty;">We'll
+              remember your team on this device so it loads automatically next time.</p>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showReconnect }}">
+          <div
+            style="background: #fff; border: 1px dashed #D1D5DB; border-radius: 12px; padding: 28px 20px; text-align: center;">
+            <div
+              style="border: 3px solid #E5E7EB; border-top: 3px solid #002D62; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto;">
+            </div>
+            <div style="font-size: 14px; font-weight: 700; color: #002D62; margin-bottom: 6px;">Reconnecting to
+              standings...</div>
+            <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto 12px auto; text-wrap: pretty;">
+              The server may still be waking up. We'll keep retrying automatically, or tap Sync above.</p>
+            <button type="button" onClick="{{ onSync }}"
+              style="background: #F3F4F6; border: 1px solid #E5E7EB; color: #002D62; font-size: 12px; font-weight: 600; padding: 9px 14px; border-radius: 8px; cursor: pointer;"
+              style-hover="background: #E5E7EB;">Retry now</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasStats }}">
+          <div
+            style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 18px 16px 16px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
+            <div
+              style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px;">
+              <span style="display: flex; align-items: baseline; gap: 8px;">
+                <span
+                  style="font-size: 52px; font-weight: 800; color: #002D62; line-height: 0.9; letter-spacing: -2px;">{{
+                  total }}</span>
+                <span style="font-size: 15px; font-weight: 600; color: #6B7280;">{{ goalSubtitle }}</span>
+              </span>
+              <span
+                style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 10px; border-radius: 20px; white-space: nowrap; background: {{ pillBg }}; color: {{ pillFg }};">{{
+                pillText }}</span>
+            </div>
+            <div style="height: 12px; border-radius: 999px; background: #EEF1F5; overflow: hidden;">
+              <div
+                style="height: 100%; border-radius: 999px; background: {{ barColor }}; width: {{ totalPct }}; transition: width 0.6s cubic-bezier(0.22,1,0.36,1);">
+              </div>
+            </div>
+            <p style="font-size: 12px; color: #6B7280; margin-top: 8px; text-wrap: pretty;">{{ goalCaption }}</p>
+          </div>
+
+          <div
+            style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
+            <div
+              style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4B5563; margin-bottom: 12px;">
+              Points by category</div>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <sc-for list="{{ categories }}" as="cat">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                    <span style="font-size: 13px; font-weight: 600; color: #111827;">{{ cat.label }}</span>
+                    <span style="font-size: 13px; font-weight: 700; color: #002D62;">{{ cat.val }}<span
+                        style="font-weight: 500; color: #9CA3AF;"> / {{ cat.cap }}</span></span>
+                  </div>
+                  <div style="height: 6px; border-radius: 999px; background: #EEF1F5; overflow: hidden;">
+                    <div
+                      style="height: 100%; border-radius: 999px; background: {{ cat.color }}; width: {{ cat.pct }}; transition: width 0.6s cubic-bezier(0.22,1,0.36,1);">
+                    </div>
+                  </div>
                 </div>
               </sc-for>
             </div>
-          </sc-if>
-          <sc-if value="{{ noAudit }}">
-            <div style="padding: 26px 20px; text-align: center;">
-              <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">No check-ins yet</div>
-              <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto; text-wrap: pretty;">Points appear here within seconds of a volunteer scanning the QR code at the field tent.</p>
+          </div>
+
+          <sc-if value="{{ showLog }}">
+            <div
+              style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; overflow: hidden;">
+              <div
+                style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #F3F4F6;">
+                <span
+                  style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #002D62;">Check-in
+                  log</span>
+                <span style="font-size: 11px; font-weight: 500; color: #6B7280;">{{ auditCount }}</span>
+              </div>
+              <sc-if value="{{ hasAudit }}">
+                <div style="display: flex; flex-direction: column;">
+                  <sc-for list="{{ audit }}" as="row">
+                    <div
+                      style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; border-bottom: 1px solid #F3F4F6;">
+                      <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                        <span style="font-size: 13px; font-weight: 600; color: #111827;">{{ row.duty }}</span>
+                        <span style="font-size: 11px; color: #6B7280;">{{ row.date }}</span>
+                      </span>
+                      <span style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                        <span
+                          style="font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 5px; background: {{ row.badgeBg }}; color: {{ row.badgeFg }};">{{
+                          row.status }}</span>
+                        <span
+                          style="font-size: 14px; font-weight: 800; color: #002D62; min-width: 28px; text-align: right;">{{
+                          row.pts }}</span>
+                      </span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ noAudit }}">
+                <div style="padding: 26px 20px; text-align: center;">
+                  <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px;">No check-ins yet
+                  </div>
+                  <p style="font-size: 12px; color: #6B7280; max-width: 34ch; margin: 0 auto; text-wrap: pretty;">Points
+                    appear here within seconds of a volunteer scanning the QR code at the field tent.</p>
+                </div>
+              </sc-if>
+              <div
+                style="background: #F9FAFB; border-top: 1px solid #F3F4F6; padding: 9px 16px; font-size: 11px; color: #6B7280; text-wrap: pretty;">
+                Volunteer names are omitted from this public log. Itemized rosters are available to the head coach or
+                team manager on request.
+              </div>
             </div>
           </sc-if>
-          <div style="background: #F9FAFB; border-top: 1px solid #F3F4F6; padding: 9px 16px; font-size: 11px; color: #6B7280; text-wrap: pretty;">
-            Volunteer names are omitted from this public log. Itemized rosters are available to the head coach or team manager on request.
-          </div>
+        </sc-if>
+
+        <div
+          style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow: hidden;">
+          <button type="button" onClick="{{ onToggleGuidelines }}"
+            style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: none; border: none; padding: 14px 16px; cursor: pointer; text-align: left; font-family: inherit;"
+            style-hover="background: #F9FAFB;">
+            <span style="font-size: 13px; font-weight: 700; color: #002D62;">Volunteer guidelines &amp; targets</span>
+            <span style="font-size: 12px; font-weight: 700; color: #6B7280;">{{ guidelinesToggle }}</span>
+          </button>
+          <sc-if value="{{ guidelinesOpen }}">
+            <div
+              style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive
+                  Divisions (U8 - U19 &amp; EXTRA)</div>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a
+                  minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points
+                  are earned through Referee assignments (up to 10 on-field), Early Ref Scheduling Incentive (max 2),
+                  Field Marshal (max 2), Friday Setup (Saturday for U8) (max 5), and Picture Day (max 2).</p>
+              </div>
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">U5 &amp; U6
+                  Divisions</div>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 8 volunteer
+                  points out of 9 possible. Points are earned through Saturday morning setup/takedown (up to 5 points),
+                  Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points), and Picture Picnic Day (max 2 points).
+                </p>
+              </div>
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playground Division
+                </div>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 volunteer
+                  points (4 points possible). Points are earned through Field Marshal shifts during Weeks 4 &amp; 10
+                  (max 2 points) and Picture Picnic Day shifts (max 2 points).</p>
+              </div>
+            </div>
+          </sc-if>
         </div>
-      </sc-if>
-    </sc-if>
 
-    <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow: hidden;">
-      <button type="button" onClick="{{ onToggleGuidelines }}" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: none; border: none; padding: 14px 16px; cursor: pointer; text-align: left; font-family: inherit;" style-hover="background: #F9FAFB;">
-        <span style="font-size: 13px; font-weight: 700; color: #002D62;">Volunteer guidelines &amp; targets</span>
-        <span style="font-size: 12px; font-weight: 700; color: #6B7280;">{{ guidelinesToggle }}</span>
-      </button>
-      <sc-if value="{{ guidelinesOpen }}">
-        <div style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
-          <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (U8 - U19 &amp; EXTRA)</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Field Marshal (max 2), Friday Setup (Saturday for U8) (max 5), and Picture Day (max 2).</p>
-          </div>
-          <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">U5 &amp; U6 Divisions</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 8 volunteer points out of 9 possible. Points are earned through Saturday morning setup/takedown (up to 5 points), Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points), and Picture Picnic Day (max 2 points).</p>
-          </div>
-          <div>
-            <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playground Division</div>
-            <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 volunteer points (4 points possible). Points are earned through Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points) and Picture Picnic Day shifts (max 2 points).</p>
-          </div>
+      </main>
+
+      <footer
+        style="background: #fff; border-top: 1px solid #E5E7EB; padding: 16px; text-align: center; font-size: 11px; color: #6B7280;">
+        <div style="display: flex; justify-content: center; gap: 14px; margin-bottom: 5px;">
+          <a href="https://www.ayso154cypress.org/" style="font-weight: 600;">AYSO 154 Homepage</a>
         </div>
-      </sc-if>
+        <p>American Youth Soccer Organization - Region 154 Cypress, CA</p>
+      </footer>
     </div>
+  </x-dc>
 
-  </main>
-
-  <footer style="background: #fff; border-top: 1px solid #E5E7EB; padding: 16px; text-align: center; font-size: 11px; color: #6B7280;">
-    <div style="display: flex; justify-content: center; gap: 14px; margin-bottom: 5px;">
-      <a href="https://www.ayso154cypress.org/" style="font-weight: 600;">AYSO 154 Homepage</a>
-    </div>
-    <p>American Youth Soccer Organization - Region 154 Cypress, CA</p>
-  </footer>
-</div>
-</x-dc>
-
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:17,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
+  <script type="text/x-dc" data-dc-script
+    data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:17,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
 const API_URL = 'https://script.google.com/macros/s/AKfycbx9a8MucGcBQj6txl60w0zXNHGQr0m4T3pFKPTcjy6kmTRD8DW-bLL-MwpB2VPkVY4/exec';
 const CACHE_DIR = 'ayso154_cached_directory';
 const CACHE_TIME = 'ayso154_cached_timestamp';
@@ -552,9 +670,10 @@ class Component extends DCLogic {
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
       ];
     } else if (isU8) {
-      // Force U8 to display Saturday Field Setup unconditionally
+      // Force U8 to display Saturday Field Setup and Early Ref Scheduling Incentive
       activeCats = [
         { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
+        { key: 'Early Ref Scheduling Incentive', label: 'Early Ref Scheduling Incentive', cap: 2 },
         { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
         { key: 'Saturday Field Setup', label: 'Saturday Field Setup', cap: 5 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
@@ -562,6 +681,7 @@ class Component extends DCLogic {
     } else {
       activeCats = [
         { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
+        { key: 'Early Ref Scheduling Incentive', label: 'Early Ref Scheduling Incentive', cap: 2 },
         { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
         { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 }
@@ -621,6 +741,8 @@ class Component extends DCLogic {
             v = cats['Friday Night Setup'] || cats['Friday Night Field Setup'] || 0;
           } else if (c.key === 'Referee Assignment') {
             v = cats['Referee (On-Field)'] || cats['Referee Assignment'] || 0;
+          } else if (c.key === 'Early Ref Scheduling Incentive') {
+            v = cats['Early Ref Scheduling Incentive'] || cats['MatchTrak Filled by Sep 26'] || cats['MatchTrak Bonus (Max 2)'] || cats['MatchTrak Bonus'] || cats['matchtrak'] || 0;
           } else if (c.key === 'Field Marshal Shift') {
             v = cats['Field Marshal'] || cats['Field Marshal Shift'] || 0;
           } else if (c.key === 'Picture Day') {
@@ -667,4 +789,5 @@ class Component extends DCLogic {
 }
 </script>
 </body>
+
 </html>

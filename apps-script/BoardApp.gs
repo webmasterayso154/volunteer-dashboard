@@ -146,7 +146,7 @@ function getBoardDashboardData() {
         teamAggregates[aCode].ref = Math.max(0, teamAggregates[aCode].ref + aPts);
       } else if (aType === 'Certified Team Referees') {
         teamAggregates[aCode].certRef = Math.min(CAP_CERTIFIED_REF, teamAggregates[aCode].certRef + aPts);
-      } else if (aType === 'MatchTrak Filled by Sep 26') {
+      } else if (aType === 'Early Ref Scheduling Incentive') {
         teamAggregates[aCode].matchtrak = Math.min(CAP_MATCHTRAK_BONUS, teamAggregates[aCode].matchtrak + aPts);
       } else {
         teamAggregates[aCode].awards += aPts;
