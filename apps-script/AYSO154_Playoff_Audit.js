@@ -1174,3 +1174,882 @@ function columnLetter_(column) {
   }
   return result;
 }
+
+// ============================================================================
+// HYBRID ADJUDICATION BRIDGE (2026 POST-SEASON PLAYOFF VOLUNTEER AUDIT)
+// ============================================================================
+
+const ADJUDICATION_SHEET = Object.freeze({
+  DOSSIERS: 'Gem_Dispute_Dossiers',
+  PLAYOFF_RESPONSES: 'Playoff_Audit_Responses',
+  AWARDS: 'Team_Awards',
+  LEDGER: 'Season_Master_Ledger'
+});
+
+/**
+ * Resolves the audit spreadsheet containing the Audit Queue / Form Responses.
+ */
+function resolveAuditSpreadsheet_() {
+  const activeSs = (typeof SpreadsheetApp !== 'undefined') ? SpreadsheetApp.getActiveSpreadsheet() : null;
+  if (activeSs) {
+    if (activeSs.getSheetByName(SHEET.QUEUE) || 
+        activeSs.getSheetByName(ADJUDICATION_SHEET.PLAYOFF_RESPONSES) ||
+        activeSs.getSheetByName(SHEET.RESPONSES)) {
+      return activeSs;
+    }
+  }
+
+  try {
+    const props = (typeof PropertiesService !== 'undefined') ? PropertiesService.getScriptProperties() : null;
+    const id = props ? props.getProperty(PROP.SPREADSHEET_ID) : null;
+    if (id && typeof SpreadsheetApp !== 'undefined') {
+      return SpreadsheetApp.openById(id);
+    }
+  } catch (e) {}
+
+  try {
+    if (typeof DriveApp !== 'undefined') {
+      const files = DriveApp.getFilesByName(AUDIT.SPREADSHEET_NAME);
+      if (files.hasNext() && typeof SpreadsheetApp !== 'undefined') {
+        return SpreadsheetApp.openById(files.next().getId());
+      }
+    }
+  } catch (e) {}
+
+  return activeSs;
+}
+
+/**
+ * Resolves the master spreadsheet containing Season_Master_Ledger and Team_Awards.
+ */
+function resolveMasterSpreadsheet_() {
+  const activeSs = (typeof SpreadsheetApp !== 'undefined') ? SpreadsheetApp.getActiveSpreadsheet() : null;
+  if (activeSs) {
+    if (activeSs.getSheetByName(ADJUDICATION_SHEET.LEDGER) || activeSs.getSheetByName(ADJUDICATION_SHEET.AWARDS)) {
+      return activeSs;
+    }
+  }
+
+  try {
+    const props = (typeof PropertiesService !== 'undefined') ? PropertiesService.getScriptProperties() : null;
+    const masterId = props ? props.getProperty('MASTER_SPREADSHEET_ID') : null;
+    if (masterId && typeof SpreadsheetApp !== 'undefined') {
+      return SpreadsheetApp.openById(masterId);
+    }
+  } catch (e) {}
+
+  return activeSs;
+}
+
+/**
+ * Pre-checks a team's status against Season_Master_Ledger.
+ * Identifies current verified points, playoff goal, qualification status, and category caps.
+ *
+ * @param {string} teamCode The team identifier to check
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [masterSs] Optional master spreadsheet reference
+ * @returns {Object} Structured pre-check audit status
+ */
+function getTeamLedgerPreCheck_(teamCode, masterSs) {
+  const ss = masterSs || resolveMasterSpreadsheet_();
+  if (!ss) {
+    return {
+      found: false,
+      teamCode: teamCode,
+      warnings: ['Master spreadsheet not accessible for ledger pre-check.']
+    };
+  }
+
+  const sheet = ss.getSheetByName(ADJUDICATION_SHEET.LEDGER) || ss.getSheetByName('Season_Master_Ledger');
+  if (!sheet || sheet.getLastRow() < 2) {
+    return {
+      found: false,
+      teamCode: teamCode,
+      warnings: ['Season_Master_Ledger tab not found or empty.']
+    };
+  }
+
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
+
+  // Find column indices
+  const idxDiv = headers.indexOf('division') !== -1 ? headers.indexOf('division') : 0;
+  const idxTeam = headers.indexOf('team code') !== -1 ? headers.indexOf('team code') : 1;
+  const idxCoach = headers.indexOf('head coach') !== -1 ? headers.indexOf('head coach') : 2;
+  const idxRef = headers.findIndex(h => h.includes('referee') && h.includes('points'));
+  const idxFm = headers.findIndex(h => h.includes('marshal'));
+  const idxSetup = headers.findIndex(h => h.includes('setup'));
+  const idxPic = headers.findIndex(h => h.includes('picture'));
+  const idxCert = headers.findIndex(h => h.includes('certified'));
+  const idxMatch = headers.findIndex(h => h.includes('matchtrak'));
+  const idxOther = headers.findIndex(h => h.includes('other') || h.includes('adjust'));
+  const idxTotal = headers.findIndex(h => h.includes('total'));
+  const idxGoal = headers.findIndex(h => h.includes('goal'));
+  const idxStatus = headers.findIndex(h => h.includes('status'));
+
+  const cleanTarget = String(teamCode || '').trim().toLowerCase();
+  const normTarget = normalizeTeamCode_(teamCode);
+
+  let matchRow = null;
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const rowTeam = String(row[idxTeam] || '').trim();
+    if (!rowTeam) continue;
+
+    if (rowTeam.toLowerCase() === cleanTarget || normalizeTeamCode_(rowTeam) === normTarget) {
+      matchRow = row;
+      break;
+    }
+  }
+
+  // Fallback: match coach name if not exact team code
+  if (!matchRow) {
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      const rowTeam = String(row[idxTeam] || '').trim();
+      const rowCoach = String(row[idxCoach !== -1 ? idxCoach : 2] || '').trim().toLowerCase();
+      if (cleanTarget.includes(rowCoach) && rowCoach.length > 3) {
+        matchRow = row;
+        break;
+      }
+    }
+  }
+
+  if (!matchRow) {
+    return {
+      found: false,
+      teamCode: teamCode,
+      warnings: [`Team '${teamCode}' was not found in Season_Master_Ledger.`]
+    };
+  }
+
+  const division = String(matchRow[idxDiv] || '').trim();
+  const canonicalTeam = String(matchRow[idxTeam] || '').trim();
+  const headCoach = String(matchRow[idxCoach !== -1 ? idxCoach : 2] || '').trim();
+
+  const refPts = idxRef !== -1 ? Number(matchRow[idxRef]) || 0 : 0;
+  const fmPts = idxFm !== -1 ? Number(matchRow[idxFm]) || 0 : 0;
+  const setupPts = idxSetup !== -1 ? Number(matchRow[idxSetup]) || 0 : 0;
+  const picPts = idxPic !== -1 ? Number(matchRow[idxPic]) || 0 : 0;
+  const certRefPts = idxCert !== -1 ? Number(matchRow[idxCert]) || 0 : 0;
+  const matchtrakPts = idxMatch !== -1 ? Number(matchRow[idxMatch]) || 0 : 0;
+  const otherPts = idxOther !== -1 ? Number(matchRow[idxOther]) || 0 : 0;
+  const totalPts = idxTotal !== -1 ? Number(matchRow[idxTotal]) || 0 : (refPts + fmPts + setupPts + picPts + certRefPts + matchtrakPts + otherPts);
+  const playoffGoal = idxGoal !== -1 ? Number(matchRow[idxGoal]) || 17 : 17;
+  const playoffStatus = idxStatus !== -1 ? String(matchRow[idxStatus] || '').trim() : (totalPts >= playoffGoal ? 'Qualified' : `${playoffGoal - totalPts} pts needed`);
+
+  const isAlreadyQualified = totalPts >= playoffGoal;
+  const pointsNeeded = Math.max(0, playoffGoal - totalPts);
+
+  const caps = {
+    refCapMet: refPts >= 10,
+    fmCapMet: fmPts >= 2,
+    setupCapMet: setupPts >= 5,
+    picCapMet: picPts >= 2,
+    certRefCapMet: certRefPts >= 5,
+    matchtrakCapMet: matchtrakPts >= 2
+  };
+
+  const warnings = [];
+  if (isAlreadyQualified) {
+    warnings.push(`⚠️ ALREADY QUALIFIED: Team currently has ${totalPts} verified points (Goal: ${playoffGoal}). Per board policy, surplus points beyond ${playoffGoal} are not audited or banked.`);
+  }
+  if (caps.refCapMet) {
+    warnings.push(`⚠️ CATEGORY CAP REACHED: Referee points at 10/10. Additional referee shifts cannot earn points under the category cap.`);
+  }
+  if (caps.fmCapMet) {
+    warnings.push(`⚠️ CATEGORY CAP REACHED: Field Marshal points at 2/2 cap.`);
+  }
+  if (caps.picCapMet) {
+    warnings.push(`⚠️ CATEGORY CAP REACHED: Picture Day points at 2/2 cap.`);
+  }
+  if (caps.setupCapMet) {
+    warnings.push(`⚠️ CATEGORY CAP REACHED: Field Setup points at 5/5 cap.`);
+  }
+
+  return {
+    found: true,
+    division: division,
+    teamCode: canonicalTeam,
+    headCoach: headCoach,
+    totalPts: totalPts,
+    playoffGoal: playoffGoal,
+    playoffStatus: playoffStatus,
+    isAlreadyQualified: isAlreadyQualified,
+    pointsNeeded: pointsNeeded,
+    breakdown: {
+      refPts: refPts,
+      fmPts: fmPts,
+      setupPts: setupPts,
+      picPts: picPts,
+      certRefPts: certRefPts,
+      matchtrakPts: matchtrakPts,
+      otherPts: otherPts
+    },
+    caps: caps,
+    warnings: warnings
+  };
+}
+
+/**
+ * Scans for unadjudicated dispute tickets across Audit Queue or response sheets.
+ *
+ * @param {Object} [options] Optional filter criteria
+ * @returns {Array<Object>} List of unadjudicated ticket objects with ledger pre-checks
+ */
+function getUnadjudicatedDisputes(options = {}) {
+  const auditSs = (options && options.auditSs) || resolveAuditSpreadsheet_();
+  const masterSs = (options && options.masterSs) || resolveMasterSpreadsheet_();
+
+  if (!auditSs) return [];
+
+  const unadjudicated = [];
+
+  // Strategy 1: Check Audit Queue + Shift Details (from AYSO154_Playoff_Audit.js)
+  const queueSheet = auditSs.getSheetByName(SHEET.QUEUE);
+  const shiftsSheet = auditSs.getSheetByName(SHEET.SHIFTS);
+
+  if (queueSheet && queueSheet.getLastRow() > 1) {
+    const queueRows = dataObjects_(queueSheet);
+    const shiftsRows = (shiftsSheet && shiftsSheet.getLastRow() > 1) ? dataObjects_(shiftsSheet) : [];
+
+    queueRows.forEach(row => {
+      const ticketId = String(row['Ticket ID'] || '').trim();
+      const decision = String(row['Decision'] || '').trim();
+      const workflow = String(row['Workflow Status'] || '').trim();
+
+      // Check if ticket is unadjudicated
+      const isUnadjudicated = (decision === 'Pending' || !decision) &&
+                              workflow !== 'Closed' &&
+                              workflow !== 'Duplicate';
+
+      if (isUnadjudicated) {
+        // Collect shifts for this ticket
+        const ticketShifts = shiftsRows.filter(s => String(s['Ticket ID'] || '').trim() === ticketId).map(s => ({
+          shiftNumber: s['Shift Number'] || 1,
+          shiftStart: s['Shift Start'] instanceof Date ? formatDateTimeSafe_(s['Shift Start']) : String(s['Shift Start'] || ''),
+          venue: s['Venue'] || '',
+          fieldLocation: s['Field / Location'] || '',
+          volunteerName: s['Volunteer Full Name'] || '',
+          category: s['Category'] || '',
+          expectedPoints: Number(s['Expected Points']) || 1,
+          teamCreditedAtCheckIn: s['Team Credited at Check-In'] || '',
+          evidence: s['Evidence / Identifying Details'] || '',
+          supportingLink: s['Supporting Link'] || '',
+          classification: s['Shift Classification'] || '',
+          timely: s['Timely?'] || 'Yes',
+          postingWindowComplete: s['48-Hour Posting Window Complete?'] || 'Yes'
+        }));
+
+        const teamCode = clean_(row['Team Code']);
+        const ledgerPreCheck = getTeamLedgerPreCheck_(teamCode, masterSs);
+
+        unadjudicated.push({
+          ticketId: ticketId,
+          received: row['Received Timestamp'] instanceof Date ? formatDateTimeSafe_(row['Received Timestamp']) : String(row['Received Timestamp'] || ''),
+          submitter: {
+            name: clean_(row['Submitter Name']),
+            role: clean_(row['Submitter Role']),
+            email: clean_(row['Email']),
+            phone: clean_(row['Cell Phone'])
+          },
+          team: {
+            teamCode: teamCode,
+            division: clean_(row['Division']),
+            headCoach: clean_(row['Head Coach'])
+          },
+          requestType: clean_(row['Request Type']),
+          workflowStatus: workflow,
+          priority: clean_(row['Priority']),
+          timely: clean_(row['Timely?']),
+          deadline: row['Applicable Deadline'] instanceof Date ? formatDateTimeSafe_(row['Applicable Deadline']) : String(row['Applicable Deadline'] || ''),
+          siblingInfo: {
+            hasSibling: clean_(row['Sibling / Multi-Team?']),
+            details: clean_(row['Sibling Details'])
+          },
+          shifts: ticketShifts,
+          ledgerPreCheck: ledgerPreCheck
+        });
+      }
+    });
+  }
+
+  // Strategy 2: Check Playoff_Audit_Responses or Form Responses if queue has no entries
+  if (unadjudicated.length === 0) {
+    const rawSheet = auditSs.getSheetByName(ADJUDICATION_SHEET.PLAYOFF_RESPONSES) ||
+                     auditSs.getSheetByName(SHEET.RESPONSES) ||
+                     auditSs.getSheetByName('Form Responses 1');
+
+    if (rawSheet && rawSheet.getLastRow() > 1) {
+      const data = rawSheet.getDataRange().getValues();
+      const headers = data[0].map(h => String(h || '').trim().toLowerCase());
+
+      const idxStatus = headers.findIndex(h => h.includes('audit status') || h.includes('workflow status'));
+      const idxRole = headers.findIndex(h => h.includes('role'));
+      const idxEmail = headers.findIndex(h => h.includes('email'));
+      const idxName = headers.findIndex(h => h.includes('submitter') && h.includes('name'));
+      const idxPhone = headers.findIndex(h => h.includes('phone'));
+      const idxDiv = headers.indexOf('division');
+      const idxCoach = headers.findIndex(h => h.includes('coach'));
+      const idxTeam = headers.findIndex(h => h.includes('team'));
+      const idxDate = headers.findIndex(h => h.includes('date'));
+      const idxCat = headers.findIndex(h => h.includes('category'));
+      const idxVol = headers.findIndex(h => h.includes('volunteer'));
+      const idxField = headers.findIndex(h => h.includes('field') || h.includes('location'));
+      const idxTime = headers.findIndex(h => h.includes('time'));
+      const idxSibling = headers.findIndex(h => h.includes('sibling') && h.includes('does'));
+      const idxSiblingDetails = headers.findIndex(h => h.includes('sibling') && (h.includes('name') || h.includes('detail')));
+      const idxLink = headers.findIndex(h => h.includes('link') || h.includes('photo'));
+
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const status = idxStatus !== -1 ? String(row[idxStatus] || '').trim() : '';
+
+        // If status is Pending or empty, it's unadjudicated
+        if (!status || status.toLowerCase() === 'pending') {
+          const teamCode = clean_(row[idxTeam !== -1 ? idxTeam : 9]);
+          if (!teamCode) continue;
+
+          const ledgerPreCheck = getTeamLedgerPreCheck_(teamCode, masterSs);
+          const ticketId = `TICKET-ROW-${i + 1}`;
+
+          unadjudicated.push({
+            ticketId: ticketId,
+            received: row[0] instanceof Date ? formatDateTimeSafe_(row[0]) : String(row[0] || ''),
+            submitter: {
+              name: clean_(row[idxName !== -1 ? idxName : 4]),
+              role: clean_(row[idxRole !== -1 ? idxRole : 1]),
+              email: clean_(row[idxEmail !== -1 ? idxEmail : 6]),
+              phone: clean_(row[idxPhone !== -1 ? idxPhone : 5])
+            },
+            team: {
+              teamCode: teamCode,
+              division: clean_(row[idxDiv !== -1 ? idxDiv : 7]),
+              headCoach: clean_(row[idxCoach !== -1 ? idxCoach : 8])
+            },
+            requestType: 'Standard Review',
+            workflowStatus: status || 'Pending',
+            priority: 'Normal',
+            timely: 'Yes',
+            deadline: 'Sun, Nov 8, 2026',
+            siblingInfo: {
+              hasSibling: clean_(row[idxSibling !== -1 ? idxSibling : 15]),
+              details: clean_(row[idxSiblingDetails !== -1 ? idxSiblingDetails : 16])
+            },
+            shifts: [{
+              shiftNumber: 1,
+              shiftStart: `${clean_(row[idxDate !== -1 ? idxDate : 10])} ${clean_(row[idxTime !== -1 ? idxTime : 14])}`.trim(),
+              venue: 'Venue',
+              fieldLocation: clean_(row[idxField !== -1 ? idxField : 13]),
+              volunteerName: clean_(row[idxVol !== -1 ? idxVol : 12]),
+              category: clean_(row[idxCat !== -1 ? idxCat : 11]),
+              expectedPoints: 1,
+              teamCreditedAtCheckIn: teamCode,
+              evidence: 'Submitted via Playoff Volunteer Audit Form',
+              supportingLink: clean_(row[idxLink !== -1 ? idxLink : 19]),
+              classification: 'Standard Review',
+              timely: 'Yes',
+              postingWindowComplete: 'Yes'
+            }],
+            ledgerPreCheck: ledgerPreCheck
+          });
+        }
+      }
+    }
+  }
+
+  return unadjudicated;
+}
+
+/**
+ * Formats a single ticket into a clean, structured Markdown dispute dossier.
+ *
+ * @param {Object} ticket The ticket data object with ledgerPreCheck
+ * @returns {string} Formatted markdown dossier
+ */
+function formatDisputeDossier(ticket) {
+  const t = ticket;
+  const l = t.ledgerPreCheck || {};
+  const b = l.breakdown || {};
+
+  const lines = [
+    `### 🎫 Ticket Dossier: ${t.ticketId}`,
+    `- **Submitter:** ${t.submitter.name} (${t.submitter.role})`,
+    `- **Contact:** 📧 ${t.submitter.email || 'N/A'} | 📱 ${t.submitter.phone || 'N/A'}`,
+    `- **Team Code:** \`${t.team.teamCode}\` | **Division:** ${t.team.division} | **Head Coach:** ${t.team.headCoach}`,
+    `- **Received:** ${t.received} | **Priority:** ${t.priority} | **Timely:** ${t.timely}`,
+    '',
+    `#### 📊 Season Master Ledger Pre-Check`,
+    `- **Verified Points:** **${l.totalPts !== undefined ? l.totalPts : 'N/A'}** / ${l.playoffGoal || 17} pts (${l.playoffStatus || 'Unknown'})`,
+    `- **Current Breakdown:** Ref: ${b.refPts || 0}/10 | FM: ${b.fmPts || 0}/2 | Setup: ${b.setupPts || 0}/5 | Pic: ${b.picPts || 0}/2 | CertRef: ${b.certRefPts || 0}/5 | MatchTrak: ${b.matchtrakPts || 0}/2 | Other: ${b.otherPts || 0}`,
+    `- **Qualification Status:** ${l.isAlreadyQualified ? '🏆 **ALREADY QUALIFIED**' : `⏳ **${l.pointsNeeded || 0} pts needed**`}`
+  ];
+
+  if (l.warnings && l.warnings.length > 0) {
+    lines.push(`- **Pre-Check Alerts:**`);
+    l.warnings.forEach(w => lines.push(`  - ${w}`));
+  }
+
+  lines.push('', `#### ⚽ Disputed Shift(s) (${t.shifts.length} shift${t.shifts.length === 1 ? '' : 's'})`);
+  t.shifts.forEach((s, idx) => {
+    lines.push(
+      `**Shift #${s.shiftNumber || idx + 1}:**`,
+      `- **Volunteer:** ${s.volunteerName}`,
+      `- **Category:** ${s.category} | **Expected Points:** +${s.expectedPoints}`,
+      `- **Date / Time:** ${s.shiftStart}`,
+      `- **Venue / Field:** ${s.venue} - ${s.fieldLocation}`,
+      `- **Check-In Team:** ${s.teamCreditedAtCheckIn || 'None specified'}`,
+      `- **Evidence Notes:** ${s.evidence || 'None provided'}`,
+      `- **Supporting Link:** ${s.supportingLink ? `[View Evidence Link](${s.supportingLink})` : 'None attached'}`
+    );
+  });
+
+  lines.push(
+    '',
+    `#### 👨‍👩‍👧‍👦 Sibling / Cross-Team Leakage Check`,
+    `- **Has Siblings in Region 154:** ${t.siblingInfo.hasSibling || 'No'}`,
+    `- **Sibling Details:** ${t.siblingInfo.details || 'None'}`
+  );
+
+  lines.push(
+    '',
+    `#### 🤖 Suggested Gem Adjudication Prompt`,
+    `> "Please evaluate ticket \`${t.ticketId}\` for team \`${t.team.teamCode}\`. Volunteer \`${t.shifts.map(s => s.volunteerName).join(', ')}\` claimed shift(s) in \`${t.shifts.map(s => s.category).join(', ')}\`. The team has ${l.totalPts !== undefined ? l.totalPts : 'N/A'}/${l.playoffGoal || 17} pts. Cross-reference against physical tent records/match cards. If verified, approve points into target column ('pictureDay' or 'adjustment'). If cap is exceeded or unverified, deny with reason."`
+  );
+
+  return lines.join('\n');
+}
+
+/**
+ * Compiles all unadjudicated dossiers into Markdown and JSON packages ready for Gem ingestion.
+ *
+ * @param {Object} [options] Filter options
+ * @returns {Object} { count, markdown, json, tickets }
+ */
+function exportDisputeDossiersForGem(options = {}) {
+  const tickets = getUnadjudicatedDisputes(options);
+
+  const header = [
+    `# 📋 AYSO REGION 154 — 2026 PLAYOFF VOLUNTEER AUDIT DOSSIERS`,
+    `**Export Timestamp:** ${formatDateTimeSafe_(new Date())}`,
+    `**Unadjudicated Dispute Tickets:** ${tickets.length}`,
+    `--------------------------------------------------------------------------------`,
+    ''
+  ].join('\n');
+
+  let markdown = '';
+  if (tickets.length === 0) {
+    markdown = header + '\n✅ *No unadjudicated dispute tickets found. All submissions have been processed.*';
+  } else {
+    markdown = header + tickets.map(t => formatDisputeDossier(t)).join('\n\n---\n\n');
+  }
+
+  const jsonString = JSON.stringify(tickets, null, 2);
+
+  // Write to a dedicated sheet tab 'Gem_Dispute_Dossiers' if spreadsheet is available
+  try {
+    const ss = resolveMasterSpreadsheet_() || resolveAuditSpreadsheet_();
+    if (ss && typeof ss.getSheetByName === 'function') {
+      let sheet = ss.getSheetByName(ADJUDICATION_SHEET.DOSSIERS);
+      if (!sheet) {
+        sheet = ss.insertSheet(ADJUDICATION_SHEET.DOSSIERS);
+      }
+      sheet.clear();
+      sheet.getRange(1, 1).setValue('AYSO 154 GEM DISPUTE DOSSIERS EXPORT (COPY / FEED INTO GEM)');
+      sheet.getRange(1, 1).setFontWeight('bold').setBackground(AUDIT.BRAND_NAVY).setFontColor('#FFFFFF').setFontSize(12);
+      sheet.getRange(2, 1).setValue(markdown);
+      sheet.getRange(2, 1).setFontFamily('Courier New').setFontSize(10).setWrap(true);
+      sheet.setColumnWidth(1, 900);
+      sheet.setRowHeight(1, 30);
+    }
+  } catch (e) {
+    Logger.log('Could not write to Gem_Dispute_Dossiers tab: ' + e.message);
+  }
+
+  return {
+    count: tickets.length,
+    markdown: markdown,
+    json: jsonString,
+    tickets: tickets
+  };
+}
+
+/**
+ * Applies an approved Gem decision directly into the Team_Awards matrix
+ * and triggers synchronization of the Season Master Ledger.
+ *
+ * @param {string} teamCode Target team code (e.g. '10U - Boys - Faheem Armanyous')
+ * @param {string} targetColumn Target matrix column: 'pictureDay' or 'adjustment'
+ * @param {number} points Point adjustment (positive or negative)
+ * @param {string} reason Reason / audit finding for the decision
+ * @param {string} [reviewerName] Name of the reviewing board member
+ * @param {string} [ticketId] Optional associated Ticket ID
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [targetSs] Optional master spreadsheet reference
+ * @returns {Object} Result object with updated team totals
+ */
+function applyGemDecisionToTeamAwards(teamCode, targetColumn, points, reason, reviewerName, ticketId, targetSs) {
+  if (!teamCode || !teamCode.trim()) {
+    throw new Error('teamCode is required to apply an adjudication decision.');
+  }
+
+  const normTarget = String(targetColumn || '').trim().toLowerCase();
+  const isPic = normTarget.includes('pic');
+  const isAdj = normTarget.includes('adj') || normTarget.includes('oth');
+
+  if (!isPic && !isAdj) {
+    throw new Error("Invalid targetColumn: must be 'pictureDay' or 'adjustment'.");
+  }
+
+  const pts = Number(points);
+  if (isNaN(pts)) {
+    throw new Error('points must be a valid number.');
+  }
+
+  const masterSs = targetSs || resolveMasterSpreadsheet_();
+  if (!masterSs) {
+    throw new Error('Master spreadsheet not found.');
+  }
+
+  let awardsSheet = masterSs.getSheetByName(ADJUDICATION_SHEET.AWARDS);
+  const awardHeaders = [
+    'Team Code',
+    'Pre-Season Referees',
+    'MatchTrak Bonus',
+    'Picture Day',
+    'Adjustment',
+    'Reason / Audit Notes',
+    'Reviewer',
+    'Last Updated'
+  ];
+
+  if (!awardsSheet) {
+    awardsSheet = masterSs.insertSheet(ADJUDICATION_SHEET.AWARDS);
+    awardsSheet.getRange(1, 1, 1, awardHeaders.length).setValues([awardHeaders]);
+    awardsSheet.getRange(1, 1, 1, awardHeaders.length)
+      .setFontWeight('bold')
+      .setBackground(AUDIT.BRAND_NAVY)
+      .setFontColor('#FFFFFF');
+  }
+
+  const data = awardsSheet.getDataRange().getValues();
+  const cleanTeam = String(teamCode).trim();
+  const normTeam = normalizeTeamCode_(cleanTeam);
+
+  let targetRowIdx = -1; // 1-based sheet row index
+  let currentPic = 0;
+  let currentAdj = 0;
+  let currentCert = 0;
+  let currentMatch = 0;
+
+  for (let r = 1; r < data.length; r++) {
+    const rowTeam = String(data[r][0] || '').trim();
+    if (!rowTeam) continue;
+    if (rowTeam.toLowerCase() === cleanTeam.toLowerCase() || normalizeTeamCode_(rowTeam) === normTeam) {
+      targetRowIdx = r + 1; // 1-indexed row
+      currentCert = Number(data[r][1]) || 0;
+      currentMatch = Number(data[r][2]) || 0;
+      currentPic = Number(data[r][3]) || 0;
+      currentAdj = Number(data[r][4]) || 0;
+      break;
+    }
+  }
+
+  const author = reviewerName || (typeof Session !== 'undefined' && Session.getActiveUser().getEmail()) || 'Board Admin';
+  const decisionReason = reason || 'Approved Gem Playoff Adjudication';
+  const now = new Date();
+
+  let newPic = currentPic;
+  let newAdj = currentAdj;
+
+  if (isPic) {
+    newPic = Math.max(0, Math.min(2, currentPic + pts));
+  } else {
+    newAdj = currentAdj + pts;
+  }
+
+  if (targetRowIdx > 0) {
+    // Update existing row in Team_Awards (Columns: D=4 Pic, E=5 Adj, F=6 Reason, G=7 Reviewer, H=8 Date)
+    awardsSheet.getRange(targetRowIdx, 4).setValue(newPic);
+    awardsSheet.getRange(targetRowIdx, 5).setValue(newAdj);
+    awardsSheet.getRange(targetRowIdx, 6).setValue(decisionReason);
+    awardsSheet.getRange(targetRowIdx, 7).setValue(author);
+    awardsSheet.getRange(targetRowIdx, 8).setValue(now);
+  } else {
+    // Append new row for team
+    const newRow = [
+      cleanTeam,
+      currentCert,
+      currentMatch,
+      newPic,
+      newAdj,
+      decisionReason,
+      author,
+      now
+    ];
+    awardsSheet.appendRow(newRow);
+  }
+
+  if (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.flush) {
+    SpreadsheetApp.flush();
+  }
+
+  // If associated with a ticket, update the Audit Queue
+  if (ticketId) {
+    try {
+      const auditSs = resolveAuditSpreadsheet_();
+      const queueSheet = auditSs ? auditSs.getSheetByName(SHEET.QUEUE) : null;
+      if (queueSheet && queueSheet.getLastRow() > 1) {
+        const qData = queueSheet.getDataRange().getValues();
+        for (let q = 1; q < qData.length; q++) {
+          if (String(qData[q][0] || '').trim() === String(ticketId).trim()) {
+            const rowNum = q + 1;
+            const hMap = headerMap_(queueSheet);
+            if (hMap['Decision']) queueSheet.getRange(rowNum, hMap['Decision']).setValue('Approved');
+            if (hMap['Net Point Adjustment']) queueSheet.getRange(rowNum, hMap['Net Point Adjustment']).setValue(pts);
+            if (hMap['Auditor Assigned']) queueSheet.getRange(rowNum, hMap['Auditor Assigned']).setValue(author);
+            if (hMap['Auditor Notes']) queueSheet.getRange(rowNum, hMap['Auditor Notes']).setValue(decisionReason);
+            if (hMap['Decision Date']) queueSheet.getRange(rowNum, hMap['Decision Date']).setValue(now);
+            if (hMap['Workflow Status']) queueSheet.getRange(rowNum, hMap['Workflow Status']).setValue('Closed');
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      Logger.log('Could not update queue ticket ' + ticketId + ': ' + err.message);
+    }
+  }
+
+  // Trigger synchronization of Season_Master_Ledger
+  let syncResult = null;
+  try {
+    if (typeof runAuditAndSyncLedger === 'function') {
+      syncResult = runAuditAndSyncLedger();
+    } else if (typeof syncSeasonMasterLedger === 'function') {
+      const auditSummary = (typeof auditFormResponses === 'function') ? auditFormResponses(masterSs) : { teamPoints: {} };
+      syncResult = syncSeasonMasterLedger(masterSs, auditSummary.teamPoints);
+    }
+  } catch (err) {
+    Logger.log('Warning during syncSeasonMasterLedger trigger: ' + err.message);
+  }
+
+  // Fetch updated ledger status
+  const updatedLedger = getTeamLedgerPreCheck_(cleanTeam, masterSs);
+
+  return {
+    success: true,
+    teamCode: cleanTeam,
+    targetColumn: isPic ? 'pictureDay' : 'adjustment',
+    pointsApplied: pts,
+    previousPic: currentPic,
+    newPic: newPic,
+    previousAdj: currentAdj,
+    newAdj: newAdj,
+    reason: decisionReason,
+    reviewer: author,
+    ticketId: ticketId || null,
+    revisedLedger: updatedLedger,
+    message: `Applied ${pts >= 0 ? '+' : ''}${pts} pt(s) to ${cleanTeam} [${isPic ? 'pictureDay' : 'adjustment'}]. Total verified points: ${updatedLedger.totalPts !== undefined ? updatedLedger.totalPts : 'N/A'}. Status: ${updatedLedger.playoffStatus || 'Updated'}.`
+  };
+}
+
+/**
+ * UI Menu Action: Export dispute dossiers and display them in an interactive modal dialog.
+ */
+function menuExportDisputeDossiers() {
+  const ui = SpreadsheetApp.getUi();
+  const exportResult = exportDisputeDossiersForGem();
+
+  if (exportResult.count === 0) {
+    ui.alert(
+      'AYSO 154 Playoff Audit',
+      '✅ No unadjudicated dispute tickets found!\n\nAll tickets in the queue have been reviewed and closed.',
+      ui.ButtonSet.OK
+    );
+    return;
+  }
+
+  const escapedMarkdown = exportResult.markdown
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <base target="_top">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; color: #0F172A; background: #F8FAFC; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #002D62; padding-bottom: 12px; margin-bottom: 16px; }
+          .title { font-size: 18px; font-weight: bold; color: #002D62; }
+          .badge { background: #C8102E; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+          .btn-bar { display: flex; gap: 10px; margin-bottom: 14px; }
+          .btn { background: #002D62; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+          .btn:hover { background: #001A38; }
+          .btn-secondary { background: #64748B; }
+          .btn-secondary:hover { background: #475569; }
+          .status { font-size: 12px; color: #15803D; font-weight: bold; margin-left: 8px; display: none; }
+          textarea { width: 100%; height: 420px; font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 12px; padding: 12px; border: 1px solid #CBD5E1; border-radius: 6px; background: #FFFFFF; resize: vertical; box-sizing: border-box; }
+          .footer { font-size: 11px; color: #64748B; margin-top: 10px; text-align: right; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">📋 Playoff Dispute Dossiers (${exportResult.count} Pending)</div>
+          <div class="badge">${exportResult.count} Tickets</div>
+        </div>
+        <div class="btn-bar">
+          <button class="btn" onclick="copyDossier()">📋 Copy Markdown Dossier</button>
+          <button class="btn btn-secondary" onclick="copyJson()">📦 Copy Structured JSON</button>
+          <span id="copyStatus" class="status">✓ Copied to clipboard!</span>
+        </div>
+        <textarea id="dossierText" readonly>${escapedMarkdown}</textarea>
+        <div class="footer">Feed this dossier into the custom Gem for adjudication recommendations. Tab 'Gem_Dispute_Dossiers' has also been refreshed.</div>
+
+        <script>
+          const rawJson = ${JSON.stringify(exportResult.json)};
+          function copyDossier() {
+            const ta = document.getElementById('dossierText');
+            ta.select();
+            document.execCommand('copy');
+            showStatus('Markdown copied!');
+          }
+          function copyJson() {
+            navigator.clipboard.writeText(rawJson).then(() => {
+              showStatus('JSON copied!');
+            });
+          }
+          function showStatus(msg) {
+            const el = document.getElementById('copyStatus');
+            el.innerText = '✓ ' + msg;
+            el.style.display = 'inline';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+          }
+        </script>
+      </body>
+    </html>
+  `;
+
+  const htmlOutput = HtmlService.createHtmlOutput(htmlContent)
+    .setWidth(720)
+    .setHeight(560);
+
+  ui.showModalDialog(htmlOutput, 'AYSO 154 - Gem Adjudication Dossiers');
+}
+
+/**
+ * UI Menu Action: Prompt board member step-by-step to apply a Gem decision directly into Team_Awards.
+ */
+function menuApplyGemDecision() {
+  const ui = SpreadsheetApp.getUi();
+
+  // 1. Team Code
+  const teamPrompt = ui.prompt(
+    'Apply Gem Adjudication Decision',
+    'Step 1 of 5: Enter the Team Code (e.g., "10U - Boys - Faheem Armanyous"):',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (teamPrompt.getSelectedButton() !== ui.Button.OK) return;
+  const teamCode = teamPrompt.getResponseText().trim();
+  if (!teamCode) {
+    ui.alert('Team code cannot be blank.');
+    return;
+  }
+
+  // 2. Target Column
+  const colPrompt = ui.prompt(
+    'Apply Gem Adjudication Decision',
+    'Step 2 of 5: Target Column in Team_Awards?\nEnter "pictureDay" or "adjustment":',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (colPrompt.getSelectedButton() !== ui.Button.OK) return;
+  const targetCol = colPrompt.getResponseText().trim();
+
+  // 3. Points
+  const ptsPrompt = ui.prompt(
+    'Apply Gem Adjudication Decision',
+    'Step 3 of 5: Number of points to add (e.g., 1 or 2):',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (ptsPrompt.getSelectedButton() !== ui.Button.OK) return;
+  const points = Number(ptsPrompt.getResponseText().trim());
+  if (isNaN(points)) {
+    ui.alert('Points must be a valid number.');
+    return;
+  }
+
+  // 4. Reason
+  const reasonPrompt = ui.prompt(
+    'Apply Gem Adjudication Decision',
+    'Step 4 of 5: Reason / Audit Finding (e.g., "Approved Gem review - missing shift 10/24 verified on match card"):',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (reasonPrompt.getSelectedButton() !== ui.Button.OK) return;
+  const reason = reasonPrompt.getResponseText().trim();
+
+  // 5. Reviewer / Ticket ID
+  const reviewerPrompt = ui.prompt(
+    'Apply Gem Adjudication Decision',
+    'Step 5 of 5: Reviewer Name / Ticket ID (e.g., "Board Admin - R154-2026-0001"):',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (reviewerPrompt.getSelectedButton() !== ui.Button.OK) return;
+  const reviewer = reviewerPrompt.getResponseText().trim();
+
+  try {
+    const res = applyGemDecisionToTeamAwards(teamCode, targetCol, points, reason, reviewer);
+    ui.alert(
+      '✅ Decision Applied Successfully',
+      `${res.message}\n\nSeason_Master_Ledger has been re-synchronized.`,
+      ui.ButtonSet.OK
+    );
+  } catch (err) {
+    ui.alert('❌ Error Applying Decision', err.message, ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * Creates the dedicated Playoff Audit Bridge menu.
+ */
+function createPlayoffAuditMenu(ui) {
+  const menuUi = ui || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getUi() : null);
+  if (!menuUi) return;
+  try {
+    menuUi.createMenu('⚖️ Playoff Audit Bridge')
+      .addItem('📋 Export Playoff Dispute Dossiers (for Gem)', 'menuExportDisputeDossiers')
+      .addItem('⚖️ Apply Gem Adjudication Decision', 'menuApplyGemDecision')
+      .addToUi();
+  } catch (e) {
+    Logger.log('Could not create Playoff Audit Bridge menu: ' + e.message);
+  }
+}
+
+/**
+ * Safe date formatter compatible with non-Apps-Script (Node.js) test environments.
+ */
+function formatDateTimeSafe_(date) {
+  if (!date) return 'Not available';
+  if (typeof Utilities !== 'undefined' && Utilities.formatDate) {
+    return Utilities.formatDate(new Date(date), AUDIT.TIME_ZONE, 'EEE, MMM d, yyyy h:mm a') + ' PT';
+  }
+  return new Date(date).toISOString();
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    exportDisputeDossiersForGem,
+    applyGemDecisionToTeamAwards,
+    getTeamLedgerPreCheck_,
+    getUnadjudicatedDisputes,
+    formatDisputeDossier,
+    menuExportDisputeDossiers,
+    menuApplyGemDecision,
+    createPlayoffAuditMenu,
+    ADJUDICATION_SHEET,
+    AUDIT,
+    SHEET,
+    QUEUE_HEADERS,
+    SHIFT_HEADERS
+  };
+}

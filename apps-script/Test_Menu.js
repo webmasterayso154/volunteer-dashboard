@@ -16,6 +16,9 @@ function onOpen() {
       .addItem('🗑️ Purge All Demo & Test Data', 'menuPurgeData')
       .addSeparator()
       .addItem('🔍 Inspect Test Team Stats (Faheem Armanyous)', 'menuInspectTeam')
+      .addSeparator()
+      .addItem('📋 Export Playoff Dispute Dossiers (for Gem)', 'menuExportDisputeDossiers')
+      .addItem('⚖️ Apply Gem Adjudication Decision', 'menuApplyGemDecision')
       .addToUi();
   } catch (e) {
     Logger.log('onOpen skipped in non-interactive context: ' + e.message);
