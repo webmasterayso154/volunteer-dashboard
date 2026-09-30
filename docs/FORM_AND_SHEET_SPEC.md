@@ -1,11 +1,12 @@
 # AYSO 154 Check-In Form & Sheet Schema Spec
 
 ## Live Google Sheet Tabs
-1. `Form Responses 1`: Destination tab for form submissions.
-2. `Team_Awards`: Manual board adjustments, bonus points, uniform deductions.
-3. `Settings`: Configuration key/value store (Caps, emails, thresholds).
+1. `Game Day Check-ins` (formerly `Form Responses 1`): Destination tab for volunteer game-day check-in submissions.
+2. `Audit Submissions` (or `Form Responses 2` / `Playoff_Audit_Responses`): Destination tab for post-season dispute & audit submissions.
+3. `Team_Awards`: Manual board adjustments, bonus points, uniform deductions.
+4. `Admin_Config` / `Settings`: Configuration key/value store (Caps, emails, thresholds).
 
-## Form Responses 1 - Column Schema
+## Game Day Check-ins - Column Schema (Columns A–Q)
 - Col 1 (A): Timestamp
 - Col 2 (B): Email Address
 - Col 3 (C): First Name

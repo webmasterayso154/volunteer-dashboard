@@ -88,12 +88,16 @@ function setupExecutiveSummarySheet(targetSpreadsheet) {
     .setFontColor(brandSubheaderTxt)
     .setFontWeight("bold");
 
+  const targetCheckInTab = (ss && typeof ss.getSheetByName === 'function' && ss.getSheetByName('Form Responses 1') && !ss.getSheetByName('Game Day Check-ins'))
+    ? 'Form Responses 1'
+    : 'Game Day Check-ins';
+
   const kpiData = [
-    ["Total Volunteer Check-In Submissions", "=MAX(0, COUNTA('Form Responses 1'!A2:A))", "100.0%", "Raw intake from Google Form"],
-    ["Verified & Clean Check-Ins (Audited)", "=COUNTIF('Form Responses 1'!O2:O, \"Verified\")", "=IF($B$6>0, B7/$B$6, 0)", "Credited towards team playoff points"],
-    ["Pending / Recorded Submissions (Awaiting Audit)", "=COUNTIF('Form Responses 1'!O2:O, \"\") + COUNTIF('Form Responses 1'!O2:O, \"Recorded\")", "=IF($B$6>0, B8/$B$6, 0)", "Under routine 48h board triage window"],
-    ["Filtered Submissions (Duplicate / NOCRA / Cap Met)", "=COUNTIF('Form Responses 1'!O2:O, \"Duplicate*\") + COUNTIF('Form Responses 1'!O2:O, \"NOCRA*\") + COUNTIF('Form Responses 1'!O2:O, \"Cap Met*\")", "=IF($B$6>0, B9/$B$6, 0)", "Deduplicated or zero-point exceptions"],
-    ["Total Verified Volunteer Points Logged", "=SUM('Form Responses 1'!P2:P)", "-", "Cumulative season points credited"]
+    ["Total Volunteer Check-In Submissions", `=MAX(0, COUNTA('${targetCheckInTab}'!A2:A))`, "100.0%", "Raw intake from Google Form"],
+    ["Verified & Clean Check-Ins (Audited)", `=COUNTIF('${targetCheckInTab}'!O2:O, "Verified")`, "=IF($B$6>0, B7/$B$6, 0)", "Credited towards team playoff points"],
+    ["Pending / Recorded Submissions (Awaiting Audit)", `=COUNTIF('${targetCheckInTab}'!O2:O, "") + COUNTIF('${targetCheckInTab}'!O2:O, "Recorded")`, "=IF($B$6>0, B8/$B$6, 0)", "Under routine 48h board triage window"],
+    ["Filtered Submissions (Duplicate / NOCRA / Cap Met)", `=COUNTIF('${targetCheckInTab}'!O2:O, "Duplicate*") + COUNTIF('${targetCheckInTab}'!O2:O, "NOCRA*") + COUNTIF('${targetCheckInTab}'!O2:O, "Cap Met*")`, "=IF($B$6>0, B9/$B$6, 0)", "Deduplicated or zero-point exceptions"],
+    ["Total Verified Volunteer Points Logged", `=SUM('${targetCheckInTab}'!P2:P)`, "-", "Cumulative season points credited"]
   ];
   sheet.getRange("A6:D10").setValues(kpiData);
 
@@ -114,10 +118,10 @@ function setupExecutiveSummarySheet(targetSpreadsheet) {
     .setFontWeight("bold");
 
   const rolesData = [
-    ["Referee (Center Referee & Assistant Referee)", "=COUNTIF('Form Responses 1'!E2:E, \"*Referee*\")", "=SUMIFS('Form Responses 1'!P2:P, 'Form Responses 1'!E2:E, \"*Referee*\")", "Max 10 On-Field Ref Points/Team"],
-    ["Field Marshal Shift", "=COUNTIF('Form Responses 1'!E2:E, \"*Field Marshal*\")", "=SUMIFS('Form Responses 1'!P2:P, 'Form Responses 1'!E2:E, \"*Field Marshal*\")", "Max 2 Field Marshal Points/Team"],
-    ["Friday Night Field Setup & Takedown", "=COUNTIF('Form Responses 1'!E2:E, \"*Set Up*\") + COUNTIF('Form Responses 1'!E2:E, \"*Setup*\")", "=SUMIFS('Form Responses 1'!P2:P, 'Form Responses 1'!E2:E, \"*Set*\")", "Max 1 Setup Point/Team (5 for U8/U6)"],
-    ["Picture Day & Special Regional Events", "=COUNTIF('Form Responses 1'!E2:E, \"*Picture*\")", "=SUMIFS('Form Responses 1'!P2:P, 'Form Responses 1'!E2:E, \"*Picture*\")", "Max 2 Picture Day Points/Team"]
+    ["Referee (Center Referee & Assistant Referee)", `=COUNTIF('${targetCheckInTab}'!E2:E, "*Referee*")`, `=SUMIFS('${targetCheckInTab}'!P2:P, '${targetCheckInTab}'!E2:E, "*Referee*")`, "Max 10 On-Field Ref Points/Team"],
+    ["Field Marshal Shift", `=COUNTIF('${targetCheckInTab}'!E2:E, "*Field Marshal*")`, `=SUMIFS('${targetCheckInTab}'!P2:P, '${targetCheckInTab}'!E2:E, "*Field Marshal*")`, "Max 2 Field Marshal Points/Team"],
+    ["Friday Night Field Setup & Takedown", `=COUNTIF('${targetCheckInTab}'!E2:E, "*Set Up*") + COUNTIF('${targetCheckInTab}'!E2:E, "*Setup*")`, `=SUMIFS('${targetCheckInTab}'!P2:P, '${targetCheckInTab}'!E2:E, "*Set*")`, "Max 1 Setup Point/Team (5 for U8/U6)"],
+    ["Picture Day & Special Regional Events", `=COUNTIF('${targetCheckInTab}'!E2:E, "*Picture*")`, `=SUMIFS('${targetCheckInTab}'!P2:P, '${targetCheckInTab}'!E2:E, "*Picture*")`, "Max 2 Picture Day Points/Team"]
   ];
   sheet.getRange("A14:D17").setValues(rolesData);
 
@@ -138,9 +142,9 @@ function setupExecutiveSummarySheet(targetSpreadsheet) {
     .setFontWeight("bold");
 
   const venueData = [
-    ["🌲 Park Lexington (Denni & Cerritos)", "=COUNTIF('Form Responses 1'!I2:I, \"*Park Lex*\") + COUNTIF('Form Responses 1'!K2:K, \"*Park Lex*\") + COUNTIF('Form Responses 1'!N2:N, \"*Park Lex*\")", "=IF($B$6>0, B21/$B$6, 0)", "Turf & Grass Fields Synced"],
-    ["🏫 Luther Elementary (U8/U10 Complex)", "=COUNTIF('Form Responses 1'!I2:I, \"*Luther*\") + COUNTIF('Form Responses 1'!K2:K, \"*Luther*\") + COUNTIF('Form Responses 1'!N2:N, \"*Luther*\")", "=IF($B$6>0, B22/$B$6, 0)", "Active with Zero-Game Fallback"],
-    ["🏫 Lexington Junior High (LJHS) & Arnold", "=COUNTIF('Form Responses 1'!I2:I, \"*LJHS*\") + COUNTIF('Form Responses 1'!I2:I, \"*Lexington*\") + COUNTIF('Form Responses 1'!I2:I, \"*Arnold*\") + COUNTIF('Form Responses 1'!K2:K, \"*LJHS*\") + COUNTIF('Form Responses 1'!K2:K, \"*Arnold*\") + COUNTIF('Form Responses 1'!N2:N, \"*LJHS*\") + COUNTIF('Form Responses 1'!N2:N, \"*Arnold*\")", "=IF($B$6>0, B23/$B$6, 0)", "Fields #1–#10 & Overflow"]
+    ["🌲 Park Lexington (Denni & Cerritos)", `=COUNTIF('${targetCheckInTab}'!I2:I, "*Park Lex*") + COUNTIF('${targetCheckInTab}'!K2:K, "*Park Lex*") + COUNTIF('${targetCheckInTab}'!N2:N, "*Park Lex*")`, "=IF($B$6>0, B21/$B$6, 0)", "Turf & Grass Fields Synced"],
+    ["🏫 Luther Elementary (U8/U10 Complex)", `=COUNTIF('${targetCheckInTab}'!I2:I, "*Luther*") + COUNTIF('${targetCheckInTab}'!K2:K, "*Luther*") + COUNTIF('${targetCheckInTab}'!N2:N, "*Luther*")`, "=IF($B$6>0, B22/$B$6, 0)", "Active with Zero-Game Fallback"],
+    ["🏫 Lexington Junior High (LJHS) & Arnold", `=COUNTIF('${targetCheckInTab}'!I2:I, "*LJHS*") + COUNTIF('${targetCheckInTab}'!I2:I, "*Lexington*") + COUNTIF('${targetCheckInTab}'!I2:I, "*Arnold*") + COUNTIF('${targetCheckInTab}'!K2:K, "*LJHS*") + COUNTIF('${targetCheckInTab}'!K2:K, "*Arnold*") + COUNTIF('${targetCheckInTab}'!N2:N, "*LJHS*") + COUNTIF('${targetCheckInTab}'!N2:N, "*Arnold*")`, "=IF($B$6>0, B23/$B$6, 0)", "Fields #1–#10 & Overflow"]
   ];
   sheet.getRange("A21:D23").setValues(venueData);
 

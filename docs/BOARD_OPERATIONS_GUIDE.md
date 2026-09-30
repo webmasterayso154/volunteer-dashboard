@@ -35,7 +35,7 @@
 
 | Day & Time | Responsible Role | Game Day Operational Action |
 | :--- | :--- | :--- |
-| ☕ **Monday Morning** | Referee Admin *(or delegate)* | Cross-reference Saturday game cards in MatchTrak against `Form Responses 1`. Resolve any Center Ref collisions so both teams get proper credit. |
+| ☕ **Monday Morning** | Referee Admin *(or delegate)* | Cross-reference Saturday game cards in MatchTrak against `Game Day Check-ins` (formerly `Form Responses 1`). Resolve any Center Ref collisions so both teams get proper credit. |
 | 📱 **Tuesday Evening** | Coach Admin *(or delegate)* | Check the public dashboard to ensure team point tallies are climbing toward the 17-point goal and answer coach inquiries. |
 | 🥅 **Friday Afternoon** | Field Director / Webmaster | Confirm Friday Night Field Setup QR codes are ready at the storage shed so setup crews can log their hours (1 pt/hr). |
 | 🏁 **Season Finale** | Regional Commissioner | Open `Admin_Config` in the spreadsheet and check cell **E8 (`StandingsFrozen`)** to lock final seeds for playoff brackets! |

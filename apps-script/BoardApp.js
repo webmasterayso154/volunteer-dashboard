@@ -64,7 +64,7 @@ function getBoardDashboardData() {
     });
   }
 
-  const respSheet = ss.getSheetByName('Form Responses 1');
+  const respSheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
   const respRows = (respSheet && respSheet.getLastRow() > 1) ? respSheet.getDataRange().getValues() : [];
   
   const awardsSheet = ss.getSheetByName('Team_Awards');
@@ -189,7 +189,7 @@ function getBoardDashboardData() {
  */
 function scanSubmissionsForAnomalies() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const respSheet = ss.getSheetByName('Form Responses 1');
+  const respSheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
   if (!respSheet || respSheet.getLastRow() < 2) return [];
 
   const rows = respSheet.getDataRange().getValues();

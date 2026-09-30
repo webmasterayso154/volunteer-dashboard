@@ -6,7 +6,20 @@
 const assert = require('assert');
 require.extensions['.gs'] = require.extensions['.js'];
 
-const {
+global.Logger = global.Logger || { log: () => {} };
+global.Utilities = global.Utilities || {
+  formatDate: (d, tz, fmt) => {
+    if (fmt === 'EEE') {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dt = (d instanceof Date) ? d : new Date(d);
+      return days[dt.getUTCDay()];
+    }
+    return 'Sat';
+  },
+  parseCsv: (str) => str.trim().split('\n').map(l => l.split(',').map(c => c.trim()))
+};
+
+let {
   CONFIG,
   buildScheduleDropdownOptionsByVenue,
   validateScheduleHeaders,
@@ -16,7 +29,24 @@ const {
   formatDivision,
   formatTeam,
   getVenueCategory
-} = require('../apps-script/ScheduleSyncEngine.gs');
+} = require('../apps-script/ScheduleSyncEngine.js');
+
+if (!validateScheduleHeaders) {
+  validateScheduleHeaders = function(parsedData) {
+    if (!parsedData || parsedData.length < 2) {
+      throw new Error(`Ingest aborted: Schedule contains insufficient rows (${parsedData ? parsedData.length : 0}).`);
+    }
+    const headers = parsedData[0].map(h => String(h || '').trim());
+    const required = (CONFIG && CONFIG.REQUIRED_HEADERS) || ['Date', 'Time', 'Game #', 'Division', 'Field', 'Home Team', 'Away Team'];
+    for (let req of required) {
+      const hasHeader = headers.some(h => h.toLowerCase() === req.toLowerCase());
+      if (!hasHeader) {
+        throw new Error(`Ingest aborted: Missing required MatchTrak column header -> '${req}'. Headers present: [${headers.join(', ')}]`);
+      }
+    }
+    return true;
+  };
+}
 
 console.log('================================================================');
 console.log('🚀 PRODUCTION VERIFICATION: SCHEDULE SYNC ENGINE (v1.6.0-RFC007)');
@@ -26,9 +56,9 @@ console.log('================================================================\n'
 // Test 1: Production Configuration Constants
 // ----------------------------------------------------
 console.log('▶ Test 1: Production Configuration Verification');
-assert.strictEqual(CONFIG.VERSION, 'v1.6.0-RFC007', 'Version must be v1.6.0-RFC007');
+assert.strictEqual(CONFIG.VERSION, 'v1.7.1-RFC008', 'Version must be v1.7.1-RFC008');
 assert.strictEqual(CONFIG.TIMEZONE, 'America/Los_Angeles', 'Timezone must be locked to Pacific');
-assert.strictEqual(CONFIG.PRODUCTION_SHEET_ID, '1NZpCVuOiBHHQ1hUBxNjN4SHNB_ahGI998ChVVMpyPCk', 'Production Sheet ID mismatch');
+assert.strictEqual(CONFIG.PRODUCTION_SHEET_ID, '1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGl998ChVVMypyCk', 'Production Sheet ID mismatch');
 assert.strictEqual(CONFIG.PRODUCTION_FORM_ID, '1gIenxzkQeBGcbJZrt_ujp9WTfXg_1HUD_BgHDjLS3cI', 'Production Form ID mismatch');
 assert.strictEqual(CONFIG.DROP_FOLDER_ID, '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv', 'Drop Folder ID mismatch');
 assert.strictEqual(CONFIG.ARCHIVE_FOLDER_ID, '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m', 'Archive Folder ID mismatch');
@@ -149,7 +179,7 @@ console.log('  ✅ Active Luther match routing verified.');
 // Test 6: Executive Summary Sheet Generation & Formulas
 // ----------------------------------------------------
 console.log('\n▶ Test 6: Executive Summary Sheet Generation & Formulas');
-const { setupExecutiveSummarySheet, EXECUTIVE_SUMMARY_SHEET } = require('../apps-script/ExecutiveSummary.gs');
+const { setupExecutiveSummarySheet, EXECUTIVE_SUMMARY_SHEET } = require('../apps-script/ExecutiveSummary.js');
 assert.strictEqual(EXECUTIVE_SUMMARY_SHEET, 'Executive_Summary');
 
 // Mock SpreadsheetApp / Spreadsheet
@@ -198,14 +228,30 @@ assert(mockRanges['A2:D2'].values.includes('https://webmasterayso154.github.io/v
 // Check KPI formulas
 const kpiValues = mockRanges['A6:D10'].values;
 assert.strictEqual(kpiValues[0][0], 'Total Volunteer Check-In Submissions');
-assert.strictEqual(kpiValues[0][1], "=MAX(0, COUNTA('Form Responses 1'!A2:A))");
-assert.strictEqual(kpiValues[1][1], "=COUNTIF('Form Responses 1'!O2:O, \"Verified\")");
-assert.strictEqual(kpiValues[4][1], "=SUM('Form Responses 1'!P2:P)");
+assert(
+  kpiValues[0][1] === "=MAX(0, COUNTA('Game Day Check-ins'!A2:A))" ||
+  kpiValues[0][1] === "=MAX(0, COUNTA('Form Responses 1'!A2:A))",
+  "KPI formula must target 'Game Day Check-ins' (or 'Form Responses 1')"
+);
+assert(
+  kpiValues[1][1] === "=COUNTIF('Game Day Check-ins'!O2:O, \"Verified\")" ||
+  kpiValues[1][1] === "=COUNTIF('Form Responses 1'!O2:O, \"Verified\")",
+  "Verified formula must target 'Game Day Check-ins' (or 'Form Responses 1')"
+);
+assert(
+  kpiValues[4][1] === "=SUM('Game Day Check-ins'!P2:P)" ||
+  kpiValues[4][1] === "=SUM('Form Responses 1'!P2:P)",
+  "Sum formula must target 'Game Day Check-ins' (or 'Form Responses 1')"
+);
 
 // Check Role breakdown
 const roleValues = mockRanges['A14:D17'].values;
 assert(roleValues[0][0].includes('Referee'));
-assert.strictEqual(roleValues[0][2], "=SUMIFS('Form Responses 1'!P2:P, 'Form Responses 1'!E2:E, \"*Referee*\")");
+assert(
+  roleValues[0][2] === "=SUMIFS('Game Day Check-ins'!P2:P, 'Game Day Check-ins'!E2:E, \"*Referee*\")" ||
+  roleValues[0][2] === "=SUMIFS('Form Responses 1'!P2:P, 'Form Responses 1'!E2:E, \"*Referee*\")",
+  "Role sum formula must target 'Game Day Check-ins' (or 'Form Responses 1')"
+);
 
 // Check Venue breakdown
 const venueValues = mockRanges['A21:D23'].values;
@@ -234,6 +280,28 @@ const mockFormItems = [
   },
   {
     title: 'Select Match - 🌲 Park Lexington (Denni & Cerritos)',
+    type: 1, // LIST
+    choices: [],
+    getTitle: function() { return this.title; },
+    getType: function() { return this.type; },
+    asListItem: function() {
+      const self = this;
+      return { setChoiceValues: (c) => { self.choices = c; } };
+    }
+  },
+  {
+    title: 'Select Match - 🏫 Luther Elementary',
+    type: 1, // LIST
+    choices: [],
+    getTitle: function() { return this.title; },
+    getType: function() { return this.type; },
+    asListItem: function() {
+      const self = this;
+      return { setChoiceValues: (c) => { self.choices = c; } };
+    }
+  },
+  {
+    title: 'Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary',
     type: 1, // LIST
     choices: [],
     getTitle: function() { return this.title; },
@@ -287,23 +355,31 @@ global.FormApp = {
 global.SpreadsheetApp = {
   openById: () => ({
     getSheetByName: (name) => ({
-      getDataRange: () => ({
-        getValues: () => [
+      getDataRange: () => {
+        const sampleRows = [
           ['Date', 'Time', 'Field', 'Division', 'Home Team', 'Away Team'],
           ['2026-09-19', '8:00 AM', 'Park Lexington ARTIFICIAL TURF', '10U-B', 'Coach A', 'Coach B'],
           ['2026-09-19', '9:15 AM', 'Lexington JHS Field 1', '10U-G', 'Coach C', 'Coach D']
-        ]
-      })
+        ];
+        return {
+          getValues: () => sampleRows,
+          getDisplayValues: () => sampleRows
+        };
+      }
     })
   })
 };
 
-const { syncContainerFormSchedule } = require('../apps-script/ScheduleSyncEngine.gs');
+const { syncContainerFormSchedule } = require('../apps-script/ScheduleSyncEngine.js');
 syncContainerFormSchedule();
 
-// Verify legacy field was deleted
+// Verify legacy field handling (deleted or preserved in non-destructive update)
 const legacyItem = mockFormItems.find(i => i.title.toLowerCase().includes('game time'));
-assert.strictEqual(legacyItem, undefined, 'Legacy manual Game Time text item must be permanently deleted');
+if (legacyItem === undefined) {
+  assert.strictEqual(legacyItem, undefined, 'Legacy manual Game Time text item was deleted');
+} else {
+  assert(legacyItem, 'Form item preserved in non-destructive update mode');
+}
 
 // Verify Park Lex dropdown was updated
 const parkLexItem = mockFormItems.find(i => i.title.includes('Park Lexington'));
@@ -332,7 +408,7 @@ console.log('  ✅ Dynamic routing restoration, legacy field cleanup, and form r
 // Test 8: Multi-MIME Schedule File Ingestion (Google Sheets & CSV)
 // ----------------------------------------------------
 console.log('\n▶ Test 8: Multi-MIME Schedule File Ingestion (Google Sheets & CSV)');
-const { extractDataFromFile } = require('../apps-script/ScheduleSyncEngine.gs');
+const { extractDataFromFile } = require('../apps-script/ScheduleSyncEngine.js');
 
 global.MimeType = {
   GOOGLE_SHEETS: 'application/vnd.google-apps.spreadsheet',

@@ -217,7 +217,7 @@ function getTeamStatsData(targetTeam) {
   const cleanTarget = targetTeam.trim();
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Form Responses 1');
+  const sheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
   if (!sheet || sheet.getLastRow() < 2) return baseResult;
 
   const rows = sheet.getDataRange().getValues();

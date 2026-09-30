@@ -66,7 +66,8 @@ const PROP = Object.freeze({
 });
 
 const SHEET = Object.freeze({
-  RESPONSES: 'Form Responses',
+  RESPONSES: 'Audit Submissions',
+  LEGACY_RESPONSES: 'Form Responses',
   QUEUE: 'Audit Queue',
   SHIFTS: 'Shift Details',
   TEAM_STATUS: 'Team Status',
@@ -1181,7 +1182,11 @@ function columnLetter_(column) {
 
 const ADJUDICATION_SHEET = Object.freeze({
   DOSSIERS: 'Gem_Dispute_Dossiers',
+  AUDIT_SUBMISSIONS: 'Audit Submissions',
+  FORM_RESPONSES_2: 'Form Responses 2',
   PLAYOFF_RESPONSES: 'Playoff_Audit_Responses',
+  GAME_DAY_CHECKINS: 'Game Day Check-ins',
+  FORM_RESPONSES_1: 'Form Responses 1',
   AWARDS: 'Team_Awards',
   LEDGER: 'Season_Master_Ledger'
 });
@@ -1193,8 +1198,12 @@ function resolveAuditSpreadsheet_() {
   const activeSs = (typeof SpreadsheetApp !== 'undefined') ? SpreadsheetApp.getActiveSpreadsheet() : null;
   if (activeSs) {
     if (activeSs.getSheetByName(SHEET.QUEUE) || 
+        activeSs.getSheetByName(ADJUDICATION_SHEET.AUDIT_SUBMISSIONS) ||
+        activeSs.getSheetByName(ADJUDICATION_SHEET.FORM_RESPONSES_2) ||
         activeSs.getSheetByName(ADJUDICATION_SHEET.PLAYOFF_RESPONSES) ||
-        activeSs.getSheetByName(SHEET.RESPONSES)) {
+        activeSs.getSheetByName(SHEET.RESPONSES) ||
+        activeSs.getSheetByName(SHEET.LEGACY_RESPONSES) ||
+        activeSs.getSheetByName('Form Responses')) {
       return activeSs;
     }
   }
@@ -1473,11 +1482,16 @@ function getUnadjudicatedDisputes(options = {}) {
     });
   }
 
-  // Strategy 2: Check Playoff_Audit_Responses or Form Responses if queue has no entries
+  // Strategy 2: Check Audit Submissions, Form Responses 2, Playoff_Audit_Responses, or Form Responses if queue has no entries
   if (unadjudicated.length === 0) {
-    const rawSheet = auditSs.getSheetByName(ADJUDICATION_SHEET.PLAYOFF_RESPONSES) ||
+    const rawSheet = auditSs.getSheetByName(ADJUDICATION_SHEET.AUDIT_SUBMISSIONS) ||
+                     auditSs.getSheetByName(ADJUDICATION_SHEET.FORM_RESPONSES_2) ||
+                     auditSs.getSheetByName(ADJUDICATION_SHEET.PLAYOFF_RESPONSES) ||
                      auditSs.getSheetByName(SHEET.RESPONSES) ||
-                     auditSs.getSheetByName('Form Responses 1');
+                     auditSs.getSheetByName(SHEET.LEGACY_RESPONSES) ||
+                     auditSs.getSheetByName('Form Responses') ||
+                     auditSs.getSheetByName(ADJUDICATION_SHEET.GAME_DAY_CHECKINS) ||
+                     auditSs.getSheetByName(ADJUDICATION_SHEET.FORM_RESPONSES_1);
 
     if (rawSheet && rawSheet.getLastRow() > 1) {
       const data = rawSheet.getDataRange().getValues();
@@ -2036,6 +2050,33 @@ function formatDateTimeSafe_(date) {
   return new Date(date).toISOString();
 }
 
+/**
+ * Helper to retrieve the Game Day Check-ins sheet with fallback to legacy Form Responses 1.
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [ss]
+ * @returns {GoogleAppsScript.Spreadsheet.Sheet|null}
+ */
+function getGameDayCheckinsSheet(ss) {
+  const targetSs = ss || ((typeof SpreadsheetApp !== 'undefined') ? SpreadsheetApp.getActiveSpreadsheet() : null);
+  if (!targetSs) return null;
+  return targetSs.getSheetByName('Game Day Check-ins') || targetSs.getSheetByName('Form Responses 1');
+}
+
+/**
+ * Helper to retrieve the Audit Submissions sheet with fallbacks to Form Responses 2, Playoff_Audit_Responses, and Form Responses.
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [ss]
+ * @returns {GoogleAppsScript.Spreadsheet.Sheet|null}
+ */
+function getAuditSubmissionsSheet(ss) {
+  const targetSs = ss || ((typeof SpreadsheetApp !== 'undefined') ? SpreadsheetApp.getActiveSpreadsheet() : null);
+  if (!targetSs) return null;
+  return targetSs.getSheetByName('Audit Submissions') ||
+         targetSs.getSheetByName('Form Responses 2') ||
+         targetSs.getSheetByName(ADJUDICATION_SHEET.PLAYOFF_RESPONSES) ||
+         targetSs.getSheetByName(SHEET.RESPONSES) ||
+         targetSs.getSheetByName(SHEET.LEGACY_RESPONSES) ||
+         targetSs.getSheetByName('Form Responses');
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     exportDisputeDossiersForGem,
@@ -2046,6 +2087,8 @@ if (typeof module !== 'undefined' && module.exports) {
     menuExportDisputeDossiers,
     menuApplyGemDecision,
     createPlayoffAuditMenu,
+    getGameDayCheckinsSheet,
+    getAuditSubmissionsSheet,
     ADJUDICATION_SHEET,
     AUDIT,
     SHEET,

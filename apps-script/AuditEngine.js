@@ -3,7 +3,7 @@
  * AYSO REGION 154 - AUDIT TRAIL & MASTER LEDGER SYNC ENGINE
  * ============================================================================
  * File: AuditEngine.js
- * Description: Populates Columns O, P, Q in 'Form Responses 1' with audit trails,
+ * Description: Populates Columns O, P, Q in 'Game Day Check-ins' (or 'Form Responses 1') with audit trails,
  *              enforces duplicate check-in filtering, applies board category caps,
  *              and synchronizes 'Season_Master_Ledger' with verified point totals.
  * ============================================================================
@@ -54,10 +54,10 @@ function runAuditAndSyncLedger() {
 }
 
 /**
- * Audits 'Form Responses 1' and writes columns O, P, Q.
+ * Audits 'Game Day Check-ins' (or 'Form Responses 1') and writes columns O, P, Q.
  */
 function auditFormResponses(ss) {
-  const sheet = ss.getSheetByName('Form Responses 1');
+  const sheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
   if (!sheet || sheet.getLastRow() < 2) {
     return { totalRows: 0, validShifts: 0, duplicates: 0, nocra: 0, capReached: 0, teamPoints: {} };
   }
@@ -217,7 +217,7 @@ function auditFormResponses(ss) {
     auditOutput.push([status, pts, reason]);
   }
 
-  // Write audit columns back to 'Form Responses 1'
+  // Write audit columns back to 'Game Day Check-ins' (or 'Form Responses 1')
   if (auditOutput.length > 0) {
     sheet.getRange(2, 15, auditOutput.length, 3).setValues(auditOutput);
   }

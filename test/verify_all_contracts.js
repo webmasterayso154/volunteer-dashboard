@@ -11,14 +11,16 @@ console.log('====================================================');
 console.log('⚽ AYSO 154 VOLUNTEER STANDINGS VERIFICATION AUDIT');
 console.log('====================================================\n');
 
-// 1. Load and parse Code.gs to extract constants and logic
-const codeGsPath = path.join(__dirname, '../apps-script/Code.gs');
+// 1. Load and parse Code.js/Code.gs to extract constants and logic
+const codeGsPath = fs.existsSync(path.join(__dirname, '../apps-script/Code.js'))
+  ? path.join(__dirname, '../apps-script/Code.js')
+  : path.join(__dirname, '../apps-script/Code.gs');
 const codeGsContent = fs.readFileSync(codeGsPath, 'utf8');
 
 // Extract MASTER_TEAMS
 let MASTER_TEAMS;
 try {
-  MASTER_TEAMS = require('../apps-script/Code.gs').MASTER_TEAMS;
+  MASTER_TEAMS = require(codeGsPath).MASTER_TEAMS;
 } catch (e) {
   const masterTeamsMatch = codeGsContent.match(/(?:const|var)\s+MASTER_TEAMS\s*=\s*(?:\([^)]+\)\s*\?\s*MASTER_TEAMS\s*:\s*)?\[([\s\S]*?)\];/);
   if (masterTeamsMatch) {

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================================
  * AYSO REGION 154 - PROGRAMMATIC TEST SUITE (STAGING AUTOMATED)
  * ============================================================================
@@ -43,7 +43,9 @@ function runAllDiagnostics() {
 function testSheetStructure() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = ss.getSheets().map(s => s.getName());
-  const required = ['Form Responses 1', 'Team_Awards', 'Admin_Config'];
+  const hasGameDay = sheets.includes('Game Day Check-ins') || sheets.includes('Form Responses 1');
+  if (!hasGameDay) throw new Error("Missing sheet: Game Day Check-ins (or Form Responses 1)");
+  const required = ['Team_Awards', 'Admin_Config'];
   const missing = required.filter(r => !sheets.includes(r));
   if (missing.length > 0) throw new Error("Missing sheets: " + missing.join(', '));
 }
@@ -68,7 +70,7 @@ function testDirectoryContract() {
 
 function testCalculationAndCaps() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const respSheet = ss.getSheetByName('Form Responses 1');
+  const respSheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
   const now = new Date();
 
   // Baseline delta check: accommodate pre-existing rows in staging
