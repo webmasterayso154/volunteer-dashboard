@@ -108,7 +108,8 @@ function auditFormResponses(ss) {
     const email = String(row[1] || '').trim().toLowerCase();
     const firstName = String(row[2] || '').trim();
     const lastName = String(row[3] || '').trim();
-    const volId = email || (firstName + ' ' + lastName).trim().toLowerCase();
+    const volName = `${firstName} ${lastName}`.trim().toLowerCase();
+    const volId = volName || email;
 
     const dutyRaw = String(row[4] || '').trim();
     const refPosition = String(row[5] || '').trim();
@@ -174,15 +175,16 @@ function auditFormResponses(ss) {
       reason = 'Paid NOCRA / USSF center referee (no volunteer credit)';
       nocra++;
     } else {
-      // De-duplication slot key: volunteer + date + time + field + category
+      // De-duplication slot key: volunteer + date + time + field + category + refPosition
       const normTime = String(timeSlot || '').replace(/\s+/g, '').toLowerCase();
       const normField = String(field || '').replace(/\s+/g, '').toLowerCase();
-      const slotKey = `${volId}|${dateStr}|${normTime}|${normField}|${category}`;
+      const normPos = String(refPosition || '').replace(/\s+/g, '').toLowerCase();
+      const slotKey = `${volId}|${dateStr}|${normTime}|${normField}|${category}|${normPos}`;
 
       if (seenVolunteerSlots.has(slotKey)) {
         status = 'Duplicate Submission (0)';
         pts = 0;
-        reason = `Duplicate check-in: volunteer already logged for slot ${timeSlot} at ${field}`;
+        reason = `Duplicate check-in: volunteer already logged for slot ${timeSlot} at ${field}${refPosition ? ` (${refPosition})` : ''}`;
         duplicates++;
       } else {
         // Check category cap
@@ -280,28 +282,29 @@ function syncSeasonMasterLedger(ss, auditedTeamPoints = {}) {
     .setBackground('#002D62')
     .setFontColor('#FFFFFF');
 
-  // Collect Awards from Team_Awards
+  // Collect Awards from Team_Awards (fixed 116-row matrix)
   const awardsSheet = ss.getSheetByName('Team_Awards');
-  const teamAwardsMap = {}; // teamCode -> { certRef: 0, matchtrak: 0, other: 0 }
-  if (awardsSheet && awardsSheet.getLastRow() > 1) {
+  const teamAwardsMap = {}; // teamCode -> { certRef: 0, matchtrak: 0, pictureDay: 0, other: 0 }
+  if (awardsSheet && awardsSheet.getLastRow() >= 1) {
     const awardRows = awardsSheet.getDataRange().getValues();
-    for (let j = 1; j < awardRows.length; j++) {
+    for (let j = 0; j < awardRows.length; j++) {
       const aRow = awardRows[j];
-      const aTeam = String(aRow[1] || '').trim();
-      const aType = String(aRow[2] || '').trim();
-      const aPts = Number(aRow[3]) || 0;
+      const teamCode = String(aRow[0] || '').trim();
+      if (!teamCode) continue;
+      // Skip header row if present
+      if (j === 0 && (/team/i.test(teamCode) && !teamCode.includes(' - '))) continue;
 
-      if (!teamAwardsMap[aTeam]) {
-        teamAwardsMap[aTeam] = { certRef: 0, matchtrak: 0, other: 0 };
-      }
+      const certRef = Math.max(0, Math.min(5, Number(aRow[1]) || 0));
+      const matchtrak = Math.max(0, Math.min(2, Number(aRow[2]) || 0));
+      const pictureDay = Math.max(0, Math.min(2, Number(aRow[3]) || 0));
+      const other = Number(aRow[4]) || 0;
 
-      if (aType === 'Certified Team Referees') {
-        teamAwardsMap[aTeam].certRef = Math.min(5, teamAwardsMap[aTeam].certRef + aPts);
-      } else if (aType === 'MatchTrak Filled by Sep 26') {
-        teamAwardsMap[aTeam].matchtrak = Math.min(2, teamAwardsMap[aTeam].matchtrak + aPts);
-      } else {
-        teamAwardsMap[aTeam].other += aPts;
-      }
+      teamAwardsMap[teamCode] = {
+        certRef: certRef,
+        matchtrak: matchtrak,
+        pictureDay: pictureDay,
+        other: other
+      };
     }
   }
 
@@ -316,15 +319,15 @@ function syncSeasonMasterLedger(ss, auditedTeamPoints = {}) {
     const coach = parts.length >= 3 ? parts.slice(2).join(' - ').trim() : parts[0].trim();
 
     const audited = auditedTeamPoints[rawTeam] || { ref: 0, fm: 0, setup: 0, pic: 0 };
-    const awards = teamAwardsMap[rawTeam] || { certRef: 0, matchtrak: 0, other: 0 };
+    const awards = teamAwardsMap[rawTeam] || { certRef: 0, matchtrak: 0, pictureDay: 0, other: 0 };
 
     const refPts = Math.min(10, audited.ref);
     const fmPts = Math.min(2, audited.fm);
     const setupPts = Math.min(5, audited.setup);
-    const picPts = Math.min(2, audited.pic);
-    const certRefPts = awards.certRef;
-    const matchtrakPts = awards.matchtrak;
-    const otherPts = awards.other;
+    const picPts = Math.min(2, audited.pic + (awards.pictureDay || 0));
+    const certRefPts = awards.certRef || 0;
+    const matchtrakPts = awards.matchtrak || 0;
+    const otherPts = awards.other || 0;
 
     const totalPts = Math.max(0, refPts + fmPts + setupPts + picPts + certRefPts + matchtrakPts + otherPts);
 
