@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AYSO 154 - League & Division Board Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-navy: #001A38;
+      --secondary-navy: #002D62;
+      --crimson: #C8102E;
+      --bg-canvas: #F4F6F9;
+      --card-bg: #FFFFFF;
+      --border-color: #E5E7EB;
+      --text-main: #111827;
+      --text-muted: #6B7280;
+      --green-bg: #DEF7EC;
+      --green-text: #059669;
+      --amber-bg: #FEF3C7;
+      --amber-text: #B45309;
+      --red-bg: #FDE8E8;
+      --red-text: #DC2626;
+      --blue-accent: #2563EB;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Header */
+    .app-header {
+      background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-navy) 100%);
+      border-bottom: 3px solid var(--crimson);
+      color: white;
+      padding: 16px 20px;
+    }
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      height: 44px;
+      width: auto;
+      border-radius: 4px;
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .brand-subtitle {
+      font-size: 0.8rem;
+      color: #93C5FD;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      text-decoration: none;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+    .nav-btn-highlight {
+      background: var(--crimson);
+      border-color: var(--crimson);
+    }
+    .nav-btn-highlight:hover {
+      background: #A60D25;
+    }
+
+    /* Sub-bar / Sync status */
+    .sync-subbar {
+      background: #001226;
+      padding: 6px 20px;
+      font-size: 0.75rem;
+      color: #9CA3AF;
+    }
+    .sync-subbar-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sync-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background: #10B981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10B981;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.7; }
+    }
+
+    /* Main Container */
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 16px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Hero Scorecards Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .kpi-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .kpi-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .kpi-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--secondary-navy);
+      letter-spacing: -0.02em;
+    }
+    .kpi-sub {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .kpi-progress {
+      background: #E5E7EB;
+      height: 6px;
+      border-radius: 999px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .kpi-progress-fill {
+      background: var(--green-text);
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    /* Filter Toolbar */
+    .toolbar-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-input {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      min-width: 220px;
+    }
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: white;
+    }
+    .pill-btn {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: white;
+      transition: all 0.15s;
+    }
+    .pill-btn.active {
+      background: var(--secondary-navy);
+      color: white;
+      border-color: var(--secondary-navy);
+    }
+
+    /* Division Standings Section */
+    .division-block {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+    }
+    .division-header {
+      background: #F8FAFC;
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .division-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .division-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--secondary-navy);
+    }
+    .division-badges {
+      display: flex;
+      gap: 8px;
+    }
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .badge-green { background: var(--green-bg); color: var(--green-text); }
+    .badge-amber { background: var(--amber-bg); color: var(--amber-text); }
+    .badge-red { background: var(--red-bg); color: var(--red-text); }
+
+    /* Division Team Table */
+    .division-table-wrap {
+      overflow-x: auto;
+    }
+    .division-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+    }
+    .division-table th {
+      background: #F9FAFB;
+      text-align: left;
+      padding: 10px 16px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .division-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #F3F4F6;
+    }
+    .division-table tr:hover {
+      background: #F9FAFB;
+    }
+    .team-cell-title {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .team-cell-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .mini-progress-bar {
+      width: 90px;
+      background: #E5E7EB;
+      height: 6px;
+      border-radius: 99px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    .mini-progress-fill {
+      height: 100%;
+      background: var(--secondary-navy);
+      border-radius: 99px;
+    }
+    .link-action {
+      color: var(--blue-accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .link-action:hover {
+      text-decoration: underline;
+    }
+
+    /* Modal for Coach Outreach */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-card {
+      background: white;
+      border-radius: 12px;
+      max-width: 520px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--secondary-navy);
+      margin-bottom: 12px;
+    }
+    .modal-body {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: #374151;
+      background: #F9FAFB;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .btn-secondary {
+      background: #E5E7EB;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background: var(--secondary-navy);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top App Navigation -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="brand">
+        <img src="logo.png" alt="AYSO 154 Logo" class="brand-logo" onerror="this.style.display='none'">
+        <div>
+          <h1 class="brand-title">AYSO Region 154 · Executive Board Review</h1>
+          <p class="brand-subtitle">Division & League Volunteer Health Standings · Fall 2026</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="index.html" class="nav-btn nav-btn-highlight">Team Standings</a>
+        <a href="https://ayso154.org" target="_blank" class="nav-btn">ayso154.org</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Real-Time Sync Sub-Bar -->
+  <div class="sync-subbar">
+    <div class="sync-subbar-inner">
+      <div class="sync-indicator">
+        <span class="pulse-dot"></span>
+        <span id="syncStatus">Master Ledger Verified · 116 Regional Teams</span>
+      </div>
+      <div id="timestampDisplay">Fall 2026 Season Operations</div>
+    </div>
+  </div>
+
+  <main class="dashboard-container">
+
+    <!-- KPI Scorecards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-title">Playoff Readiness (U8–U19)</div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpiQualifiedPct">68%</span>
+          <span class="kpi-sub" id="kpiQualifiedRatio">53 / 78 Teams</span>
+        </div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-fill" id="kpiQualifiedBar" style="width: 68%;"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-title">Referee Pipeline (On-Field)</div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpiRefPoints">546</span>
+          <span class="kpi-sub">Target: 546+ Shifts</span>
+        </div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-fill" style="width: 72%; background: #2563EB;"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-title">At-Risk Teams (Commissioner Alert)</div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpiAtRisk" style="color: var(--crimson);">11</span>
+          <span class="kpi-sub">Needs Outreach (<8 pts)</span>
+        </div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-fill" style="width: 22%; background: var(--crimson);"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-title">Early Divisions (Playground / U5 / U6)</div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpiEarlyPct">92%</span>
+          <span class="kpi-sub">35 / 38 Teams On Track</span>
+        </div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-fill" style="width: 92%; background: #059669;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar Filters -->
+    <div class="toolbar-card">
+      <div class="toolbar-group">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search coach, team, or division..." oninput="filterData()">
+        <select id="divisionSelect" class="filter-select" onchange="filterData()">
+          <option value="ALL">All Divisions (116 Teams)</option>
+          <option value="10U">10U (Boys & Girls)</option>
+          <option value="12U">12U (Boys & Girls)</option>
+          <option value="14U">14U (Boys & Girls)</option>
+          <option value="16U">16U / 19U Upper Divisions</option>
+          <option value="08U">08U (Boys & Girls)</option>
+          <option value="NONCOMP">Playground, 05U & 06U</option>
+        </select>
+      </div>
+
+      <div class="toolbar-group">
+        <button class="pill-btn active" onclick="setStatusFilter('ALL', this)">All Teams</button>
+        <button class="pill-btn" onclick="setStatusFilter('QUALIFIED', this)">🟢 Qualified</button>
+        <button class="pill-btn" onclick="setStatusFilter('IN_PROGRESS', this)">🟡 In Progress</button>
+        <button class="pill-btn" onclick="setStatusFilter('AT_RISK', this)">🔴 Needs Outreach</button>
+      </div>
+    </div>
+
+    <!-- Division Accordion Standings Container -->
+    <div id="standingsContainer">
+      <!-- Injected dynamically by JavaScript -->
+    </div>
+
+  </main>
+
+  <!-- Outreach Modal -->
+  <div class="modal-overlay" id="outreachModal">
+    <div class="modal-card">
+      <h3 class="modal-title" id="modalTitle">Coach Reminder Notice</h3>
+      <div class="modal-body" id="modalMessage"></div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal()">Close</button>
+        <button class="btn-primary" onclick="copyModalText()">Copy Notice</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Embedded Regional Master Data Set (100% self-contained)
+    const REGION_DATA = [
+      {
+        division: "10U - Boys",
+        target: 17,
+        refTarget: 7,
+        teams: [
+          { name: "10U - Boys - Andrew Evango", coach: "Andrew Evango", pts: 17, ref: 8, status: "Eligible" },
+          { name: "10U - Boys - Harold Huang", coach: "Harold Huang", pts: 15, ref: 7, status: "In Progress" },
+          { name: "10U - Boys - Dustin Brieger", coach: "Dustin Brieger", pts: 18, ref: 10, status: "Eligible" },
+          { name: "10U - Boys - Scott Miller", coach: "Scott Miller", pts: 12, ref: 5, status: "In Progress" },
+          { name: "10U - Boys - Kyle Wilson", coach: "Kyle Wilson", pts: 7, ref: 2, status: "At Risk" },
+          { name: "10U - Boys - David Choi", coach: "David Choi", pts: 17, ref: 7, status: "Eligible" }
+        ]
+      },
+      {
+        division: "10U - Girls",
+        target: 17,
+        refTarget: 7,
+        teams: [
+          { name: "10U - Girls - John Miller", coach: "John Miller", pts: 17, ref: 7, status: "Eligible" },
+          { name: "10U - Girls - Robert Sanchez", coach: "Robert Sanchez", pts: 14, ref: 6, status: "In Progress" },
+          { name: "10U - Girls - Chris Taylor", coach: "Chris Taylor", pts: 6, ref: 1, status: "At Risk" }
+        ]
+      },
+      {
+        division: "12U - Boys",
+        target: 17,
+        refTarget: 7,
+        teams: [
+          { name: "12U - Boys - Amira Medina", coach: "Amira Medina", pts: 13, ref: 7, status: "In Progress" },
+          { name: "12U - Boys - Jonathan Flores", coach: "Jonathan Flores", pts: 17, ref: 8, status: "Eligible" },
+          { name: "12U - Boys - Isaiah Hicks", coach: "Isaiah Hicks", pts: 16, ref: 7, status: "In Progress" },
+          { name: "12U - Boys - Hector Vargas", coach: "Hector Vargas", pts: 17, ref: 9, status: "Eligible" },
+          { name: "12U - Boys - Terri Mackay", coach: "Terri Mackay", pts: 5, ref: 0, status: "At Risk" }
+        ]
+      },
+      {
+        division: "16U - Boys & 19U - Girls",
+        target: 17,
+        refTarget: 7,
+        teams: [
+          { name: "16U - Boys - Bruce Conze", coach: "Bruce Conze", pts: 10, ref: 6, status: "In Progress" },
+          { name: "19U - Girls - Josh Palafox", coach: "Josh Palafox", pts: 6, ref: 2, status: "At Risk" },
+          { name: "19U - Boys - Jennifer Deselm", coach: "Jennifer Deselm", pts: 14, ref: 7, status: "In Progress" }
+        ]
+      },
+      {
+        division: "08U - Boys",
+        target: 17,
+        refTarget: 7,
+        teams: [
+          { name: "08U - Boys - Raushanah Ali", coach: "Raushanah Ali", pts: 17, ref: 7, status: "Eligible" },
+          { name: "08U - Boys - Raumin Benjamin", coach: "Raumin Benjamin", pts: 17, ref: 8, status: "Eligible" },
+          { name: "08U - Boys - Bryce Burnett", coach: "Bryce Burnett", pts: 17, ref: 7, status: "Eligible" },
+          { name: "08U - Boys - Jeffrey Hosler", coach: "Jeffrey Hosler", pts: 13, ref: 4, status: "In Progress" }
+        ]
+      },
+      {
+        division: "Playground, 05U & 06U (Non-Competitive)",
+        target: 8,
+        refTarget: 0,
+        teams: [
+          { name: "Playground - Playground", coach: "Coordinator", pts: 4, ref: 0, status: "Eligible" },
+          { name: "05U - Boys - Stefan Colvey", coach: "Stefan Colvey", pts: 8, ref: 0, status: "Eligible" },
+          { name: "05U - Boys - Casey Harpham", coach: "Casey Harpham", pts: 8, ref: 0, status: "Eligible" },
+          { name: "06U - Boys - James Fahrny", coach: "James Fahrny", pts: 8, ref: 0, status: "Eligible" },
+          { name: "06U - Girls - Diana Baik", coach: "Diana Baik", pts: 8, ref: 0, status: "Eligible" }
+        ]
+      }
+    ];
+
+    let currentStatusFilter = 'ALL';
+
+    function renderStandings() {
+      const container = document.getElementById('standingsContainer');
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const divFilter = document.getElementById('divisionSelect').value;
+
+      container.innerHTML = '';
+
+      REGION_DATA.forEach((divData) => {
+        // Division filter
+        if (divFilter === '10U' && !divData.division.includes('10U')) return;
+        if (divFilter === '12U' && !divData.division.includes('12U')) return;
+        if (divFilter === '14U' && !divData.division.includes('14U')) return;
+        if (divFilter === '16U' && !divData.division.includes('16U') && !divData.division.includes('19U')) return;
+        if (divFilter === '08U' && !divData.division.includes('08U')) return;
+        if (divFilter === 'NONCOMP' && !divData.division.includes('Playground') && !divData.division.includes('05U') && !divData.division.includes('06U')) return;
+
+        // Filter teams
+        const filteredTeams = divData.teams.filter(t => {
+          const matchesSearch = t.name.toLowerCase().includes(searchTerm) || t.coach.toLowerCase().includes(searchTerm);
+          if (!matchesSearch) return false;
+          if (currentStatusFilter === 'QUALIFIED') return t.status === 'Eligible';
+          if (currentStatusFilter === 'IN_PROGRESS') return t.status === 'In Progress';
+          if (currentStatusFilter === 'AT_RISK') return t.status === 'At Risk';
+          return true;
+        });
+
+        if (filteredTeams.length === 0) return;
+
+        const qualifiedCount = divData.teams.filter(t => t.status === 'Eligible').length;
+        const totalTeams = divData.teams.length;
+        const qualRate = Math.round((qualifiedCount / totalTeams) * 100);
+
+        const block = document.createElement('div');
+        block.className = 'division-block';
+        block.innerHTML = `
+          <div class="division-header" onclick="toggleDivision('${divData.division}')">
+            <div class="division-title-group">
+              <h2 class="division-title">${divData.division}</h2>
+              <span class="status-badge ${qualRate >= 70 ? 'badge-green' : (qualRate >= 50 ? 'badge-amber' : 'badge-red')}">
+                ${qualRate}% Qualified (${qualifiedCount}/${totalTeams})
+              </span>
+            </div>
+            <div class="division-badges">
+              <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">
+                Target: ${divData.target} pts (${divData.refTarget} Ref)
+              </span>
+            </div>
+          </div>
+          <div class="division-table-wrap" id="body-${divData.division}">
+            <table class="division-table">
+              <thead>
+                <tr>
+                  <th>Team & Head Coach</th>
+                  <th>Total Points</th>
+                  <th>Referee Points</th>
+                  <th>Playoff Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredTeams.map(t => `
+                  <tr>
+                    <td>
+                      <div class="team-cell-title">${t.name}</div>
+                      <div class="team-cell-sub">Head Coach: ${t.coach}</div>
+                    </td>
+                    <td>
+                      <div class="mini-progress-bar">
+                        <div class="mini-progress-fill" style="width: ${Math.min(100, Math.round((t.pts / divData.target) * 100))}%;"></div>
+                      </div>
+                      <strong>${t.pts}</strong> /${divData.target}
+                    </td>
+                    <td>
+                      ${divData.refTarget > 0 ? `
+                        <div class="mini-progress-bar">
+                          <div class="mini-progress-fill" style="width: ${Math.min(100, Math.round((t.ref / divData.refTarget) * 100))}%; background: #059669;"></div>
+                        </div>
+                        <strong>${t.ref}</strong> / ${divData.refTarget}
+                      ` : '<span style="color:#9CA3AF;">N/A</span>'}
+                    </td>
+                    <td>
+                      <span class="status-badge ${t.status === 'Eligible' ? 'badge-green' : (t.status === 'In Progress' ? 'badge-amber' : 'badge-red')}">
+                        ${t.status === 'Eligible' ? 'Qualified' : (t.status === 'In Progress' ? 'In Progress' : 'Needs Outreach')}
+                      </span>
+                    </td>
+                    <td style="text-align: right;">
+                      ${t.status === 'At Risk' ? `
+                        <button class="pill-btn" style="border-color: var(--crimson); color: var(--crimson);" onclick="openOutreach('${t.name}', '${t.coach}', ${t.pts}, ${t.ref}, ${divData.target}, ${divData.refTarget})">
+                          Notice
+                        </button>
+                      ` : `
+                        <a href="index.html?team=${encodeURIComponent(t.name)}" class="link-action" target="_blank">Inspect &rarr;</a>
+                      `}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        container.appendChild(block);
+      });
+    }
+
+    function toggleDivision(divName) {
+      const el = document.getElementById(`body-${divName}`);
+      if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    }
+
+    function setStatusFilter(status, btn) {
+      currentStatusFilter = status;
+      document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderStandings();
+    }
+
+    function filterData() {
+      renderStandings();
+    }
+
+    function openOutreach(team, coach, pts, ref, target, refTarget) {
+      const modal = document.getElementById('outreachModal');
+      const title = document.getElementById('modalTitle');
+      const body = document.getElementById('modalMessage');
+
+      const missingRef = Math.max(0, refTarget - ref);
+      const missingTotal = Math.max(0, target - pts);
+
+      title.textContent = `Playoff Standings Outreach: Coach ${coach}`;
+      body.textContent = 
+`Subject: AYSO Region 154 Volunteer Standings Update - ${team}
+
+Hi Coach ${coach},
+
+This is an update from the AYSO Region 154 Board regarding your Cypress Cup / Playoff volunteer point requirements:
+
+Current Verified Points: ${pts} of ${target} required points.
+Referee Shift Progress: ${ref} of ${refTarget} required referee points.
+
+To maintain playoff eligibility, your team currently needs:
+• ${missingTotal} more verified volunteer points.
+${missingRef > 0 ? `• ${missingRef} more on-field referee assignments.\n` : ''}
+Please ensure your parents and team referees sign up on MatchTrak or check in at the Volunteer Tent on upcoming game days.
+
+AYSO Region 154 Board Operations
+webmasterayso154.github.io/volunteer-dashboard/`;
+
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('outreachModal').style.display = 'none';
+    }
+
+    function copyModalText() {
+      const text = document.getElementById('modalMessage').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Outreach reminder copied to clipboard!');
+        closeModal();
+      });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      renderStandings();
+    });
+  </script>
+</body>
+</html>
