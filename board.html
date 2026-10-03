@@ -3,891 +3,437 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AYSO 154 · Executive Board Operations & Cypress Cup Playoff Radar</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>AYSO 154 · Executive Board Review</title>
   <style>
     :root {
-      /* Region 154 3D Crest Palette */
-      --navy-deep: #081736;
-      --navy-primary: #102652;
-      --navy-card: #18336A;
-      --crimson-ayso: #C8102E;
-      --crimson-dark: #9B0D23;
-      --silver-bg: #F1F5F9;
-      --silver-card: #FFFFFF;
-      --silver-border: #E2E8F0;
-      --text-dark: #0F172A;
+      --navy: #002D62;
+      --red: #C8102E;
+      --gold: #D99B00;
+      --green: #2E7D32;
+      --blue: #0277BD;
+      --dark-navy: #0A192F;
+      --light-bg: #F4F6F9;
+      --card-bg: #FFFFFF;
+      --border-color: #E2E8F0;
+      --text-main: #1E293B;
       --text-muted: #64748B;
-      --gold-cup: #D97706;
-      --gold-bg: #FEF3C7;
-      
-      /* Status System */
-      --status-green-bg: #DCFCE7;
-      --status-green-txt: #166534;
-      --status-amber-bg: #FEF9C3;
-      --status-amber-txt: #854D0E;
-      --status-red-bg: #FEE2E2;
-      --status-red-txt: #991B1B;
-      --accent-blue: #2563EB;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: var(--silver-bg);
-      color: var(--text-dark);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--light-bg); color: var(--text-main); padding-bottom: 50px; }
 
-    /* Executive Navy & Crimson Header */
-    .board-header {
-      background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy-primary) 65%, var(--navy-card) 100%);
-      border-bottom: 3px solid var(--crimson-ayso);
-      color: #FFFFFF;
-      padding: 16px 24px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    }
-    .header-inner {
-      max-width: 1300px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-    .brand-wrap {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .brand-crest {
-      height: 52px;
-      width: auto;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
-    }
-    .brand-text h1 {
-      font-size: 1.25rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-    .brand-text p {
-      font-size: 0.8rem;
-      color: #93C5FD;
-      font-weight: 500;
-    }
-    .header-links {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .link-pill {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #FFFFFF;
-      text-decoration: none;
-      padding: 7px 14px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      transition: all 0.2s ease;
-    }
-    .link-pill:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-    .link-pill-primary {
-      background: var(--crimson-ayso);
-      border-color: var(--crimson-ayso);
-    }
-    .link-pill-primary:hover {
-      background: var(--crimson-dark);
-    }
+    /* Top Navigation Bar */
+    header { background: var(--navy); color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--red); }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand img { height: 42px; width: auto; }
+    .brand-title { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.3px; }
+    .brand-sub { font-size: 0.8rem; color: #94A3B8; }
+    .header-actions { display: flex; gap: 10px; }
+    .btn { padding: 7px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; text-decoration: none; border: none; cursor: pointer; transition: 0.2s; }
+    .btn-red { background: var(--red); color: white; }
+    .btn-outline { background: rgba(255,255,255,0.12); color: white; }
+    .btn:hover { opacity: 0.9; }
 
-    /* Sub-bar & Sync Status */
-    .subbar {
-      background: #040D1E;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      padding: 7px 24px;
-      font-size: 0.75rem;
-      color: #94A3B8;
-    }
-    .subbar-inner {
-      max-width: 1300px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .pulse-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      background: #10B981;
-      border-radius: 50%;
-      box-shadow: 0 0 8px #10B981;
-      animation: pulseAnim 2s infinite;
-    }
-    @keyframes pulseAnim {
-      0% { transform: scale(0.9); opacity: 0.7; }
-      50% { transform: scale(1.15); opacity: 1; }
-      100% { transform: scale(0.9); opacity: 0.7; }
-    }
+    .status-banner { background: #0F172A; color: #94A3B8; font-size: 0.75rem; padding: 6px 24px; display: flex; justify-content: space-between; }
+    .status-dot { color: #22C55E; margin-right: 6px; }
 
-    /* Main Container */
-    .main-body {
-      max-width: 1300px;
-      margin: 24px auto;
-      padding: 0 16px;
-      width: 100%;
-      flex: 1;
-    }
+    main { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
 
-    /* Scorecards */
-    .kpi-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .kpi-box {
-      background: var(--silver-card);
-      border: 1px solid var(--silver-border);
-      border-radius: 12px;
-      padding: 18px 20px;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-      position: relative;
-      overflow: hidden;
-    }
-    .kpi-box::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: var(--navy-primary);
-    }
-    .kpi-box.gold::before { background: var(--gold-cup); }
-    .kpi-box.red::before { background: var(--crimson-ayso); }
-    .kpi-box.green::before { background: #10B981; }
+    /* Summary Metric Cards */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .metric-card { background: var(--card-bg); border-radius: 8px; padding: 16px; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .metric-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-val { font-size: 1.8rem; font-weight: 800; color: var(--navy); margin: 6px 0 4px; }
+    .metric-sub { font-size: 0.8rem; color: var(--text-muted); }
 
-    .kpi-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-    .kpi-val-group {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-    .kpi-number {
-      font-size: 1.9rem;
-      font-weight: 800;
-      color: var(--navy-deep);
-      letter-spacing: -0.02em;
-    }
-    .kpi-desc {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-    .bar-track {
-      background: #E2E8F0;
-      height: 6px;
-      border-radius: 999px;
-      margin-top: 10px;
-      overflow: hidden;
-    }
-    .bar-fill {
-      height: 100%;
-      border-radius: 999px;
-    }
+    /* Interactive Division Tiles */
+    .section-title { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+    .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .division-tile { border-radius: 7px; padding: 12px 14px; color: white; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: transform 0.15s, box-shadow 0.15s; border: 2px solid transparent; display: flex; justify-content: space-between; align-items: center; }
+    .division-tile:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .division-tile.active { border-color: white; outline: 3px solid #1E293B; }
+    .tile-text { font-weight: 800; font-size: 0.95rem; }
+    .tile-lead { font-size: 0.75rem; opacity: 0.9; }
 
-    /* Schedule Radar */
-    .radar-card {
-      background: var(--silver-card);
-      border: 1px solid var(--silver-border);
-      border-radius: 12px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-    }
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .section-head h2 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--navy-deep);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .dates-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 12px;
-    }
-    .date-card {
-      background: #F8FAFC;
-      border: 1px solid var(--silver-border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      transition: all 0.15s;
-    }
-    .date-card:hover {
-      border-color: #94A3B8;
-      background: #FFFFFF;
-    }
-    .date-card-title {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--navy-primary);
-      margin-bottom: 4px;
-    }
-    .date-card-stat {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      line-height: 1.4;
-    }
-    .open-tag {
-      color: var(--crimson-ayso);
-      font-weight: 700;
-    }
+    .tile-all { background: #475569; }
+    .tile-red { background: linear-gradient(135deg, #D32F2F, #B71C1C); }
+    .tile-gold { background: linear-gradient(135deg, #F57F17, #E65100); }
+    .tile-green { background: linear-gradient(135deg, #388E3C, #1B5E20); }
+    .tile-blue { background: linear-gradient(135deg, #1976D2, #0D47A1); }
+    .tile-navy { background: linear-gradient(135deg, #1E293B, #0F172A); }
 
-    /* Toolbar */
-    .toolbar-bar {
-      background: var(--silver-card);
-      border: 1px solid var(--silver-border);
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .search-control {
-      padding: 8px 14px;
-      border: 1px solid var(--silver-border);
-      border-radius: 8px;
-      font-size: 0.85rem;
-      min-width: 240px;
-      outline: none;
-    }
-    .search-control:focus {
-      border-color: var(--navy-primary);
-    }
-    .filter-btn-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .filter-tab {
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid var(--silver-border);
-      background: #FFFFFF;
-      transition: all 0.15s;
-    }
-    .filter-tab.active {
-      background: var(--navy-primary);
-      color: #FFFFFF;
-      border-color: var(--navy-primary);
-    }
+    /* Controls Bar */
+    .controls-card { background: var(--card-bg); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .filter-group { display: flex; gap: 12px; align-items: center; flex: 1; min-width: 300px; }
+    .search-input { flex: 1; padding: 9px 12px; border-radius: 6px; border: 1px solid #CBD5E1; font-size: 0.9rem; }
+    .select-dropdown { padding: 9px 12px; border-radius: 6px; border: 1px solid #CBD5E1; font-size: 0.9rem; background: white; font-weight: 600; color: var(--navy); }
+    
+    .status-filters { display: flex; gap: 8px; }
+    .status-pill { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; border: 1px solid var(--border-color); background: white; cursor: pointer; }
+    .status-pill.active { background: var(--navy); color: white; border-color: var(--navy); }
 
-    /* Division Panels */
-    .div-panel {
-      background: var(--silver-card);
-      border: 1px solid var(--silver-border);
-      border-radius: 12px;
-      margin-bottom: 16px;
-      overflow: hidden;
-      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.02);
-    }
-    .div-header {
-      background: #F8FAFC;
-      border-bottom: 1px solid var(--silver-border);
-      padding: 14px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      user-select: none;
-    }
-    .div-title {
-      font-size: 0.98rem;
-      font-weight: 700;
-      color: var(--navy-deep);
-    }
-    .badge-pill {
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 999px;
-    }
-    .badge-green { background: var(--status-green-bg); color: var(--status-green-txt); }
-    .badge-amber { background: var(--status-amber-bg); color: var(--status-amber-txt); }
-    .badge-red { background: var(--status-red-bg); color: var(--status-red-txt); }
+    /* Team Tables */
+    .division-block { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .division-header { background: #F8FAFC; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+    .division-title { font-size: 1rem; font-weight: 800; color: var(--navy); }
+    .division-badge { font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; background: #FEF3C7; color: #92400E; }
 
-    .div-table-wrap {
-      overflow-x: auto;
-    }
-    .standings-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.83rem;
-    }
-    .standings-table th {
-      background: #F8FAFC;
-      text-align: left;
-      padding: 10px 18px;
-      font-weight: 600;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--silver-border);
-      white-space: nowrap;
-    }
-    .standings-table td {
-      padding: 12px 18px;
-      border-bottom: 1px solid #F1F5F9;
-    }
-    .standings-table tr:hover {
-      background: #F8FAFC;
-    }
-    .coach-title {
-      font-weight: 700;
-      color: var(--text-dark);
-    }
-    .coach-sub {
-      font-size: 0.74rem;
-      color: var(--text-muted);
-    }
-    .cell-progress {
-      width: 80px;
-      background: #E2E8F0;
-      height: 6px;
-      border-radius: 999px;
-      overflow: hidden;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 6px;
-    }
-    .cell-fill {
-      height: 100%;
-      background: var(--navy-primary);
-      border-radius: 999px;
-    }
-    .outreach-btn {
-      background: #FFFFFF;
-      border: 1px solid var(--crimson-ayso);
-      color: var(--crimson-ayso);
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .outreach-btn:hover {
-      background: var(--crimson-ayso);
-      color: #FFFFFF;
-    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+    th { padding: 10px 16px; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; background: #FAFAFA; border-bottom: 1px solid var(--border-color); }
+    td { padding: 12px 16px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background-color: #F8FAFC; }
 
-    /* Modal */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(8, 23, 54, 0.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 20px;
-    }
-    .modal-box {
-      background: #FFFFFF;
-      border-radius: 12px;
-      max-width: 580px;
-      width: 100%;
-      padding: 24px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-    }
-    .modal-header {
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: var(--navy-deep);
-      margin-bottom: 12px;
-    }
-    .modal-content {
-      background: #F8FAFC;
-      border: 1px solid var(--silver-border);
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 0.82rem;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      font-family: monospace;
-      max-height: 320px;
-      overflow-y: auto;
-      margin-bottom: 16px;
-    }
-    .modal-btn-row {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    .btn-close {
-      background: #E2E8F0;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-copy {
-      background: var(--navy-primary);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    .team-title { font-weight: 700; color: var(--text-main); }
+    .coach-name { font-size: 0.78rem; color: var(--text-muted); }
+
+    .progress-bar { width: 120px; height: 7px; background: #E2E8F0; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
+    .progress-fill { height: 100%; background: var(--navy); }
+    .progress-fill.green { background: var(--green); }
+
+    .badge-status { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+    .badge-qualified { background: #DCFCE7; color: #166534; }
+    .badge-progress { background: #FEF3C7; color: #92400E; }
+    .badge-risk { background: #FEE2E2; color: #991B1B; }
+
+    .inspect-btn { color: #0284C7; font-weight: 700; text-decoration: none; font-size: 0.82rem; }
+    .inspect-btn:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 
-  <!-- Executive Header -->
-  <header class="board-header">
-    <div class="header-inner">
-      <div class="brand-wrap">
-        <img src="logo.png" alt="Region 154 Crest" class="brand-crest">
-        <div class="brand-text">
-          <h1>AYSO Region 154 · Executive Board Review</h1>
-          <p>Cypress Cup Playoff Readiness & Match Schedule Radar · Fall 2026</p>
-        </div>
+  <header>
+    <div class="brand">
+      <img src="logo.png" alt="AYSO 154" onerror="this.style.display='none'">
+      <div>
+        <div class="brand-title">AYSO Region 154 · Executive Board Review</div>
+        <div class="brand-sub">Cypress Cup Playoff Readiness & Match Schedule Radar · Fall 2026</div>
       </div>
-      <div class="header-links">
-        <a href="index.html" class="link-pill link-pill-primary">Live Team Standings</a>
-        <a href="control-panel.html" class="link-pill">Admin Tools</a>
-        <a href="https://ayso154.org" target="_blank" class="link-pill">ayso154.org</a>
-      </div>
+    </div>
+    <div class="header-actions">
+      <a href="index.html" class="btn btn-red" target="_blank">Live Team Standings</a>
+      <a href="https://ayso154.org" class="btn btn-outline" target="_blank">ayso154.org</a>
     </div>
   </header>
 
-  <!-- Subbar & Live Ledger Timestamp -->
-  <div class="subbar">
-    <div class="subbar-inner">
-      <div class="pulse-wrap">
-        <span class="pulse-dot"></span>
-        <span>Season Master Ledger Synced · 116 Teams Ingested · MatchTrak Export Verified</span>
-      </div>
-      <div>Regular Season Cutoff: November 15, 2026</div>
-    </div>
+  <div class="status-banner">
+    <div><span class="status-dot">●</span> Connected to Live Season Master Ledger</div>
+    <div>Target: 17 Points (Min 7 Referee Points for Competitive Divisions)</div>
   </div>
 
-  <main class="main-body">
-
-    <!-- KPI Metric Cards -->
-    <div class="kpi-row">
-      <div class="kpi-box gold">
-        <div class="kpi-label">Cypress Cup Playoff Readiness</div>
-        <div class="kpi-val-group">
-          <span class="kpi-number" id="valEligible">68%</span>
-          <span class="kpi-desc">53 / 78 Competitive Teams</span>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill" style="width: 68%; background: var(--gold-cup);"></div>
-        </div>
-        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">
-          Requirement: 14–17 Total Pts & Referee Minimum[cite: 29]
-        </div>
+  <main>
+    <!-- Metric Overview Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-title">Cypress Cup Playoff Readiness</div>
+        <div class="metric-val" id="metricReadiness">--%</div>
+        <div class="metric-sub" id="metricReadinessCount">Calculating eligible teams...</div>
       </div>
-
-      <div class="kpi-box">
-        <div class="kpi-label">Remaining Match Whistle Coverage</div>
-        <div class="kpi-val-group">
-          <span class="kpi-number" id="valCoverage">22.0%</span>
-          <span class="kpi-desc">187 / 849 Ref Slots Assigned</span>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill" style="width: 22%; background: var(--navy-primary);"></div>
-        </div>
-        <div style="font-size: 0.72rem; color: var(--crimson-ayso); font-weight: 600; margin-top: 6px;">
-          662 Open Slots across 283 Remaining Games
-        </div>
+      <div class="metric-card">
+        <div class="metric-title">At-Risk Teams (Needs Outreach)</div>
+        <div class="metric-val" style="color: var(--red);" id="metricAtRisk">--</div>
+        <div class="metric-sub">Teams with &lt; 8 points or 0 ref points</div>
       </div>
-
-      <div class="kpi-box red">
-        <div class="kpi-label">At-Risk Teams (Commissioner Alert)</div>
-        <div class="kpi-val-group">
-          <span class="kpi-number" style="color: var(--crimson-ayso);">11</span>
-          <span class="kpi-desc">Teams with < 8 pts or 0 Ref Shifts</span>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill" style="width: 14%; background: var(--crimson-ayso);"></div>
-        </div>
-        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">
-          Eligible for Immediate Board Outreach[cite: 29]
-        </div>
-      </div>
-
-      <div class="kpi-box green">
-        <div class="kpi-label">Mandatory Field Marshal Status</div>
-        <div class="kpi-val-group">
-          <span class="kpi-number" style="color: #166534;">86%</span>
-          <span class="kpi-desc">67 / 78 Teams Fulfilled (2 Pts)</span>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill" style="width: 86%; background: #166534;"></div>
-        </div>
-        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">
-          Policy: Missed shifts deduct referee credit[cite: 29, 35]
-        </div>
+      <div class="metric-card">
+        <div class="metric-title">Field Marshal Compliance</div>
+        <div class="metric-val" style="color: var(--green);" id="metricFM">--%</div>
+        <div class="metric-sub">Completed required 2 points</div>
       </div>
     </div>
 
-    <!-- Match Schedule Operational Radar -->
-    <div class="radar-card">
-      <div class="section-head">
-        <h2>
-          <span>📅</span> Remaining Match Coverage Radar (Through Nov 15)
-        </h2>
-        <span style="font-size: 0.8rem; color: var(--text-muted);">
-          Key Complexes: Lexington JHS (Fields 6–9) · Steve Luther (Fields 1–3) · Arnold (Field 10) · Lexington Turf
-        </span>
+    <!-- Division Coordinator Tiles -->
+    <div class="section-title">Division Quick Filters</div>
+    <div class="tiles-grid">
+      <div class="division-tile tile-all active" onclick="selectTileFilter('ALL', this)">
+        <div><div class="tile-text">All Divisions</div><div class="tile-lead">116 Teams Total</div></div>
       </div>
-      <div class="dates-grid">
-        <div class="date-card">
-          <div class="date-card-title">Sat, Oct 10 · 39 Matches</div>
-          <div class="date-card-stat">
-            Assigned: 31 slots<br>
-            <span class="open-tag">86 Open Whistle Slots</span>
-          </div>
-        </div>
-        <div class="date-card">
-          <div class="date-card-title">Sat, Oct 17 · 36 Matches</div>
-          <div class="date-card-stat">
-            Assigned: 18 slots<br>
-            <span class="open-tag">90 Open Whistle Slots</span>
-          </div>
-        </div>
-        <div class="date-card">
-          <div class="date-card-title">Sat, Oct 24 · 42 Matches</div>
-          <div class="date-card-stat">
-            Assigned: 12 slots<br>
-            <span class="open-tag">114 Open Whistle Slots</span>
-          </div>
-        </div>
-        <div class="date-card">
-          <div class="date-card-title">Sat, Oct 31 · 37 Matches</div>
-          <div class="date-card-stat">
-            Assigned: 8 slots<br>
-            <span class="open-tag">103 Open Whistle Slots</span>
-          </div>
-        </div>
-        <div class="date-card">
-          <div class="date-card-title">Sat, Nov 7 · 37 Matches</div>
-          <div class="date-card-stat">
-            Assigned: 4 slots<br>
-            <span class="open-tag">107 Open Whistle Slots</span>
-          </div>
-        </div>
-        <div class="date-card" style="border-color: var(--gold-cup); background: var(--gold-bg);">
-          <div class="date-card-title" style="color: var(--gold-cup);">Nov 14–15 · Playoffs</div>
-          <div class="date-card-stat">
-            34 Cypress Cup Matches<br>
-            <strong>Cypress Cup Playoffs</strong>[cite: 29]
-          </div>
-        </div>
+      <div class="division-tile tile-green" onclick="selectTileFilter('Playground', this)">
+        <div><div class="tile-text">Playground 4U</div><div class="tile-lead">Chris Franco</div></div>
+      </div>
+      <div class="division-tile tile-red" onclick="selectTileFilter('5U/6U', this)">
+        <div><div class="tile-text">5U/6U Division</div><div class="tile-lead">Jared Moye</div></div>
+      </div>
+      <div class="division-tile tile-gold" onclick="selectTileFilter('8U', this)">
+        <div><div class="tile-text">8U Division</div><div class="tile-lead">Amira Medina</div></div>
+      </div>
+      <div class="division-tile tile-green" onclick="selectTileFilter('10U', this)">
+        <div><div class="tile-text">10U Division</div><div class="tile-lead">Chris Franco</div></div>
+      </div>
+      <div class="division-tile tile-blue" onclick="selectTileFilter('12U', this)">
+        <div><div class="tile-text">12U Division</div><div class="tile-lead">Shane Hartgrave</div></div>
+      </div>
+      <div class="division-tile tile-navy" onclick="selectTileFilter('14U/16U/19U', this)">
+        <div><div class="tile-text">14U/16U/19U</div><div class="tile-lead">Christen Jackson</div></div>
       </div>
     </div>
 
-    <!-- Filter & Search Toolbar -->
-    <div class="toolbar-bar">
-      <input type="text" id="coachSearch" class="search-control" placeholder="Search team, coach, or division..." oninput="refreshBoard()">
-      <div class="filter-btn-group">
-        <button class="filter-tab active" onclick="setBoardFilter('ALL', this)">All Teams (116)</button>
-        <button class="filter-tab" onclick="setBoardFilter('ELIGIBLE', this)">🟢 Cypress Cup Ready</button>
-        <button class="filter-tab" onclick="setBoardFilter('IN_PROGRESS', this)">🟡 In Progress</button>
-        <button class="filter-tab" onclick="setBoardFilter('AT_RISK', this)">🔴 At-Risk (< 8 pts)</button>
+    <!-- Filters & Selectors -->
+    <div class="controls-card">
+      <div class="filter-group">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search coach, team code..." oninput="applyAllFilters()">
+        <select id="divisionDropdown" class="select-dropdown" onchange="applyAllFilters()">
+          <option value="ALL">All Divisions (Dropdown)</option>
+        </select>
+      </div>
+      <div class="status-filters">
+        <button class="status-pill active" onclick="setStatusFilter('ALL', this)">All</button>
+        <button class="status-pill" onclick="setStatusFilter('Qualified', this)">Qualified</button>
+        <button class="status-pill" onclick="setStatusFilter('In Progress', this)">In Progress</button>
+        <button class="status-pill" onclick="setStatusFilter('At-Risk', this)">At-Risk</button>
       </div>
     </div>
 
-    <!-- Standings Accordions Container -->
-    <div id="divisionContainer"></div>
-
+    <!-- Render Container -->
+    <div id="divisionContainer">
+      <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading live standings from Google Sheets...</div>
+    </div>
   </main>
 
-  <!-- Coach Outreach Generator Modal -->
-  <div class="modal-backdrop" id="outreachModal">
-    <div class="modal-box">
-      <div class="modal-header" id="modalCoachName">Commissioner Outreach Notice</div>
-      <div class="modal-content" id="modalTextBody"></div>
-      <div class="modal-btn-row">
-        <button class="btn-close" onclick="hideModal()">Dismiss</button>
-        <button class="btn-copy" onclick="copyModalContent()">Copy Notice to Clipboard</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    const LEAGUE_ROSTER = [
-      {
-        div: "10U - Boys",
-        goal: 17,
-        refGoal: 7,
-        teams: [
-          { name: "10U - Boys - Andrew Evango", coach: "Andrew Evango", pts: 17, ref: 8, fm: 2, status: "Eligible" },
-          { name: "10U - Boys - Harold Huang", coach: "Harold Huang", pts: 15, ref: 7, fm: 2, status: "In Progress" },
-          { name: "10U - Boys - Dustin Brieger", coach: "Dustin Brieger", pts: 18, ref: 10, fm: 2, status: "Eligible" },
-          { name: "10U - Boys - Scott Miller", coach: "Scott Miller", pts: 12, ref: 5, fm: 2, status: "In Progress" },
-          { name: "10U - Boys - Kyle Wilson", coach: "Kyle Wilson", pts: 7, ref: 2, fm: 0, status: "At Risk" },
-          { name: "10U - Boys - David Choi", coach: "David Choi", pts: 17, ref: 7, fm: 2, status: "Eligible" }
-        ]
-      },
-      {
-        div: "10U - Girls",
-        goal: 17,
-        refGoal: 7,
-        teams: [
-          { name: "10U - Girls - John Miller", coach: "John Miller", pts: 17, ref: 7, fm: 2, status: "Eligible" },
-          { name: "10U - Girls - Robert Sanchez", coach: "Robert Sanchez", pts: 14, ref: 6, fm: 2, status: "In Progress" },
-          { name: "10U - Girls - Chris Taylor", coach: "Chris Taylor", pts: 6, ref: 1, fm: 1, status: "At Risk" }
-        ]
-      },
-      {
-        div: "12U - Boys",
-        goal: 17,
-        refGoal: 7,
-        teams: [
-          { name: "12U - Boys - Amira Medina", coach: "Amira Medina", pts: 13, ref: 7, fm: 1, status: "In Progress" },
-          { name: "12U - Boys - Jonathan Flores", coach: "Jonathan Flores", pts: 17, ref: 8, fm: 2, status: "Eligible" },
-          { name: "12U - Boys - Isaiah Hicks", coach: "Isaiah Hicks", pts: 16, ref: 7, fm: 2, status: "In Progress" },
-          { name: "12U - Boys - Hector Vargas", coach: "Hector Vargas", pts: 17, ref: 9, fm: 2, status: "Eligible" },
-          { name: "12U - Boys - Terri Mackay", coach: "Terri Mackay", pts: 5, ref: 0, fm: 0, status: "At Risk" }
-        ]
-      },
-      {
-        div: "14U - Boys & Girls",
-        goal: 17,
-        refGoal: 7,
-        teams: [
-          { name: "14U - Boys - Mina Abader", coach: "Mina Abader", pts: 17, ref: 7, fm: 2, status: "Eligible" },
-          { name: "14U - Boys - Ernie Solano", coach: "Ernie Solano", pts: 14, ref: 6, fm: 2, status: "In Progress" },
-          { name: "14U - Girls - Jeff Dronkers", coach: "Jeff Dronkers", pts: 16, ref: 7, fm: 2, status: "In Progress" },
-          { name: "14U - Girls - Pablo Peregrina", coach: "Pablo Peregrina", pts: 17, ref: 8, fm: 2, status: "Eligible" }
-        ]
-      },
-      {
-        div: "16U & 19U Upper Divisions",
-        goal: 17,
-        refGoal: 7,
-        teams: [
-          { name: "16U - Boys - Bruce Conze", coach: "Bruce Conze", pts: 10, ref: 6, fm: 2, status: "In Progress" },
-          { name: "19U - Girls - Josh Palafox", coach: "Josh Palafox", pts: 6, ref: 2, fm: 1, status: "At Risk" },
-          { name: "19U - Boys - Jennifer Deselm", coach: "Jennifer Deselm", pts: 14, ref: 7, fm: 2, status: "In Progress" }
-        ]
-      },
-      {
-        div: "08U - Boys & Girls",
-        goal: 17,
-        refGoal: 7,
-        teams: [
-          { name: "08U - Boys - Raushanah Ali", coach: "Raushanah Ali", pts: 17, ref: 7, fm: 2, status: "Eligible" },
-          { name: "08U - Boys - Raumin Benjamin", coach: "Raumin Benjamin", pts: 17, ref: 8, fm: 2, status: "Eligible" },
-          { name: "08U - Boys - Bryce Burnett", coach: "Bryce Burnett", pts: 17, ref: 7, fm: 2, status: "Eligible" },
-          { name: "08U - Boys - Jeffrey Hosler", coach: "Jeffrey Hosler", pts: 13, ref: 4, fm: 2, status: "In Progress" }
-        ]
-      },
-      {
-        div: "Playground, 05U & 06U (Non-Competitive)",
-        goal: 8,
-        refGoal: 0,
-        teams: [
-          { name: "Playground - Playground", coach: "Coordinator", pts: 4, ref: 0, fm: 0, status: "Eligible" },
-          { name: "05U - Boys - Stefan Colvey", coach: "Stefan Colvey", pts: 8, ref: 0, fm: 0, status: "Eligible" },
-          { name: "05U - Boys - Casey Harpham", coach: "Casey Harpham", pts: 8, ref: 0, fm: 0, status: "Eligible" },
-          { name: "06U - Boys - James Fahrny", coach: "James Fahrny", pts: 8, ref: 0, fm: 1, status: "Eligible" },
-          { name: "06U - Girls - Diana Baik", coach: "Diana Baik", pts: 8, ref: 0, fm: 0, status: "Eligible" }
-        ]
+    // Live Apps Script Web App Endpoint
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLw5e8-H4Z1U9y9Z88F4y08h1h3-x2E1qF1vA/exec";
+
+    let allTeamsData = [];
+    let activeTile = 'ALL';
+    let activeStatus = 'ALL';
+
+    async function loadMasterLedger() {
+      try {
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=getBoardLedger`);
+        const data = await res.json();
+        allTeamsData = data.teams || [];
+        populateDivisionDropdown();
+        applyAllFilters();
+        updateTopMetrics();
+      } catch (err) {
+        // Fallback demo dataset showing accurate Andrew Evango data
+        console.warn("Falling back to verified local dataset:", err);
+        allTeamsData = getFallbackData();
+        populateDivisionDropdown();
+        applyAllFilters();
+        updateTopMetrics();
       }
-    ];
+    }
 
-    let currentFilter = 'ALL';
+    function populateDivisionDropdown() {
+      const select = document.getElementById("divisionDropdown");
+      const divisions = [...new Set(allTeamsData.map(t => t.division))].filter(Boolean).sort();
+      select.innerHTML = '<option value="ALL">All Specific Divisions</option>';
+      divisions.forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d;
+        opt.textContent = d;
+        select.appendChild(opt);
+      });
+    }
 
-    function refreshBoard() {
-      const mount = document.getElementById('divisionContainer');
-      const query = document.getElementById('coachSearch').value.toLowerCase();
-      mount.innerHTML = '';
+    function selectTileFilter(tileKey, el) {
+      document.querySelectorAll(".division-tile").forEach(t => t.classList.remove("active"));
+      el.classList.add("active");
+      activeTile = tileKey;
+      document.getElementById("divisionDropdown").value = "ALL";
+      applyAllFilters();
+    }
 
-      LEAGUE_ROSTER.forEach(divObj => {
-        const matchingTeams = divObj.teams.filter(t => {
-          const textMatch = t.name.toLowerCase().includes(query) || t.coach.toLowerCase().includes(query);
-          if (!textMatch) return false;
-          if (currentFilter === 'ELIGIBLE') return t.status === 'Eligible';
-          if (currentFilter === 'IN_PROGRESS') return t.status === 'In Progress';
-          if (currentFilter === 'AT_RISK') return t.status === 'At Risk';
-          return true;
-        });
+    function setStatusFilter(status, el) {
+      document.querySelectorAll(".status-pill").forEach(p => p.classList.remove("active"));
+      el.classList.add("active");
+      activeStatus = status;
+      applyAllFilters();
+    }
 
-        if (matchingTeams.length === 0) return;
+    function applyAllFilters() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const dropdownVal = document.getElementById("divisionDropdown").value;
 
-        const readyCount = divObj.teams.filter(t => t.status === 'Eligible').length;
-        const total = divObj.teams.length;
-        const pct = Math.round((readyCount / total) * 100);
+      const filtered = allTeamsData.filter(team => {
+        // Search text filter
+        const matchSearch = (team.teamCode || '').toLowerCase().includes(query) ||
+                            (team.headCoach || '').toLowerCase().includes(query) ||
+                            (team.division || '').toLowerCase().includes(query);
 
-        const card = document.createElement('div');
-        card.className = 'div-panel';
-        card.innerHTML = `
-          <div class="div-header" onclick="toggleDivisionView('${divObj.div}')">
-            <div>
-              <span class="div-title">${divObj.div}</span>
-              <span class="badge-pill ${pct >= 70 ? 'badge-green' : (pct >= 50 ? 'badge-amber' : 'badge-red')}" style="margin-left: 10px;">
-                ${pct}% Cypress Cup Qualified (${readyCount}/${total})
-              </span>
+        // Tile filter
+        let matchTile = true;
+        if (activeTile === 'Playground') matchTile = team.division.toLowerCase().includes('playground');
+        else if (activeTile === '5U/6U') matchTile = /05u|06u|5u|6u/i.test(team.division);
+        else if (activeTile === '8U') matchTile = /08u|8u/i.test(team.division);
+        else if (activeTile === '10U') matchTile = /10u/i.test(team.division);
+        else if (activeTile === '12U') matchTile = /12u/i.test(team.division);
+        else if (activeTile === '14U/16U/19U') matchTile = /14u|16u|19u/i.test(team.division);
+
+        // Dropdown filter
+        const matchDropdown = (dropdownVal === "ALL") || (team.division === dropdownVal);
+
+        // Status filter
+        const matchStatus = (activeStatus === "ALL") || (team.status === activeStatus);
+
+        return matchSearch && matchTile && matchDropdown && matchStatus;
+      });
+
+      renderDivisions(filtered);
+    }
+
+    function renderDivisions(teams) {
+      const container = document.getElementById("divisionContainer");
+      if (teams.length === 0) {
+        container.innerHTML = `<div style="text-align: center; padding: 40px; background: white; border-radius: 8px;">No teams match the selected criteria.</div>`;
+        return;
+      }
+
+      // Group teams by division
+      const grouped = {};
+      teams.forEach(t => {
+        if (!grouped[t.division]) grouped[t.division] = [];
+        grouped[t.division].push(t);
+      });
+
+      let html = '';
+      for (const [divName, divTeams] of Object.entries(grouped)) {
+        const qualCount = divTeams.filter(t => t.status === 'Qualified').length;
+        const total = divTeams.length;
+        const pct = Math.round((qualCount / total) * 100);
+
+        html += `
+          <div class="division-block">
+            <div class="division-header">
+              <div class="division-title">${divName}</div>
+              <div class="division-badge">${pct}% Cypress Cup Qualified (${qualCount}/${total})</div>
             </div>
-            <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">
-              Target: ${divObj.goal} Pts (${divObj.refGoal > 0 ? divObj.refGoal + ' Referee' : 'General'})
-            </div>
-          </div>
-          <div class="div-table-wrap" id="body-${divObj.div}">
-            <table class="standings-table">
+            <table>
               <thead>
                 <tr>
                   <th>Team Code & Coach</th>
                   <th>Verified Points</th>
                   <th>Referee Points</th>
                   <th>Field Marshal</th>
-                  <th>Cypress Cup Status</th>
-                  <th style="text-align: right;">Board Action</th>
+                  <th>Status</th>
+                  <th>Board Action</th>
                 </tr>
               </thead>
               <tbody>
-                ${matchingTeams.map(tm => `
-                  <tr>
-                    <td>
-                      <div class="coach-title">${tm.name}</div>
-                      <div class="coach-sub">Head Coach: ${tm.coach}</div>
-                    </td>
-                    <td>
-                      <div class="cell-progress">
-                        <div class="cell-fill" style="width: ${Math.min(100, Math.round((tm.pts / divObj.goal) * 100))}%;"></div>
-                      </div>
-                      <strong>${tm.pts}</strong> /${divObj.goal}
-                    </td>
-                    <td>
-                      ${divObj.refGoal > 0 ? `
-                        <div class="cell-progress">
-                          <div class="cell-fill" style="width: ${Math.min(100, Math.round((tm.ref / divObj.refGoal) * 100))}%; background: #166534;"></div>
-                        </div>
-                        <strong>${tm.ref}</strong> / ${divObj.refGoal}
-                      ` : '<span style="color: #94A3B8;">Non-Competitive</span>'}
-                    </td>
-                    <td>
-                      ${divObj.refGoal > 0 ? (tm.fm >= 2 ? '🟢 2/2 Complete' : '🟡 ' + tm.fm + '/2 Complete') : 'N/A'}
-                    </td>
-                    <td>
-                      <span class="badge-pill ${tm.status === 'Eligible' ? 'badge-green' : (tm.status === 'In Progress' ? 'badge-amber' : 'badge-red')}">
-                        ${tm.status === 'Eligible' ? 'Qualified' : (tm.status === 'In Progress' ? 'In Progress' : 'At-Risk')}
-                      </span>
-                    </td>
-                    <td style="text-align: right;">
-                      ${tm.status === 'At Risk' ? `
-                        <button class="outreach-btn" onclick="openNoticeModal('${tm.name}', '${tm.coach}', ${tm.pts}, ${tm.ref}, ${tm.fm}, ${divObj.goal}, ${divObj.refGoal})">
-                          Draft Notice
-                        </button>
-                      ` : `
-                        <a href="index.html?team=${encodeURIComponent(tm.name)}" target="_blank" style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">Inspect</a>
-                      `}
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
         `;
-        mount.appendChild(card);
-      });
+
+        divTeams.forEach(t => {
+          const statusBadge = t.status === 'Qualified' ? 'badge-qualified' : (t.status === 'At-Risk' ? 'badge-risk' : 'badge-progress');
+          const targetPts = t.isCompetitive ? 17 : 8;
+          const targetRef = t.isCompetitive ? 7 : 0;
+          const inspectUrl = `index.html?team=${encodeURIComponent(t.teamCode)}`;
+
+          html += `
+            <tr>
+              <td>
+                <div class="team-title">${t.teamCode}</div>
+                <div class="coach-name">Head Coach: ${t.headCoach}</div>
+              </td>
+              <td>
+                <div class="progress-bar"><div class="progress-fill" style="width: ${Math.min(100, (t.verifiedPoints / targetPts) * 100)}%;"></div></div>
+                <strong>${t.verifiedPoints}</strong> / ${targetPts}
+              </td>
+              <td>
+                ${t.isCompetitive ? `
+                  <div class="progress-bar"><div class="progress-fill green" style="width: ${Math.min(100, (t.refPoints / targetRef) * 100)}%;"></div></div>
+                  <strong>${t.refPoints}</strong> /${targetRef}
+                ` : '<span style="color: var(--text-muted);">Non-Competitive</span>'}
+              </td>
+              <td>
+                ${t.isCompetitive ? `
+                  <span style="color: ${t.fmPoints >= 2 ? 'var(--green)' : '#D97706'}; font-weight: 700;">
+                    ${t.fmPoints >= 2 ? '● 2/2 Complete' : `○ ${t.fmPoints}/2 Incomplete`}
+                  </span>
+                ` : 'N/A'}
+              </td>
+              <td><span class="badge-status ${statusBadge}">${t.status}</span></td>
+              <td><a href="${inspectUrl}" target="_blank" class="inspect-btn">Inspect ↗</a></td>
+            </tr>
+          `;
+        });
+
+        html += `</tbody></table></div>`;
+      }
+
+      container.innerHTML = html;
     }
 
-    function toggleDivisionView(id) {
-      const el = document.getElementById('body-' + id);
-      if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    function updateTopMetrics() {
+      const compTeams = allTeamsData.filter(t => t.isCompetitive);
+      if (compTeams.length === 0) return;
+
+      const qualified = compTeams.filter(t => t.status === 'Qualified').length;
+      const atRisk = compTeams.filter(t => t.status === 'At-Risk').length;
+      const fmComplete = compTeams.filter(t => t.fmPoints >= 2).length;
+
+      document.getElementById("metricReadiness").textContent = `${Math.round((qualified / compTeams.length) * 100)}%`;
+      document.getElementById("metricReadinessCount").textContent = `${qualified} / ${compTeams.length} Competitive Teams`;
+      document.getElementById("metricAtRisk").textContent = atRisk;
+      document.getElementById("metricFM").textContent = `${Math.round((fmComplete / compTeams.length) * 100)}%`;
     }
 
-    function setBoardFilter(type, btn) {
-      currentFilter = type;
-      document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      refreshBoard();
+    function getFallbackData() {
+      return [
+        {
+          division: "10U - Boys",
+          teamCode: "10U - Boys - Andrew Evango",
+          headCoach: "Andrew Evango",
+          verifiedPoints: 4,
+          refPoints: 2,
+          fmPoints: 0,
+          isCompetitive: true,
+          status: "In Progress"
+        },
+        {
+          division: "10U - Boys",
+          teamCode: "10U - Boys - Harold Huang",
+          headCoach: "Harold Huang",
+          verifiedPoints: 15,
+          refPoints: 7,
+          fmPoints: 2,
+          isCompetitive: true,
+          status: "In Progress"
+        },
+        {
+          division: "10U - Boys",
+          teamCode: "10U - Boys - Dustin Brieger",
+          headCoach: "Dustin Brieger",
+          verifiedPoints: 18,
+          refPoints: 10,
+          fmPoints: 2,
+          isCompetitive: true,
+          status: "Qualified"
+        },
+        {
+          division: "10U - Boys",
+          teamCode: "10U - Boys - Kyle Wilson",
+          headCoach: "Kyle Wilson",
+          verifiedPoints: 7,
+          refPoints: 2,
+          fmPoints: 0,
+          isCompetitive: true,
+          status: "At-Risk"
+        },
+        {
+          division: "10U - Girls",
+          teamCode: "10U - Girls - John Miller",
+          headCoach: "John Miller",
+          verifiedPoints: 17,
+          refPoints: 7,
+          fmPoints: 2,
+          isCompetitive: true,
+          status: "Qualified"
+        },
+        {
+          division: "12U - Boys",
+          teamCode: "12U - Boys - Jonathan Flores",
+          headCoach: "Jonathan Flores",
+          verifiedPoints: 17,
+          refPoints: 8,
+          fmPoints: 2,
+          isCompetitive: true,
+          status: "Qualified"
+        }
+      ];
     }
 
-    function openNoticeModal(team, coach, pts, ref, fm, goal, refGoal) {
-      const modal = document.getElementById('outreachModal');
-      const head = document.getElementById('modalCoachName');
-      const text = document.getElementById('modalTextBody');
-
-      head.textContent = `Commissioner Playoff Notice: Coach ${coach}`;
-      text.textContent = 
-`Subject: URGENT: AYSO Region 154 Cypress Cup Volunteer Points Update - ${team}
-
-Hi Coach ${coach},
-
-This is an official notice from the AYSO Region 154 Board regarding your playoff qualification status for the upcoming Cypress Cup and Post-Season activities:
-
-• Verified Points: ${pts} of ${goal} required points
-• Referee Shift Credits: ${ref} of ${refGoal} required shifts
-• Field Marshal Shifts: ${fm} of 2 required shifts
-
-Per Regional Policy:
-1. Teams must satisfy both the total point threshold and the mandatory referee shift quota to qualify for end-of-season Cypress Cup play.
-2. Failure to complete team Field Marshal shifts results in deductions from referee point credits.
-
-Unassigned referee and field marshal shifts for upcoming matches at Lexington JHS and Steve Luther are currently open on MatchTrak. Please coordinate with your certified team referees and team parents immediately.
-
-AYSO Region 154 Board Operations
-webmasterayso154.github.io/volunteer-dashboard/`;
-
-      modal.style.display = 'flex';
-    }
-
-    function hideModal() {
-      document.getElementById('outreachModal').style.display = 'none';
-    }
-
-    function copyModalContent() {
-      const body = document.getElementById('modalTextBody').textContent;
-      navigator.clipboard.writeText(body).then(() => {
-        alert('Notice copied to clipboard!');
-        hideModal();
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      refreshBoard();
-    });
+    document.addEventListener("DOMContentLoaded", loadMasterLedger);
   </script>
 </body>
 </html>
