@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Official Region 154 3D Shield Palette */
+      /* Region 154 3D Crest Palette */
       --navy-deep: #081736;
       --navy-primary: #102652;
       --navy-card: #18336A;
@@ -18,7 +18,6 @@
       --silver-bg: #F1F5F9;
       --silver-card: #FFFFFF;
       --silver-border: #E2E8F0;
-      --silver-line: #CBD5E1;
       --text-dark: #0F172A;
       --text-muted: #64748B;
       --gold-cup: #D97706;
@@ -108,7 +107,7 @@
       background: var(--crimson-dark);
     }
 
-    /* Sub-bar / Schedule Sync Bar */
+    /* Sub-bar & Sync Status */
     .subbar {
       background: #040D1E;
       border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -144,7 +143,7 @@
       100% { transform: scale(0.9); opacity: 0.7; }
     }
 
-    /* Main Grid Canvas */
+    /* Main Container */
     .main-body {
       max-width: 1300px;
       margin: 24px auto;
@@ -153,7 +152,7 @@
       flex: 1;
     }
 
-    /* Policy & KPI Scorecards */
+    /* Scorecards */
     .kpi-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -215,7 +214,7 @@
       border-radius: 999px;
     }
 
-    /* Section 2: Match Schedule Operational Radar */
+    /* Schedule Radar */
     .radar-card {
       background: var(--silver-card);
       border: 1px solid var(--silver-border);
@@ -272,7 +271,7 @@
       font-weight: 700;
     }
 
-    /* Section 3: Toolbar & Filters */
+    /* Toolbar */
     .toolbar-bar {
       background: var(--silver-card);
       border: 1px solid var(--silver-border);
@@ -318,7 +317,7 @@
       border-color: var(--navy-primary);
     }
 
-    /* Section 4: Division Standings & Policy Rollups */
+    /* Division Panels */
     .div-panel {
       background: var(--silver-card);
       border: 1px solid var(--silver-border);
@@ -351,7 +350,6 @@
     .badge-green { background: var(--status-green-bg); color: var(--status-green-txt); }
     .badge-amber { background: var(--status-amber-bg); color: var(--status-amber-txt); }
     .badge-red { background: var(--status-red-bg); color: var(--status-red-txt); }
-    .badge-gold { background: var(--gold-bg); color: var(--gold-cup); }
 
     .div-table-wrap {
       overflow-x: auto;
@@ -416,7 +414,7 @@
       color: #FFFFFF;
     }
 
-    /* Notice Generator Modal */
+    /* Modal */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -484,7 +482,7 @@
   <header class="board-header">
     <div class="header-inner">
       <div class="brand-wrap">
-        <img src="logo-3d.png" alt="Region 154 Crest" class="brand-crest" onerror="this.src='logo.png'">
+        <img src="logo.png" alt="Region 154 Crest" class="brand-crest">
         <div class="brand-text">
           <h1>AYSO Region 154 · Executive Board Review</h1>
           <p>Cypress Cup Playoff Readiness & Match Schedule Radar · Fall 2026</p>
@@ -511,7 +509,7 @@
 
   <main class="main-body">
 
-    <!-- KPI Metric Cards (Reflecting Volunteer Points Policy) -->
+    <!-- KPI Metric Cards -->
     <div class="kpi-row">
       <div class="kpi-box gold">
         <div class="kpi-label">Cypress Cup Playoff Readiness</div>
@@ -570,7 +568,7 @@
       </div>
     </div>
 
-    <!-- Match Schedule Operational Radar (From 9-21-26 Schedule Export.xlsx) -->
+    <!-- Match Schedule Operational Radar -->
     <div class="radar-card">
       <div class="section-head">
         <h2>
@@ -655,7 +653,6 @@
   </div>
 
   <script>
-    // Embedded Region 154 Master Snapshot
     const LEAGUE_ROSTER = [
       {
         div: "10U - Boys",
