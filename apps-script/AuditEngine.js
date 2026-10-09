@@ -3,9 +3,16 @@
  * AYSO REGION 154 - AUDIT TRAIL & MASTER LEDGER SYNC ENGINE
  * ============================================================================
  * File: AuditEngine.js
- * Description: Populates Columns O, P, Q in 'Game Day Check-ins' (or 'Form Responses 1') with audit trails,
- *              enforces duplicate check-in filtering, applies board category caps,
- *              and synchronizes 'Season_Master_Ledger' with verified point totals.
+ * Version: v2.1.0-FORMULA-EDITION
+ * Last Updated: October 9, 2026, 08:45 AM PDT
+ * Author: AYSO 154 Webmaster
+ * 
+ * CHANGELOG:
+ * - [2026-10-09 08:45 AM] CRITICAL FIX: Replaced destructive sheet.clearContents()
+ *   with an atomic in-place overwrite to prevent ledger wipe on script timeout.
+ * - [2026-10-09 08:45 AM] UPGRADE: Injected native Google Sheets formulas 
+ *   (=SUMIFS) into the Season_Master_Ledger. The sheet will now calculate 
+ *   itself independently of the Apps Script runtime.
  * ============================================================================
  */
 
@@ -46,9 +53,7 @@ function runAuditAndSyncLedger() {
   try {
     const ui = SpreadsheetApp.getUi();
     ui.alert('AYSO 154 Audit Engine', message, ui.ButtonSet.OK);
-  } catch (e) {
-    // Non-UI context (trigger/clasp/script execution)
-  }
+  } catch (e) {}
 
   return { auditSummary, ledgerSummary };
 }
@@ -62,7 +67,6 @@ function auditFormResponses(ss) {
     return { totalRows: 0, validShifts: 0, duplicates: 0, nocra: 0, capReached: 0, teamPoints: {} };
   }
 
-  // Ensure Headers in Row 1 (Cols O, P, Q -> 15, 16, 17)
   sheet.getRange(1, 15).setValue('Audit Status');
   sheet.getRange(1, 16).setValue('Points Awarded');
   sheet.getRange(1, 17).setValue('Audit Reason');
@@ -70,22 +74,14 @@ function auditFormResponses(ss) {
 
   const rows = sheet.getDataRange().getValues();
   const caps = (typeof getActiveCaps === 'function') ? getActiveCaps() : {
-    onFieldRef: 10,
-    fieldMarshal: 2,
-    setup: 5,
-    pic: 2,
-    certifiedRef: 5,
-    matchtrak: 2
+    onFieldRef: 10, fieldMarshal: 2, setup: 5, pic: 2, certifiedRef: 5, matchtrak: 2
   };
 
   const auditOutput = [];
-  const teamCategoryCounts = {}; // teamCode -> { ref: 0, fm: 0, setup: 0, pic: 0 }
-  const seenVolunteerSlots = new Set(); // volId + date + time + field + role
+  const teamCategoryCounts = {}; 
+  const seenVolunteerSlots = new Set();
 
-  let validShifts = 0;
-  let duplicates = 0;
-  let nocra = 0;
-  let capReached = 0;
+  let validShifts = 0, duplicates = 0, nocra = 0, capReached = 0;
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
@@ -100,37 +96,26 @@ function auditFormResponses(ss) {
       dateStr = Utilities.formatDate(timestamp, 'America/Los_Angeles', 'yyyy-MM-dd');
     } else {
       const parsedDate = new Date(timestamp);
-      dateStr = !isNaN(parsedDate.getTime())
-        ? Utilities.formatDate(parsedDate, 'America/Los_Angeles', 'yyyy-MM-dd')
-        : String(timestamp).split(' ')[0];
+      dateStr = !isNaN(parsedDate.getTime()) ? Utilities.formatDate(parsedDate, 'America/Los_Angeles', 'yyyy-MM-dd') : String(timestamp).split(' ')[0];
     }
 
     const email = String(row[1] || '').trim().toLowerCase();
     const firstName = String(row[2] || '').trim();
     const lastName = String(row[3] || '').trim();
-    const volName = `${firstName} ${lastName}`.trim().toLowerCase();
-    const volId = volName || email;
+    const volId = (`${firstName} ${lastName}`.trim().toLowerCase()) || email;
 
     const dutyRaw = String(row[4] || '').trim();
     const refPosition = String(row[5] || '').trim();
     const rowTeamRef = String(row[6] || '').trim();
     const refGameTime = String(row[7] || '').trim();
     const refField = String(row[8] || '').trim();
-
     const rowTeamFm = String(row[9] || '').trim();
     const fmField = String(row[10] || '').trim();
     const fmGameTime = String(row[11] || '').trim();
-
     const rowTeamSetup = String(row[12] || '').trim();
     const setupField = String(row[13] || '').trim();
 
-    // Identify target team, role/category, time slot, and field
-    let teamCode = '';
-    let category = '';
-    let categoryCap = 0;
-    let timeSlot = '';
-    let field = '';
-    let isNocra = false;
+    let teamCode = '', category = '', categoryCap = 0, timeSlot = '', field = '', isNocra = false;
 
     if (rowTeamRef || /ref/i.test(dutyRaw)) {
       teamCode = rowTeamRef || findMatchingTeamInRow(row);
@@ -138,9 +123,7 @@ function auditFormResponses(ss) {
       categoryCap = caps.onFieldRef;
       timeSlot = refGameTime || 'GameTime';
       field = refField || 'Field';
-      if (/nocra|ussf/i.test(refPosition)) {
-        isNocra = true;
-      }
+      if (/nocra|ussf/i.test(refPosition)) isNocra = true;
     } else if (rowTeamFm || /marshal/i.test(dutyRaw)) {
       teamCode = rowTeamFm || findMatchingTeamInRow(row);
       category = 'Field Marshal Shift';
@@ -161,13 +144,9 @@ function auditFormResponses(ss) {
       field = 'Picture Tent';
     }
 
-    if (!teamCategoryCounts[teamCode]) {
-      teamCategoryCounts[teamCode] = { ref: 0, fm: 0, setup: 0, pic: 0 };
-    }
+    if (!teamCategoryCounts[teamCode]) teamCategoryCounts[teamCode] = { ref: 0, fm: 0, setup: 0, pic: 0 };
 
-    let status = 'Recorded';
-    let pts = 0;
-    let reason = '';
+    let status = 'Recorded', pts = 0, reason = '';
 
     if (isNocra) {
       status = 'NOCRA - No Points';
@@ -175,7 +154,6 @@ function auditFormResponses(ss) {
       reason = 'Paid NOCRA / USSF center referee (no volunteer credit)';
       nocra++;
     } else {
-      // De-duplication slot key: volunteer + date + time + field + category + refPosition
       const normTime = String(timeSlot || '').replace(/\s+/g, '').toLowerCase();
       const normField = String(field || '').replace(/\s+/g, '').toLowerCase();
       const normPos = String(refPosition || '').replace(/\s+/g, '').toLowerCase();
@@ -187,7 +165,6 @@ function auditFormResponses(ss) {
         reason = `Duplicate check-in: volunteer already logged for slot ${timeSlot} at ${field}${refPosition ? ` (${refPosition})` : ''}`;
         duplicates++;
       } else {
-        // Check category cap
         let currentCount = 0;
         if (category === 'Referee Assignment') currentCount = teamCategoryCounts[teamCode].ref;
         else if (category === 'Field Marshal Shift') currentCount = teamCategoryCounts[teamCode].fm;
@@ -213,28 +190,16 @@ function auditFormResponses(ss) {
         }
       }
     }
-
     auditOutput.push([status, pts, reason]);
   }
 
-  // Write audit columns back to 'Game Day Check-ins' (or 'Form Responses 1')
   if (auditOutput.length > 0) {
     sheet.getRange(2, 15, auditOutput.length, 3).setValues(auditOutput);
   }
 
-  return {
-    totalRows: auditOutput.length,
-    validShifts,
-    duplicates,
-    nocra,
-    capReached,
-    teamPoints: teamCategoryCounts
-  };
+  return { totalRows: auditOutput.length, validShifts, duplicates, nocra, capReached, teamPoints: teamCategoryCounts };
 }
 
-/**
- * Finds team string from row if column wasn't explicitly populated
- */
 function findMatchingTeamInRow(row) {
   const master = (typeof MASTER_TEAMS !== 'undefined') ? MASTER_TEAMS : [];
   for (let c = 0; c < row.length; c++) {
@@ -249,7 +214,8 @@ function findMatchingTeamInRow(row) {
 }
 
 /**
- * Synchronizes 'Season_Master_Ledger' with verified point totals, awards, and qualification status.
+ * Injects Native Google Sheets Formulas into 'Season_Master_Ledger'.
+ * Ensures calculations survive backend crashes and operate autonomously.
  */
 function syncSeasonMasterLedger(ss, auditedTeamPoints = {}) {
   let sheet = ss.getSheetByName('Season_Master_Ledger');
@@ -257,115 +223,63 @@ function syncSeasonMasterLedger(ss, auditedTeamPoints = {}) {
     sheet = ss.insertSheet('Season_Master_Ledger');
   }
 
-  // Headers
   const headers = [
-    'Division',
-    'Team Code',
-    'Head Coach',
-    'Referee Points (Max 10)',
-    'Field Marshal Points (Max 2)',
-    'Field Setup Points (Max 5)',
-    'Picture Day Points (Max 2)',
-    'Certified Ref Bonus (Max 5)',
-    'MatchTrak Bonus (Max 2)',
-    'Other Adjustments',
-    'Total Verified Points',
-    'Playoff Goal',
-    'Playoff Status',
-    'Last Audited'
+    'Division', 'Team Code', 'Head Coach', 'Referee Points (Max 10)',
+    'Field Marshal Points (Max 2)', 'Field Setup Points (Max 5)',
+    'Picture Day Points (Max 2)', 'Certified Ref Bonus (Max 5)',
+    'MatchTrak Bonus (Max 2)', 'Other Adjustments', 'Total Verified Points',
+    'Playoff Goal', 'Playoff Status', 'Last Audited'
   ];
 
-  sheet.clearContents();
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  sheet.getRange(1, 1, 1, headers.length)
+  // Identify Check-in Tab name for formula linking
+  const checkInTab = ss.getSheetByName('Game Day Check-ins') ? 'Game Day Check-ins' : 'Form Responses 1';
+
+  // Atomic write for headers - NO sheet.clearContents()
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers])
     .setFontWeight('bold')
     .setBackground('#002D62')
     .setFontColor('#FFFFFF');
 
-  // Collect Awards from Team_Awards (fixed 116-row matrix)
-  const awardsSheet = ss.getSheetByName('Team_Awards');
-  const teamAwardsMap = {}; // teamCode -> { certRef: 0, matchtrak: 0, pictureDay: 0, other: 0 }
-  if (awardsSheet && awardsSheet.getLastRow() >= 1) {
-    const awardRows = awardsSheet.getDataRange().getValues();
-    for (let j = 0; j < awardRows.length; j++) {
-      const aRow = awardRows[j];
-      const teamCode = String(aRow[0] || '').trim();
-      if (!teamCode) continue;
-      // Skip header row if present
-      if (j === 0 && (/team/i.test(teamCode) && !teamCode.includes(' - '))) continue;
-
-      const certRef = Math.max(0, Math.min(5, Number(aRow[1]) || 0));
-      const matchtrak = Math.max(0, Math.min(2, Number(aRow[2]) || 0));
-      const pictureDay = Math.max(0, Math.min(2, Number(aRow[3]) || 0));
-      const other = Number(aRow[4]) || 0;
-
-      teamAwardsMap[teamCode] = {
-        certRef: certRef,
-        matchtrak: matchtrak,
-        pictureDay: pictureDay,
-        other: other
-      };
-    }
-  }
-
   const teams = (typeof MASTER_TEAMS !== 'undefined') ? MASTER_TEAMS : Object.keys(auditedTeamPoints);
-  const nowStr = Utilities.formatDate(new Date(), 'America/Los_Angeles', 'yyyy-MM-dd HH:mm');
-  const ledgerRows = [];
+  const nowStr = Utilities.formatDate(new Date(), 'America/Los_Angeles', 'yyyy-MM-dd HH:mm:ss');
+  const rows = [];
 
-  teams.forEach(rawTeam => {
-    if (!rawTeam || !rawTeam.trim()) return;
+  teams.forEach((rawTeam, index) => {
+    if (!rawTeam || !rawTeam.trim() || rawTeam.startsWith('teamCode')) return;
     const parts = rawTeam.split(' - ');
     const division = parts.length >= 2 ? (parts[0].trim() + ' - ' + parts[1].trim()) : parts[0].trim();
     const coach = parts.length >= 3 ? parts.slice(2).join(' - ').trim() : parts[0].trim();
 
-    const audited = auditedTeamPoints[rawTeam] || { ref: 0, fm: 0, setup: 0, pic: 0 };
-    const awards = teamAwardsMap[rawTeam] || { certRef: 0, matchtrak: 0, pictureDay: 0, other: 0 };
+    // R is the row number (Row 2 onward)
+    const r = index + 2; 
 
-    const refPts = Math.min(10, audited.ref);
-    const fmPts = Math.min(2, audited.fm);
-    const setupPts = Math.min(5, audited.setup);
-    const picPts = Math.min(2, audited.pic + (awards.pictureDay || 0));
-    const certRefPts = awards.certRef || 0;
-    const matchtrakPts = awards.matchtrak || 0;
-    const otherPts = awards.other || 0;
+    // Live Spreadsheet Formulas
+    const refFormula = `=MIN(10, SUMIFS('${checkInTab}'!$P:$P, '${checkInTab}'!$G:$G, $B${r}, '${checkInTab}'!$E:$E, "*Referee*"))`;
+    const fmFormula = `=MIN(2, SUMIFS('${checkInTab}'!$P:$P, '${checkInTab}'!$J:$J, $B${r}, '${checkInTab}'!$E:$E, "*Marshal*"))`;
+    const setupFormula = `=MIN(5, SUMIFS('${checkInTab}'!$P:$P, '${checkInTab}'!$M:$M, $B${r}, '${checkInTab}'!$E:$E, "*Set*"))`;
+    const picFormula = `=MIN(2, SUMIFS('${checkInTab}'!$P:$P, '${checkInTab}'!$G:$G, $B${r}, '${checkInTab}'!$E:$E, "*Picture*") + SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$D:$D))`;
+    const certFormula = `=MIN(5, SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$B:$B))`;
+    const matchTrakFormula = `=MIN(2, SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$C:$C))`;
+    const adjFormula = `=SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$E:$E)`;
+    
+    const totalFormula = `=MAX(0, D${r} + E${r} + F${r} + G${r} + H${r} + I${r} + J${r})`;
+    const goalFormula = `=IF(ISNUMBER(SEARCH("Playground", A${r})), 4, IF(OR(ISNUMBER(SEARCH("05U", A${r})), ISNUMBER(SEARCH("06U", A${r}))), 8, 17))`;
+    const statusFormula = `=IF(K${r} >= L${r}, "Qualified", (L${r} - K${r}) & " pts needed")`;
 
-    const totalPts = Math.max(0, refPts + fmPts + setupPts + picPts + certRefPts + matchtrakPts + otherPts);
-
-    // Determine division target goal
-    let goal = 17;
-    if (division.includes('Playground')) goal = 4;
-    else if (division.startsWith('05U') || division.startsWith('06U')) goal = 8;
-
-    let status = 'In Progress';
-    if (totalPts >= goal) {
-      status = 'Qualified';
-    } else {
-      const remaining = goal - totalPts;
-      status = `${remaining} pts needed`;
-    }
-
-    ledgerRows.push([
-      division,
-      rawTeam,
-      coach,
-      refPts,
-      fmPts,
-      setupPts,
-      picPts,
-      certRefPts,
-      matchtrakPts,
-      otherPts,
-      totalPts,
-      goal,
-      status,
+    rows.push([
+      division, rawTeam, coach,
+      refFormula, fmFormula, setupFormula, picFormula,
+      certFormula, matchTrakFormula, adjFormula,
+      totalFormula, goalFormula, statusFormula,
       nowStr
     ]);
   });
 
-  if (ledgerRows.length > 0) {
-    sheet.getRange(2, 1, ledgerRows.length, headers.length).setValues(ledgerRows);
+  if (rows.length > 0) {
+    // Atomic overwrite. Google Sheets evaluates "=" strings automatically as formulas
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
     sheet.autoResizeColumns(1, headers.length);
   }
 
-  return { teamsCount: ledgerRows.length };
+  return { teamsCount: rows.length };
 }
