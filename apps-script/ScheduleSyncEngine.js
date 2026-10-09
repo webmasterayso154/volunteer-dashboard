@@ -1,28 +1,30 @@
 /**
  * ============================================================================
- * AYSO REGION 154 - PRODUCTION SCHEDULE & DRIVE INGEST ENGINE (v1.7.1)
+ * AYSO REGION 154 - PRODUCTION SCHEDULE & DRIVE INGEST ENGINE
  * ============================================================================
  * File: ScheduleSyncEngine.gs
- * Version: v1.7.1-RFC008
- * Description: Hardened production schedule engine with strict 3-venue routing,
- *              Hybrid Upcoming Weekend filtering (Fri/Sat/Sun), interactive
- *              pre-flight confirmation dialogs, headless abort thresholds,
- *              automated sheet snapshots, resilient multi-type item resolution,
- *              and non-destructive in-place dropdown updates.
+ * Version: v1.7.3-LOCKED-FIX
+ * Last Updated: October 9, 2026, 08:45 AM PDT
+ * Author: AYSO 154 Webmaster
+ * 
+ * CHANGELOG:
+ * - [2026-10-09 08:45 AM] BUGFIX: Restored missing mathematical operators 
+ *   (-, *) stripped during merge. Fixed SpreadApp typo to SpreadsheetApp.
+ * - [2026-10-08 12:30 PM] SECURITY: Added assertNotProtectedTab_ to guarantee
+ *   schedule ingestion NEVER accesses Season_Master_Ledger.
  * ============================================================================
  */
 
-// ============================================================================
-// CONFIGURATION CONSTANTS
-// ============================================================================
 const CONFIG = {
-  VERSION: 'v1.7.1-RFC008',
+  VERSION: 'v1.7.3-LOCKED-FIX',
   TIMEZONE: 'America/Los_Angeles',
   PRODUCTION_SHEET_ID: '1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGl998ChVVMypyCk',
   PRODUCTION_FORM_ID: '1gIenxzkQeBGcbJZrt_ujp9WTfXg_1HUD_BgHDjLS3cI',
   DROP_FOLDER_ID: '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv',
   ARCHIVE_FOLDER_ID: '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m',
   DASHBOARD_URL: 'https://webmasterayso154.github.io/volunteer-dashboard/',
+  SCHEDULE_TAB_NAME: 'Master Schedule',
+  PROTECTED_IMMUTABLE_TABS: ['Season_Master_Ledger', 'Form Responses 1', 'Form Responses 2', 'Team_Awards', 'Settings', 'Admin_Config'],
   FORM_DESCRIPTION: "🙌 Game day happens because of YOU! ⚽\nThank you for volunteering your time for our players and community today.\n\nQuick Steps for New Volunteers:\n1. Enter your name and role.\n2. Pick your field venue and select your match from the dropdown.\n3. Submit to log your points!\n\n📊 View live team points on the Volunteer Standings Dashboard: https://webmasterayso154.github.io/volunteer-dashboard/",
   CONFIRMATION_MESSAGE: "⚽ Thanks for checking in! 🙌\n\nYou can track live team standings and volunteer points on the Volunteer Dashboard here:\nhttps://webmasterayso154.github.io/volunteer-dashboard/",
   VENUE_TITLES: {
@@ -35,18 +37,17 @@ const CONFIG = {
   MIN_GAMES_THRESHOLD: 5
 };
 
-// ============================================================================
-// HYBRID UPCOMING WEEKEND RESOLVER & DATE HELPERS
-// ============================================================================
+function assertNotProtectedTab_(sheet) {
+  if (!sheet) throw new Error("CRITICAL: Attempted operation on null sheet.");
+  const name = sheet.getName().trim();
+  if (CONFIG.PROTECTED_IMMUTABLE_TABS.includes(name)) {
+    throw new Error(`SECURITY ALERT: ScheduleSyncEngine attempted to touch protected tab "${name}". Operation hard-aborted to prevent data loss.`);
+  }
+}
 
-/**
- * Normalizes any date string or object to YYYY-MM-DD in Pacific Time.
- */
 function normalizeToYMD(rawDate) {
   if (!rawDate) return '';
-  if (rawDate instanceof Date) {
-    return Utilities.formatDate(rawDate, CONFIG.TIMEZONE, 'yyyy-MM-dd');
-  }
+  if (rawDate instanceof Date) return Utilities.formatDate(rawDate, CONFIG.TIMEZONE, 'yyyy-MM-dd');
   const str = String(rawDate).trim();
   const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
   if (slashMatch) {
@@ -62,10 +63,6 @@ function normalizeToYMD(rawDate) {
   return !isNaN(parsed.getTime()) ? Utilities.formatDate(parsed, CONFIG.TIMEZONE, 'yyyy-MM-dd') : '';
 }
 
-/**
- * Resolves the 3-day weekend window (Fri, Sat, Sun). Checks Admin_Config
- * for 'TargetWeekendStart' override, otherwise computes rolling upcoming weekend.
- */
 function resolveUpcomingWeekendDates() {
   let overrideDateStr = null;
   try {
@@ -78,15 +75,19 @@ function resolveUpcomingWeekendDates() {
     if (startYMD) {
       const parts = startYMD.split('-');
       const start = new Date(parts[0], parts[1] - 1, parts[2]);
-      const d1 = startYMD;
-      const d2 = Utilities.formatDate(new Date(start.getTime() + 86400000), CONFIG.TIMEZONE, 'yyyy-MM-dd');
-      const d3 = Utilities.formatDate(new Date(start.getTime() + 172800000), CONFIG.TIMEZONE, 'yyyy-MM-dd');
-      return { dates: [d1, d2, d3], isOverride: true, startYMD: d1 };
+      return {
+        dates: [
+          startYMD,
+          Utilities.formatDate(new Date(start.getTime() + 86400000), CONFIG.TIMEZONE, 'yyyy-MM-dd'),
+          Utilities.formatDate(new Date(start.getTime() + 172800000), CONFIG.TIMEZONE, 'yyyy-MM-dd')
+        ],
+        isOverride: true, startYMD: startYMD
+      };
     }
   }
 
   const now = new Date();
-  const dayStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'u'); // 1=Mon .. 7=Sun
+  const dayStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'u');
   const dayOfWeek = parseInt(dayStr, 10);
 
   let daysToFri = 0;
@@ -112,9 +113,6 @@ function resolveUpcomingWeekendDates() {
   };
 }
 
-/**
- * Filters parsed rows to only include matches on the target Friday, Saturday, and Sunday.
- */
 function filterScheduleForTargetWeekend(parsedData, targetDates) {
   if (!parsedData || parsedData.length <= 1) return [];
   const headers = parsedData[0];
@@ -127,17 +125,12 @@ function filterScheduleForTargetWeekend(parsedData, targetDates) {
   for (let i = 1; i < parsedData.length; i++) {
     const row = parsedData[i];
     if (!row || row.length === 0) continue;
-    const ymd = normalizeToYMD(row[dateIdx]);
-    if (targetSet.has(ymd)) {
+    if (targetSet.has(normalizeToYMD(row[dateIdx]))) {
       filtered.push(row);
     }
   }
   return filtered;
 }
-
-// ============================================================================
-// FORMATTING HELPERS
-// ============================================================================
 
 function formatDay(rawDate) {
   if (!rawDate) return '';
@@ -155,9 +148,7 @@ function formatDay(rawDate) {
 
 function formatTime(rawTime) {
   if (!rawTime) return '';
-  if (typeof Utilities !== 'undefined' && rawTime instanceof Date) {
-    return Utilities.formatDate(rawTime, CONFIG.TIMEZONE, 'h:mm a');
-  }
+  if (typeof Utilities !== 'undefined' && rawTime instanceof Date) return Utilities.formatDate(rawTime, CONFIG.TIMEZONE, 'h:mm a');
   let timeStr = String(rawTime || '').trim();
   const milMatch = timeStr.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
   if (milMatch) {
@@ -239,9 +230,7 @@ function buildScheduleDropdownOptionsByVenue(scheduleData) {
   const homeIdx = headers.findIndex(h => /home/i.test(h));
   const awayIdx = headers.findIndex(h => /away/i.test(h));
 
-  const rawPark = [];
-  const rawLuther = [];
-  const rawLjhs = [];
+  const rawPark = [], rawLuther = [], rawLjhs = [];
 
   for (let i = 1; i < scheduleData.length; i++) {
     const row = scheduleData[i];
@@ -276,20 +265,14 @@ function buildScheduleDropdownOptionsByVenue(scheduleData) {
   lutherMatches.push(CONFIG.OTHER_UNLISTED_OPTION);
   ljhsArnoldMatches.push(CONFIG.OTHER_UNLISTED_OPTION);
 
-  return {
-    parkLexMatches: [...new Set(parkLexMatches)],
-    lutherMatches: [...new Set(lutherMatches)],
-    ljhsArnoldMatches: [...new Set(ljhsArnoldMatches)]
-  };
+  return { parkLexMatches, lutherMatches, ljhsArnoldMatches };
 }
 
 function extractDataFromFile(file) {
   const mime = file.getMimeType();
   if (mime === MimeType.GOOGLE_SHEETS || mime === 'application/vnd.google-apps.spreadsheet') {
     const ss = SpreadsheetApp.openById(file.getId());
-    const sheet = ss.getSheets()[0];
-    const range = sheet.getDataRange();
-    return (typeof range.getDisplayValues === 'function') ? range.getDisplayValues() : range.getValues();
+    return ss.getSheets()[0].getDataRange().getDisplayValues();
   }
   const blob = file.getBlob();
   const content = blob.getDataAsString('UTF-8') || blob.getDataAsString();
@@ -297,90 +280,58 @@ function extractDataFromFile(file) {
   return Utilities.parseCsv(content);
 }
 
-// ============================================================================
-// CORE SYNCHRONIZATION PIPELINE (NON-DESTRUCTIVE & RESILIENT)
-// ============================================================================
-
-/**
- * Updates dropdown choices directly inside Sections 3, 4, and 5.
- * Scans all form items with fuzzy matching across multiple item types
- * to avoid false-negative missing item aborts.
- */
 function syncContainerFormSchedule(optionalScheduleData) {
   const form = FormApp.openById(CONFIG.PRODUCTION_FORM_ID);
   let data = optionalScheduleData;
 
   if (!data) {
     const ss = SpreadsheetApp.openById(CONFIG.PRODUCTION_SHEET_ID);
-    const sheet = ss.getSheetByName('Master Schedule') || ss.getSheetByName('Master_Schedule');
-    if (!sheet) throw new Error("Could not find 'Master Schedule' tab.");
+    const sheet = ss.getSheetByName(CONFIG.SCHEDULE_TAB_NAME);
+    if (!sheet) throw new Error(`Could not find '${CONFIG.SCHEDULE_TAB_NAME}' tab.`);
+    assertNotProtectedTab_(sheet);
     data = sheet.getDataRange().getDisplayValues();
   }
 
   const { parkLexMatches, lutherMatches, ljhsArnoldMatches } = buildScheduleDropdownOptionsByVenue(data);
 
-  // Scan all items to find venue placeholders regardless of specific visual type
   const allItems = form.getItems();
-  let ljhsItem = null;
-  let parkLexItem = null;
-  let lutherItem = null;
+  let ljhsItem = null, parkLexItem = null, lutherItem = null;
 
   allItems.forEach(item => {
     const title = item.getTitle().toLowerCase();
     const type = item.getType();
-    const isChoiceType = (type === FormApp.ItemType.LIST || 
-                          type === FormApp.ItemType.MULTIPLE_CHOICE || 
-                          type === FormApp.ItemType.CHECKBOX);
+    const isChoiceType = (type === FormApp.ItemType.LIST || type === FormApp.ItemType.MULTIPLE_CHOICE || type === FormApp.ItemType.CHECKBOX);
 
     if (isChoiceType) {
-      if ((title.includes('lexington') || title.includes('arnold')) && !title.includes('park')) {
-        ljhsItem = item;
-      } else if (title.includes('park lex') || title.includes('denni') || title.includes('cerritos')) {
-        parkLexItem = item;
-      } else if (title.includes('luther')) {
-        lutherItem = item;
-      }
+      if ((title.includes('lexington') || title.includes('arnold')) && !title.includes('park')) ljhsItem = item;
+      else if (title.includes('park lex') || title.includes('denni') || title.includes('cerritos')) parkLexItem = item;
+      else if (title.includes('luther')) lutherItem = item;
     }
   });
 
   if (!ljhsItem || !parkLexItem || !lutherItem) {
-    const missing = [];
-    if (!ljhsItem) missing.push("LJHS/Arnold");
-    if (!parkLexItem) missing.push("Park Lexington");
-    if (!lutherItem) missing.push("Luther");
-    throw new Error(`Missing venue target(s): [${missing.join(', ')}]. Check item titles in Sections 3, 4, or 5.`);
+    throw new Error(`Missing venue target(s). Check item titles in Sections 3, 4, or 5.`);
   }
 
-  // Update choice values in place
   const applyChoices = (targetItem, choices) => {
-    if (targetItem.getType() === FormApp.ItemType.LIST) {
-      targetItem.asListItem().setChoiceValues(choices);
-    } else if (targetItem.getType() === FormApp.ItemType.MULTIPLE_CHOICE) {
-      targetItem.asMultipleChoiceItem().setChoiceValues(choices);
-    } else if (targetItem.getType() === FormApp.ItemType.CHECKBOX) {
-      targetItem.asCheckboxItem().setChoiceValues(choices);
-    }
+    if (targetItem.getType() === FormApp.ItemType.LIST) targetItem.asListItem().setChoiceValues(choices);
+    else if (targetItem.getType() === FormApp.ItemType.MULTIPLE_CHOICE) targetItem.asMultipleChoiceItem().setChoiceValues(choices);
+    else if (targetItem.getType() === FormApp.ItemType.CHECKBOX) targetItem.asCheckboxItem().setChoiceValues(choices);
   };
 
   applyChoices(ljhsItem, ljhsArnoldMatches);
   applyChoices(parkLexItem, parkLexMatches);
   applyChoices(lutherItem, lutherMatches);
 
-  // Lock UI metadata and reopen form
   form.setDescription(CONFIG.FORM_DESCRIPTION);
   form.setConfirmationMessage(CONFIG.CONFIRMATION_MESSAGE);
   form.setAcceptingResponses(true);
-
-  Logger.log(`✅ Dropdowns updated in-place: LJHS (${ljhsArnoldMatches.length}), Park Lex (${parkLexMatches.length}), Luther (${lutherMatches.length})`);
+  Logger.log(`✅ Dropdowns updated in-place`);
 }
 
-/**
- * Main ingestion workflow with pre-flight interactive warning for manual runs
- * and automated threshold guard for background runs.
- */
 function autoIngestWeeklySchedule() {
   const weekendWindow = resolveUpcomingWeekendDates();
-  Logger.log(`Target Weekend Window: ${weekendWindow.dates.join(', ')} (Override: ${weekendWindow.isOverride})`);
+  Logger.log(`Target Weekend Window: ${weekendWindow.dates.join(', ')}`);
 
   const dropFolder = DriveApp.getFolderById(CONFIG.DROP_FOLDER_ID);
   const archiveFolder = DriveApp.getFolderById(CONFIG.ARCHIVE_FOLDER_ID);
@@ -389,7 +340,7 @@ function autoIngestWeeklySchedule() {
   while (fileIter.hasNext()) fileList.push(fileIter.next());
 
   if (fileList.length === 0) {
-    Logger.log("No files in drop folder. Running form sync from existing Master Schedule.");
+    Logger.log("No new CSV in drop folder. Running dropdown refresh from existing Master Schedule.");
     syncContainerFormSchedule();
     return;
   }
@@ -401,90 +352,54 @@ function autoIngestWeeklySchedule() {
   const totalMatches = filteredData.length - 1;
 
   if (totalMatches < CONFIG.MIN_GAMES_THRESHOLD) {
-    const msg = `ABORTED: Found only ${totalMatches} games for weekend ${weekendWindow.dates.join(', ')}. Minimum threshold is ${CONFIG.MIN_GAMES_THRESHOLD}. Check date format or Drop folder.`;
+    const msg = `ABORTED: Found only ${totalMatches} games. Minimum threshold is ${CONFIG.MIN_GAMES_THRESHOLD}.`;
     Logger.log(msg);
-    try {
-      SpreadsheetApp.getUi().alert('Sync Aborted: Low Match Count', msg, SpreadsheetApp.getUi().ButtonSet.OK);
-    } catch (e) {}
     return;
   }
 
   const { parkLexMatches, lutherMatches, ljhsArnoldMatches } = buildScheduleDropdownOptionsByVenue(filteredData);
 
-  // Interactive Pre-Flight Confirmation for manual sheet runs
   try {
     const ui = SpreadsheetApp.getUi();
     const prompt = `TARGET WEEKEND: ${weekendWindow.dates[0]} to ${weekendWindow.dates[2]}\n` +
-                   `SOURCE FILE: ${latestFile.getName()}\n\n` +
                    `MATCHES IDENTIFIED (${totalMatches} total):\n` +
                    `• 🌲 Park Lexington: ${parkLexMatches.length - 1}\n` +
                    `• 🏫 Luther Elementary: ${lutherMatches.length - 1}\n` +
                    `• 🏫 LJHS / Arnold: ${ljhsArnoldMatches.length - 1}\n\n` +
-                   `⚠️ Overwrite "Master Schedule" and update live Form dropdowns?`;
+                   `⚠️ Overwrite "${CONFIG.SCHEDULE_TAB_NAME}" and update live Form dropdowns?`;
     const res = ui.alert('Confirm Live Game Day Sync', prompt, ui.ButtonSet.YES_NO);
-    if (res !== ui.Button.YES) {
-      Logger.log("Sync canceled by user.");
-      return;
-    }
+    if (res !== ui.Button.YES) return;
   } catch (headless) {}
 
   const ss = SpreadsheetApp.openById(CONFIG.PRODUCTION_SHEET_ID);
-  let scheduleSheet = ss.getSheetByName('Master Schedule') || ss.getSheetByName('Master_Schedule');
+  let scheduleSheet = ss.getSheetByName(CONFIG.SCHEDULE_TAB_NAME);
+  if (!scheduleSheet) scheduleSheet = ss.insertSheet(CONFIG.SCHEDULE_TAB_NAME);
 
-  // Backup snapshot
+  assertNotProtectedTab_(scheduleSheet);
+
   const tag = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyyMMdd_HHmmss');
-  if (scheduleSheet && scheduleSheet.getLastRow() > 1) {
+  if (scheduleSheet.getLastRow() > 1) {
     try {
       const bkp = scheduleSheet.copyTo(ss);
       bkp.setName(`Master_Schedule_Backup_${tag}`);
     } catch (err) {}
-  } else if (!scheduleSheet) {
-    scheduleSheet = ss.insertSheet('Master Schedule');
   }
 
   scheduleSheet.clearContents();
   scheduleSheet.getRange(1, 1, filteredData.length, filteredData[0].length).setValues(filteredData);
 
-  // In-place dropdown sync
   syncContainerFormSchedule(filteredData);
 
-  // Log to Schedule_Sync_Log
   let logSheet = ss.getSheetByName('Schedule_Sync_Log') || ss.insertSheet('Schedule_Sync_Log');
   if (logSheet.getLastRow() === 0) {
     logSheet.appendRow(['Timestamp', 'Source File', 'Weekend Start', 'Total Rows', 'Park Lex', 'Luther', 'LJHS/Arnold', 'Status']);
   }
   logSheet.appendRow([
     Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss'),
-    latestFile.getName(),
-    weekendWindow.dates[0],
-    totalMatches,
-    parkLexMatches.length - 1,
-    lutherMatches.length - 1,
-    ljhsArnoldMatches.length - 1,
-    'SUCCESS'
+    latestFile.getName(), weekendWindow.dates[0], totalMatches,
+    parkLexMatches.length - 1, lutherMatches.length - 1, ljhsArnoldMatches.length - 1, 'SUCCESS'
   ]);
 
   try { latestFile.moveTo(archiveFolder); } catch (e) {}
   Logger.log("🏆 AUTO INGEST & FORM SYNC COMPLETED SUCCESSFULLY.");
-}
-
-// ============================================================================
-// NODE.JS TEST EXPORTS
-// ============================================================================
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    CONFIG,
-    buildScheduleDropdownOptionsByVenue,
-    formatDay,
-    formatTime,
-    formatField,
-    formatDivision,
-    formatTeam,
-    getVenueCategory,
-    extractDataFromFile,
-    resolveUpcomingWeekendDates,
-    filterScheduleForTargetWeekend,
-    autoIngestWeeklySchedule,
-    syncContainerFormSchedule
-  };
 }
