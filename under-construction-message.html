@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sideline Timeout | AYSO Region 154 Volunteer Dashboard</title>
+    <style>
+        :root {
+            --region-navy: #102a5c;
+            --region-navy-dark: #081c40;
+            --region-red: #e3222a;
+            --region-red-dark: #b9151c;
+            --region-gold: #ffd34d;
+            --region-white: #ffffff;
+            --region-light: #f4f6f8;
+            --region-blue-light: #eaf1fa;
+            --region-border: #d8dee8;
+            --region-text: #303846;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--region-navy-dark);
+            background-image: 
+                linear-gradient(rgba(8, 28, 64, 0.94), rgba(16, 42, 92, 0.94)),
+                repeating-linear-gradient(90deg, transparent 0, transparent 38px, rgba(255, 255, 255, 0.04) 39px, rgba(255, 255, 255, 0.04) 40px);
+            color: var(--region-text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        .maintenance-card {
+            background-color: var(--region-white);
+            max-width: 620px;
+            width: 100%;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+            border-top: 6px solid var(--region-red);
+            text-align: center;
+        }
+
+        .card-header {
+            background-color: var(--region-navy);
+            padding: 32px 20px 24px;
+            color: var(--region-white);
+            position: relative;
+        }
+
+        .logo-frame {
+            width: 110px;
+            height: auto;
+            margin: 0 auto 16px;
+            background: var(--region-white);
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: block;
+        }
+
+        .whistle-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background-color: var(--region-gold);
+            color: var(--region-navy-dark);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 12px;
+        }
+
+        .card-header h1 {
+            font-size: clamp(1.4rem, 4.5vw, 1.85rem);
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--region-white);
+            line-height: 1.2;
+        }
+
+        .card-header h1 span {
+            display: block;
+            color: var(--region-gold);
+            font-size: 0.9em;
+            margin-top: 4px;
+        }
+
+        .card-body {
+            padding: 28px 24px;
+        }
+
+        .message-lead {
+            font-size: 1.05rem;
+            line-height: 1.5;
+            color: var(--region-text);
+            margin-bottom: 20px;
+        }
+
+        .status-box {
+            background-color: var(--region-blue-light);
+            border: 2px dashed #9cb7e0;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: left;
+            margin-bottom: 24px;
+        }
+
+        .status-box-title {
+            font-weight: 700;
+            color: var(--region-navy);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.98rem;
+            margin-bottom: 8px;
+        }
+
+        .status-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+            color: #3b4555;
+            line-height: 1.5;
+        }
+
+        .status-box li {
+            position: relative;
+            padding-left: 22px;
+            margin-bottom: 6px;
+        }
+
+        .status-box li:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-box li::before {
+            content: "⚽";
+            position: absolute;
+            left: 0;
+            font-size: 0.8rem;
+            top: 2px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 20px;
+            background-color: var(--region-navy);
+            color: var(--region-white) !important;
+            border: 2px solid var(--region-navy);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.15s ease;
+        }
+
+        .action-button:hover {
+            background-color: #0b1f42;
+            transform: translateY(-2px);
+        }
+
+        .action-button:active {
+            transform: scale(0.98);
+        }
+
+        .card-footer {
+            background-color: var(--region-light);
+            border-top: 1px solid var(--region-border);
+            padding: 14px 20px;
+            font-size: 0.82rem;
+            color: #657386;
+        }
+
+        .card-footer a {
+            color: var(--region-navy);
+            font-weight: 700;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="maintenance-card">
+        <div class="card-header">
+            <img src="logo.png" onerror="this.src='https://www.ayso154cypress.org/Portals/14837/docs/2026/AYSO%20154%20Logo%20-%203D.png'" alt="AYSO Region 154 Logo" class="logo-frame">
+            <div class="whistle-badge">⏱️ Halftime Break</div>
+            <h1>The Volunteer Dashboard Is Taking <span>A Sideline Timeout!</span></h1>
+        </div>
+
+        <div class="card-body">
+            <p class="message-lead">
+                Our team is reviewing the game film, running drills, and tuning up the <strong>Volunteer Points Engine</strong> for our upcoming matches.
+            </p>
+
+            <div class="status-box">
+                <div class="status-box-title">
+                    <span>🛡️</span> Game Day Volunteer Notice
+                </div>
+                <ul>
+                    <li><strong>Are your points safe?</strong> Absolutely! All volunteer shift check-ins and referee assignments remain logged and secure in our database.</li>
+                    <li><strong>Field check-ins:</strong> Continue checking in and scanning QR codes at the tents and fields as usual.</li>
+                    <li><strong>When will it return?</strong> The dashboard will blow the whistle and resume live tracking as soon as data calibrations wrap up.</li>
+                </ul>
+            </div>
+
+            <div class="button-group">
+                <a href="https://www.ayso154cypress.org" class="action-button">
+                    ← Return to Region 154 Parent Hub
+                </a>
+            </div>
+        </div>
+
+        <div class="card-footer">
+            AYSO Region 154 · Cypress, California<br>
+            Questions regarding referee credit? Contact <a href="mailto:Cypress154RRA@gmail.com">Cypress154RRA@gmail.com</a>
+        </div>
+    </main>
+
+</body>
+</html>
