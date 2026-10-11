@@ -27,7 +27,23 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <script>
+
+<meta http-equiv="Expires" content="0">
+  <script>
+    // --------------------------------------------------------------------------
+    // MAINTENANCE TOGGLE: Set to true when working, false when live
+    // --------------------------------------------------------------------------
+    const UNDER_CONSTRUCTION = true;
+
+    // Bypass with "?preview=1" or "?admin=1" in URL
+    const hasAdminBypass = new URLSearchParams(window.location.search).has('preview');
+
+    if (UNDER_CONSTRUCTION && !hasAdminBypass) {
+      window.location.replace("under-construction-message.html");
+    }
+
     (function () {
+      // Bump together with the ?v= query on the support.js <script> tag below —
       // Bump together with the ?v= query on the support.js <script> tag below —
       // that query string is what actually forces mobile browsers/CDNs to fetch
       // a new copy of the runtime instead of reusing a disk-cached one.
