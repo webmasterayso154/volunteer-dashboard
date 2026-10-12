@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AYSO Region 154 · Volunteer Points & Postseason Runway Engine</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <style>
+    :root {
+      --navy: #002D62;
+      --navy-dark: #081C40;
+      --red: #C8102E;
+      --gold: #FFD34D;
+      --gold-dark: #D99B00;
+      --green: #166534;
+      --green-light: #DCFCE7;
+      --amber: #B45309;
+      --amber-light: #FEF3C7;
+      --orange: #C2410C;
+      --orange-light: #FFEDD5;
+      --crimson: #991B1B;
+      --crimson-light: #FEE2E2;
+      --bg-page: #0A192F;
+      --card-bg: #FFFFFF;
+      --text-main: #1E293B;
+      --text-muted: #64748B;
+      --border-color: #E2E8F0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); min-height: 100vh; padding-bottom: 60px; }
+
+    header {
+      background: var(--navy-dark);
+      border-bottom: 3px solid var(--red);
+      padding: 14px 20px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { height: 40px; width: auto; background: white; padding: 4px; border-radius: 8px; }
+    .brand-title { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; }
+    .brand-sub { font-size: 0.75rem; color: #94A3B8; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .sync-btn {
+      background: var(--gold);
+      color: var(--navy-dark);
+      border: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    .sync-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .container { max-width: 1000px; margin: 20px auto; padding: 0 16px; }
+
+    /* Team Selection Bar */
+    .controls-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 14px;
+      align-items: center;
+    }
+    @media (max-width: 640px) {
+      .controls-card { grid-template-columns: 1fr; }
+    }
+    .control-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; display: block; }
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--navy);
+      background: #F8FAFC;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus { border-color: var(--navy); background: white; }
+
+    /* Proactive Runway Hero Card */
+    .runway-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      border-top: 6px solid var(--navy);
+      margin-bottom: 24px;
+    }
+    .runway-header {
+      background: var(--navy);
+      color: white;
+      padding: 16px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .team-display-title { font-size: 1.25rem; font-weight: 800; }
+    .team-display-coach { font-size: 0.85rem; color: #CBD5E1; }
+    .tier-badge {
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tier-clinched { background: var(--green-light); color: var(--green); border: 1px solid var(--green); }
+    .tier-ontrack { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber); }
+    .tier-action { background: var(--orange-light); color: var(--orange); border: 1px solid var(--orange); }
+    .tier-critical { background: var(--crimson-light); color: var(--crimson); border: 1px solid var(--crimson); }
+
+    .runway-body { padding: 22px; }
+
+    /* 3 Point Tiers Visual Grid */
+    .tiers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .tier-box {
+      background: #F8FAFC;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+      position: relative;
+    }
+    .tier-box.highlight {
+      background: #EFF6FF;
+      border-color: #93C5FD;
+    }
+    .tier-name { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
+    .tier-pts { font-size: 1.85rem; font-weight: 800; color: var(--navy); margin: 4px 0; }
+    .tier-goal-sub { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+
+    /* Action Directive & Runway Box */
+    .directive-card {
+      background: #F0FDF4;
+      border-left: 5px solid var(--green);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .directive-card.alert-action { background: #FFF7ED; border-left-color: var(--orange); }
+    .directive-card.alert-critical { background: #FEF2F2; border-left-color: var(--crimson); }
+    .directive-title { font-weight: 800; font-size: 0.95rem; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .directive-text { font-size: 0.95rem; color: #334155; line-height: 1.45; }
+    .runway-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(0,0,0,0.1);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .metric-pill { background: rgba(0,0,0,0.05); padding: 4px 10px; border-radius: 6px; }
+
+    /* Category Point Buckets */
+    .categories-header { font-size: 0.9rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .cat-box {
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .cat-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); min-height: 28px; }
+    .cat-val { font-size: 1.25rem; font-weight: 800; color: var(--navy); margin-top: 4px; }
+    .cat-cap { font-size: 0.7rem; color: #94A3B8; font-weight: 600; }
+
+    /* Itemized Shift History Table */
+    .history-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    .history-header {
+      background: #F8FAFC;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+    }
+    .history-title { font-size: 0.95rem; font-weight: 800; color: var(--navy); display: flex; align-items: center; gap: 8px; }
+    .history-toggle { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
+    
+    .history-table-wrapper { overflow-x: auto; max-height: 420px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+    th { background: #F1F5F9; color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; font-weight: 800; padding: 10px 14px; position: sticky; top: 0; }
+    td { padding: 12px 14px; border-bottom: 1px solid #F1F5F9; color: var(--text-main); }
+    tr:hover td { background: #F8FAFC; }
+    .status-tag { font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 12px; display: inline-block; }
+    .status-recorded { background: var(--green-light); color: var(--green); }
+    .status-nocra { background: #F1F5F9; color: #475569; }
+    .status-dup { background: var(--crimson-light); color: var(--crimson); }
+    .status-cap { background: var(--amber-light); color: var(--amber); }
+
+    /* Footer & Loading */
+    .footer { text-align: center; color: #94A3B8; font-size: 0.75rem; margin-top: 30px; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <img src="logo.png" onerror="this.src='https://www.ayso154cypress.org/Portals/14837/docs/2026/AYSO%20154%20Logo%20-%203D.png'" alt="AYSO 154">
+      <div>
+        <div class="brand-title">AYSO Region 154 Cypress</div>
+        <div class="brand-sub">Volunteer Postseason Eligibility Engine · Fall 2026</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="sync-btn" id="refreshBtn" onclick="manualRefresh()">
+        <span id="syncIcon">↻</span> Refresh
+      </button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Team Selection Controls -->
+    <div class="controls-card">
+      <div>
+        <label class="control-label" for="divisionSelect">1. Select Division</label>
+        <select id="divisionSelect" onchange="onDivisionChange()">
+          <option value="">Loading divisions...</option>
+        </select>
+      </div>
+      <div>
+        <label class="control-label" for="teamSelect">2. Select Your Team</label>
+        <select id="teamSelect" onchange="onTeamChange()">
+          <option value="">Choose your coach/team...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Proactive Runway Card -->
+    <div class="runway-card" id="runwayCard">
+      <div class="runway-header">
+        <div>
+          <div class="team-display-title" id="teamDisplayTitle">Select a Team Above</div>
+          <div class="team-display-coach" id="teamDisplayCoach">Coach / Roster Status</div>
+        </div>
+        <div class="tier-badge tier-ontrack" id="statusBadge">🟡 Awaiting Selection</div>
+      </div>
+
+      <div class="runway-body">
+        
+        <!-- 3 Point Tiers -->
+        <div class="tiers-grid">
+          <div class="tier-box">
+            <div class="tier-name">Tier 1: Banked Verified</div>
+            <div class="tier-pts" id="ptsVerified">0</div>
+            <div class="tier-goal-sub">Goal: <span id="goalPtsVerified">17</span> pts</div>
+          </div>
+          <div class="tier-box">
+            <div class="tier-name">Tier 2: Projected Base</div>
+            <div class="tier-pts" id="ptsProjected">0</div>
+            <div class="tier-goal-sub">Banked + Pending FM Shifts</div>
+          </div>
+          <div class="tier-box highlight">
+            <div class="tier-name">Tier 3: With Full Setup</div>
+            <div class="tier-pts" id="ptsSetupMax">0</div>
+            <div class="tier-goal-sub">Assuming 5/5 Setup Points</div>
+          </div>
+        </div>
+
+        <!-- Automated Action Directive & Runway Math -->
+        <div class="directive-card" id="directiveCard">
+          <div class="directive-title">
+            <span id="directiveIcon">⚽</span> <span id="directiveHeadline">Your Path to the Cypress Cup</span>
+          </div>
+          <div class="directive-text" id="directiveBody">
+            Select your team from the dropdown above to view your exact shift run-rate and remaining match targets.
+          </div>
+          <div class="runway-metrics" id="runwayMetricsRow">
+            <div class="metric-pill">Gap to Close: <strong id="metricGap">0 pts</strong></div>
+            <div class="metric-pill">Ref Matches Needed: <strong id="metricRefNeeded">0</strong></div>
+            <div class="metric-pill">Required Run-Rate: <strong id="metricRunRate">0.0 shifts/wk</strong></div>
+            <div class="metric-pill">Home Ref Capacity: <strong id="metricCapacity">0 pts (0 games)</strong></div>
+          </div>
+        </div>
+
+        <!-- Category Buckets Grid -->
+        <div class="categories-header">Verified Points by Category</div>
+        <div class="categories-grid">
+          <div class="cat-box">
+            <div class="cat-title">On-Field Ref</div>
+            <div class="cat-val" id="catRef">0</div>
+            <div class="cat-cap">Max 10</div>
+          </div>
+          <div class="cat-box">
+            <div class="cat-title">Field Marshal</div>
+            <div class="cat-val" id="catFm">0</div>
+            <div class="cat-cap">Max 2</div>
+          </div>
+          <div class="cat-box">
+            <div class="cat-title">Friday Setup</div>
+            <div class="cat-val" id="catSetup">0</div>
+            <div class="cat-cap">Max 5</div>
+          </div>
+          <div class="cat-box">
+            <div class="cat-title">Picture Day</div>
+            <div class="cat-val" id="catPic">0</div>
+            <div class="cat-cap">Max 2</div>
+          </div>
+          <div class="cat-box">
+            <div class="cat-title">Cert Ref Bonus</div>
+            <div class="cat-val" id="catCert">0</div>
+            <div class="cat-cap">Max 5</div>
+          </div>
+          <div class="cat-box">
+            <div class="cat-title">MatchTrak Bonus</div>
+            <div class="cat-val" id="catMatch">0</div>
+            <div class="cat-cap">Max 2</div>
+          </div>
+          <div class="cat-box">
+            <div class="cat-title">Adjustments</div>
+            <div class="cat-val" id="catAdj">0</div>
+            <div class="cat-cap">Board</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Itemized Shift History Log (Frontline Deflection Table) -->
+    <div class="history-card">
+      <div class="history-header" onclick="toggleHistoryTable()">
+        <div class="history-title">
+          <span>📋</span> Verified Shift Check-Ins & Audit Log
+        </div>
+        <div class="history-toggle" id="historyToggleLabel">Collapse ▲</div>
+      </div>
+      <div class="history-table-wrapper" id="historyWrapper">
+        <table id="shiftsTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Volunteer</th>
+              <th>Assignment</th>
+              <th>Status</th>
+              <th>Points</th>
+              <th>Auditor Notes / Reason</th>
+            </tr>
+          </thead>
+          <tbody id="shiftsTableBody">
+            <tr><td colspan="6" style="text-align: center; color: #94A3B8; padding: 20px;">Select a team to display itemized shift receipts.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer">
+      AYSO Region 154 Cypress · Verified Standings & Postseason Runway Engine · Updated <span id="syncTimestamp">Just now</span>
+    </div>
+
+  </div>
+
+  <script>
+    // Configured Google Apps Script Web App Endpoint URL
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLw5e8-H4Z1U9y9Z88F4y08h1h3-x2E1qF1vA/exec";
+
+    let directoryData = {};
+    let currentTeamStats = null;
+
+    // Dual-Transport Request Engine (Fetch with automated JSONP fallback)
+    async function apiRequest(action, extraParams = {}) {
+      const queryParams = new URLSearchParams({ action, ...extraParams, _t: Date.now() });
+      const url = `${APPS_SCRIPT_URL}?${queryParams.toString()}`;
+
+      // 1. Try modern Fetch
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12000);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          return data;
+        }
+      } catch (fetchErr) {
+        console.warn("Fetch failed, falling back to JSONP wrapper...", fetchErr);
+      }
+
+      // 2. Automated JSONP Fallback
+      return new Promise((resolve, reject) => {
+        const callbackName = 'ayso_cb_' + Math.round(100000 * Math.random());
+        window[callbackName] = function(payload) {
+          delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          resolve(payload);
+        };
+        const script = document.createElement('script');
+        script.src = `${url}&callback=${callbackName}`;
+        script.onerror = () => {
+          delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          reject(new Error("JSONP network request timed out."));
+        };
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initDashboard() {
+      try {
+        const res = await apiRequest('getDirectory');
+        if (res && res.directory) {
+          directoryData = res.directory;
+          populateDivisionDropdown();
+          if (res.syncTimestamp) document.getElementById('syncTimestamp').innerText = res.syncTimestamp;
+
+          // Auto-select first team or restore saved team
+          const savedTeam = localStorage.getItem('ayso154_selected_team');
+          if (savedTeam) selectTeamByCode(savedTeam);
+        }
+      } catch (err) {
+        console.error("Directory load failure:", err);
+      }
+    }
+
+    function populateDivisionDropdown() {
+      const divSelect = document.getElementById('divisionSelect');
+      divSelect.innerHTML = '<option value="">-- Choose Division --</option>';
+      const divisions = Object.keys(directoryData).sort();
+      divisions.forEach(div => {
+        const opt = document.createElement('option');
+        opt.value = div;
+        opt.innerText = div;
+        divSelect.appendChild(opt);
+      });
+    }
+
+    function onDivisionChange() {
+      const divSelect = document.getElementById('divisionSelect');
+      const teamSelect = document.getElementById('teamSelect');
+      const selectedDiv = divSelect.value;
+      teamSelect.innerHTML = '<option value="">-- Choose Coach / Team --</option>';
+
+      if (selectedDiv && directoryData[selectedDiv]) {
+        directoryData[selectedDiv].forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.teamCode;
+          opt.innerText = `${t.teamCode} (${t.coach || 'Coach'})`;
+          teamSelect.appendChild(opt);
+        });
+      }
+    }
+
+    async function onTeamChange() {
+      const teamCode = document.getElementById('teamSelect').value;
+      if (!teamCode) return;
+      localStorage.setItem('ayso154_selected_team', teamCode);
+      loadTeamRunway(teamCode);
+    }
+
+    function selectTeamByCode(teamCode) {
+      for (const div in directoryData) {
+        const found = directoryData[div].find(t => t.teamCode === teamCode);
+        if (found) {
+          document.getElementById('divisionSelect').value = div;
+          onDivisionChange();
+          document.getElementById('teamSelect').value = teamCode;
+          loadTeamRunway(teamCode);
+          break;
+        }
+      }
+    }
+
+    async function loadTeamRunway(teamCode) {
+      document.getElementById('teamDisplayTitle').innerText = teamCode;
+      document.getElementById('teamDisplayCoach').innerText = "Loading live eligibility runway...";
+
+      try {
+        const stats = await apiRequest('getTeamStats', { teamCode });
+        if (!stats) return;
+
+        currentTeamStats = stats;
+        renderRunwayCard(teamCode, stats);
+      } catch (err) {
+        console.error("Team load failure:", err);
+      }
+    }
+
+    function renderRunwayCard(teamCode, stats) {
+      const r = stats.proactiveRunway || {};
+      const goal = stats.playoffGoal || 17;
+
+      document.getElementById('teamDisplayTitle').innerText = teamCode;
+      document.getElementById('teamDisplayCoach').innerText = `Playoff Target: ${goal} Points`;
+
+      // 1. Render Tiers Grid
+      document.getElementById('ptsVerified').innerText = stats.totalPoints || 0;
+      document.getElementById('goalPtsVerified').innerText = goal;
+      document.getElementById('ptsProjected').innerText = r.projectedBasePoints || stats.totalPoints || 0;
+      document.getElementById('ptsSetupMax').innerText = r.projectedWithFullSetup || stats.totalPoints || 0;
+
+      // 2. Status Badge Formatting
+      const badge = document.getElementById('statusBadge');
+      const tier = r.statusTier || '🟠 ACTION REQUIRED';
+      badge.innerText = tier;
+      badge.className = 'tier-badge ' + (
+        tier.includes('CLINCHED') ? 'tier-clinched' :
+        tier.includes('ON TRACK') ? 'tier-ontrack' :
+        tier.includes('ACTION') ? 'tier-action' : 'tier-critical'
+      );
+
+      // 3. Directive Box Formatting
+      const directiveCard = document.getElementById('directiveCard');
+      directiveCard.className = 'directive-card ' + (
+        tier.includes('ACTION') ? 'alert-action' :
+        tier.includes('CRITICAL') ? 'alert-critical' : ''
+      );
+      document.getElementById('directiveHeadline').innerText = tier.includes('CLINCHED') ? 'Berth Clinched!' : 'Path to Cypress Cup:';
+      document.getElementById('directiveBody').innerText = r.actionDirective || 'Complete scheduled matches.';
+
+      // 4. Action Runway Metrics
+      document.getElementById('metricGap').innerText = (r.gapTo17 !== undefined ? r.gapTo17 : Math.max(0, goal - (stats.totalPoints || 0))) + ' pts';
+      document.getElementById('metricRefNeeded').innerText = r.refMatchTarget || 0;
+      document.getElementById('metricRunRate').innerText = (r.targetShiftsPerWeek !== undefined ? r.targetShiftsPerWeek : 0) + ' shifts/wk';
+      document.getElementById('metricCapacity').innerText = `${r.homeRefCapacity || 0} pts (${r.homeGamesRemaining || 0} home matches)`;
+
+      // 5. Category Buckets
+      const c = stats.categories || {};
+      document.getElementById('catRef').innerText = c['Referee (On-Field)'] || 0;
+      document.getElementById('catFm').innerText = c['Field Marshal'] || 0;
+      document.getElementById('catSetup').innerText = c['Friday Night Field Setup'] || 0;
+      document.getElementById('catPic').innerText = c['Picture Day'] || 0;
+      document.getElementById('catCert').innerText = c['Certified Team Referees'] || 0;
+      document.getElementById('catMatch').innerText = c['MatchTrak Filled by Sep 26'] || 0;
+      document.getElementById('catAdj').innerText = c['Other Adjustments'] || 0;
+
+      // 6. Itemized Shift History Table
+      renderShiftHistoryTable(stats.audit || []);
+    }
+
+    function renderShiftHistoryTable(auditLogs) {
+      const tbody = document.getElementById('shiftsTableBody');
+      tbody.innerHTML = '';
+
+      if (!auditLogs || auditLogs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #94A3B8; padding: 20px;">No volunteer shifts logged for this team yet.</td></tr>';
+        return;
+      }
+
+      auditLogs.forEach(log => {
+        const tr = document.createElement('tr');
+        const status = log.status || 'Recorded';
+        const tagClass = (
+          status.includes('Recorded') || status.includes('Verified') ? 'status-recorded' :
+          status.includes('NOCRA') ? 'status-nocra' :
+          status.includes('Duplicate') ? 'status-dup' : 'status-cap'
+        );
+
+        tr.innerHTML = `
+          <td><strong>${log.date || '—'}</strong></td>
+          <td>${log.volunteer || 'Volunteer'}</td>
+          <td>${log.duty || 'Assignment'}</td>
+          <td><span class="status-tag ${tagClass}">${status}</span></td>
+          <td><strong>${log.points > 0 ? '+' + log.points : '0'}</strong></td>
+          <td style="color: #64748B;">${log.note || '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleHistoryTable() {
+      const wrapper = document.getElementById('historyWrapper');
+      const label = document.getElementById('historyToggleLabel');
+      if (wrapper.style.display === 'none') {
+        wrapper.style.display = 'block';
+        label.innerText = 'Collapse ▲';
+      } else {
+        wrapper.style.display = 'none';
+        label.innerText = 'Expand ▼';
+      }
+    }
+
+    async function manualRefresh() {
+      const btn = document.getElementById('refreshBtn');
+      btn.innerHTML = '<span class="spinner"></span> Syncing...';
+      const teamCode = document.getElementById('teamSelect').value;
+      await initDashboard();
+      if (teamCode) await loadTeamRunway(teamCode);
+      btn.innerHTML = '<span id="syncIcon">↻</span> Refresh';
+    }
+
+    // Initialize on window load
+    window.addEventListener('DOMContentLoaded', initDashboard);
+  </script>
+</body>
+</html>
