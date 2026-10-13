@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AYSO Region 154 · Volunteer Points & Postseason Runway Engine</title>
   <link rel="icon" type="image/png" href="logo.png">
+  <meta name="theme-color" content="#081C40">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
     :root {
       --navy: #002D62;
@@ -28,7 +31,7 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: var(--bg-page); color: var(--text-main); min-height: 100vh; padding-bottom: 60px; }
+    body { background-color: var(--bg-page); color: var(--text-main); min-height: 100vh; padding-bottom: 60px; -webkit-font-smoothing: antialiased; }
 
     header {
       background: var(--navy-dark);
@@ -41,50 +44,52 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
     }
     .brand { display: flex; align-items: center; gap: 12px; }
-    .brand img { height: 40px; width: auto; background: white; padding: 4px; border-radius: 8px; }
-    .brand-title { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; }
+    .brand img { height: 42px; width: auto; background: white; padding: 4px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .brand-title { font-size: 1.12rem; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; }
     .brand-sub { font-size: 0.75rem; color: #94A3B8; }
     .header-right { display: flex; align-items: center; gap: 10px; }
     .sync-btn {
       background: var(--gold);
       color: var(--navy-dark);
       border: none;
-      padding: 6px 14px;
+      padding: 7px 16px;
       border-radius: 20px;
       font-weight: 800;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       transition: transform 0.15s, opacity 0.15s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-    .sync-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .sync-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+    .sync-btn:active { transform: scale(0.97); }
 
-    .container { max-width: 1000px; margin: 20px auto; padding: 0 16px; }
+    .container { max-width: 1020px; margin: 20px auto; padding: 0 16px; }
 
     /* Team Selection Bar */
     .controls-card {
       background: var(--card-bg);
       border-radius: 12px;
-      padding: 16px 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      padding: 18px 22px;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
       display: grid;
-      grid-template-columns: 1fr 1.5fr;
-      gap: 14px;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 16px;
       align-items: center;
     }
-    @media (max-width: 640px) {
+    @media (max-width: 680px) {
       .controls-card { grid-template-columns: 1fr; }
     }
-    .control-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; display: block; }
+    .control-label { font-size: 0.76rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: block; letter-spacing: 0.4px; }
     select {
       width: 100%;
-      padding: 10px 14px;
+      padding: 11px 14px;
       border: 1px solid var(--border-color);
       border-radius: 8px;
       font-size: 0.95rem;
@@ -93,149 +98,157 @@
       background: #F8FAFC;
       outline: none;
       cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
     }
-    select:focus { border-color: var(--navy); background: white; }
+    select:focus { border-color: var(--navy); background: white; box-shadow: 0 0 0 3px rgba(0,45,98,0.12); }
 
     /* Proactive Runway Hero Card */
     .runway-card {
       background: var(--card-bg);
       border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.25);
       border-top: 6px solid var(--navy);
       margin-bottom: 24px;
     }
     .runway-header {
       background: var(--navy);
       color: white;
-      padding: 16px 22px;
+      padding: 18px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
     }
-    .team-display-title { font-size: 1.25rem; font-weight: 800; }
-    .team-display-coach { font-size: 0.85rem; color: #CBD5E1; }
+    .team-display-title { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.2px; }
+    .team-display-coach { font-size: 0.85rem; color: #CBD5E1; margin-top: 2px; }
     .tier-badge {
-      font-size: 0.82rem;
+      font-size: 0.84rem;
       font-weight: 800;
-      padding: 6px 14px;
-      border-radius: 20px;
+      padding: 7px 16px;
+      border-radius: 24px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
-    .tier-clinched { background: var(--green-light); color: var(--green); border: 1px solid var(--green); }
-    .tier-ontrack { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber); }
-    .tier-action { background: var(--orange-light); color: var(--orange); border: 1px solid var(--orange); }
-    .tier-critical { background: var(--crimson-light); color: var(--crimson); border: 1px solid var(--crimson); }
+    .tier-clinched { background: var(--green-light); color: var(--green); border: 1.5px solid var(--green); }
+    .tier-ontrack { background: var(--amber-light); color: var(--amber); border: 1.5px solid var(--amber); }
+    .tier-action { background: var(--orange-light); color: var(--orange); border: 1.5px solid var(--orange); }
+    .tier-critical { background: var(--crimson-light); color: var(--crimson); border: 1.5px solid var(--crimson); }
 
-    .runway-body { padding: 22px; }
+    .runway-body { padding: 24px; }
 
     /* 3 Point Tiers Visual Grid */
     .tiers-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 14px;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
     .tier-box {
       background: #F8FAFC;
       border: 1px solid var(--border-color);
       border-radius: 10px;
-      padding: 14px 16px;
+      padding: 16px 18px;
       text-align: center;
       position: relative;
     }
     .tier-box.highlight {
       background: #EFF6FF;
       border-color: #93C5FD;
+      box-shadow: inset 0 0 0 1px #BFDBFE;
     }
-    .tier-name { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
-    .tier-pts { font-size: 1.85rem; font-weight: 800; color: var(--navy); margin: 4px 0; }
-    .tier-goal-sub { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+    .tier-name { font-size: 0.74rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.4px; }
+    .tier-pts { font-size: 2rem; font-weight: 800; color: var(--navy); margin: 6px 0 4px; }
+    .tier-goal-sub { font-size: 0.76rem; color: var(--text-muted); font-weight: 600; }
 
     /* Action Directive & Runway Box */
     .directive-card {
       background: #F0FDF4;
       border-left: 5px solid var(--green);
       border-radius: 8px;
-      padding: 16px 18px;
-      margin-bottom: 20px;
+      padding: 18px 20px;
+      margin-bottom: 22px;
     }
+    .directive-card.alert-ontrack { background: #FEFCE8; border-left-color: var(--amber); }
     .directive-card.alert-action { background: #FFF7ED; border-left-color: var(--orange); }
     .directive-card.alert-critical { background: #FEF2F2; border-left-color: var(--crimson); }
-    .directive-title { font-weight: 800; font-size: 0.95rem; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
-    .directive-text { font-size: 0.95rem; color: #334155; line-height: 1.45; }
+    .directive-title { font-weight: 800; font-size: 0.98rem; color: var(--text-main); margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+    .directive-text { font-size: 0.95rem; color: #334155; line-height: 1.5; font-weight: 500; }
     .runway-metrics {
       display: flex;
       flex-wrap: wrap;
-      gap: 14px;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dashed rgba(0,0,0,0.1);
+      gap: 12px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(0,0,0,0.12);
       font-size: 0.85rem;
       font-weight: 700;
     }
-    .metric-pill { background: rgba(0,0,0,0.05); padding: 4px 10px; border-radius: 6px; }
+    .metric-pill { background: rgba(0,0,0,0.05); padding: 5px 12px; border-radius: 6px; color: #1E293B; }
 
     /* Category Point Buckets */
-    .categories-header { font-size: 0.9rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+    .categories-header { font-size: 0.88rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; letter-spacing: 0.4px; }
     .categories-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 10px;
-      margin-bottom: 24px;
+      margin-bottom: 26px;
     }
     .cat-box {
       background: #FFFFFF;
       border: 1px solid var(--border-color);
       border-radius: 8px;
-      padding: 12px;
+      padding: 12px 10px;
       text-align: center;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
-    .cat-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); min-height: 28px; }
-    .cat-val { font-size: 1.25rem; font-weight: 800; color: var(--navy); margin-top: 4px; }
-    .cat-cap { font-size: 0.7rem; color: #94A3B8; font-weight: 600; }
+    .cat-box:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+    .cat-title { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); min-height: 28px; line-height: 1.25; }
+    .cat-val { font-size: 1.35rem; font-weight: 800; color: var(--navy); margin-top: 4px; }
+    .cat-cap { font-size: 0.72rem; color: #94A3B8; font-weight: 600; }
 
-    /* Itemized Shift History Table */
+    /* Itemized Shift History Table (Frontline Deflection Table) */
     .history-card {
       background: var(--card-bg);
       border-radius: 12px;
       border: 1px solid var(--border-color);
       overflow: hidden;
       margin-bottom: 24px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
     .history-header {
       background: #F8FAFC;
-      padding: 14px 20px;
+      padding: 15px 22px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--border-color);
       cursor: pointer;
+      user-select: none;
     }
     .history-title { font-size: 0.95rem; font-weight: 800; color: var(--navy); display: flex; align-items: center; gap: 8px; }
-    .history-toggle { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
+    .history-toggle { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
     
-    .history-table-wrapper { overflow-x: auto; max-height: 420px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
-    th { background: #F1F5F9; color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; font-weight: 800; padding: 10px 14px; position: sticky; top: 0; }
+    .history-table-wrapper { overflow-x: auto; max-height: 440px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; text-align: left; }
+    th { background: #F1F5F9; color: var(--text-muted); font-size: 0.73rem; text-transform: uppercase; font-weight: 800; padding: 11px 14px; position: sticky; top: 0; z-index: 10; letter-spacing: 0.4px; }
     td { padding: 12px 14px; border-bottom: 1px solid #F1F5F9; color: var(--text-main); }
+    tr:last-child td { border-bottom: none; }
     tr:hover td { background: #F8FAFC; }
-    .status-tag { font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 12px; display: inline-block; }
+    .status-tag { font-size: 0.72rem; font-weight: 800; padding: 3px 9px; border-radius: 12px; display: inline-block; }
     .status-recorded { background: var(--green-light); color: var(--green); }
     .status-nocra { background: #F1F5F9; color: #475569; }
     .status-dup { background: var(--crimson-light); color: var(--crimson); }
     .status-cap { background: var(--amber-light); color: var(--amber); }
 
-    /* Footer & Loading */
-    .footer { text-align: center; color: #94A3B8; font-size: 0.75rem; margin-top: 30px; }
-    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; }
+    /* Footer & Spinners */
+    .footer { text-align: center; color: #94A3B8; font-size: 0.76rem; margin-top: 32px; }
+    .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(0,45,98,0.25); border-radius: 50%; border-top-color: var(--navy-dark); animation: spin 0.8s linear infinite; vertical-align: middle; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
@@ -364,7 +377,7 @@
       </div>
     </div>
 
-    <!-- Itemized Shift History Log (Frontline Deflection Table) -->
+    <!-- Itemized Shift History Table (Frontline Deflection Table) -->
     <div class="history-card">
       <div class="history-header" onclick="toggleHistoryTable()">
         <div class="history-title">
@@ -385,7 +398,7 @@
             </tr>
           </thead>
           <tbody id="shiftsTableBody">
-            <tr><td colspan="6" style="text-align: center; color: #94A3B8; padding: 20px;">Select a team to display itemized shift receipts.</td></tr>
+            <tr><td colspan="6" style="text-align: center; color: #94A3B8; padding: 22px;">Select a team to display itemized shift receipts.</td></tr>
           </tbody>
         </table>
       </div>
@@ -398,7 +411,7 @@
   </div>
 
   <script>
-    // Configured Google Apps Script Web App Endpoint URL
+    // Live Staging Test Deployment Endpoint
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3o3rRzPb0MRfse8uJ6QrbqbH7JA-XgT8lX4kp5Fc3DdIekIlKbAQGN5-geZGBMFJ08w/exec";
 
     let directoryData = {};
@@ -409,7 +422,7 @@
       const queryParams = new URLSearchParams({ action, ...extraParams, _t: Date.now() });
       const url = `${APPS_SCRIPT_URL}?${queryParams.toString()}`;
 
-      // 1. Try modern Fetch
+      // 1. Modern Fetch Attempt
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 12000);
@@ -450,7 +463,6 @@
           populateDivisionDropdown();
           if (res.syncTimestamp) document.getElementById('syncTimestamp').innerText = res.syncTimestamp;
 
-          // Auto-select first team or restore saved team
           const savedTeam = localStorage.getItem('ayso154_selected_team');
           if (savedTeam) selectTeamByCode(savedTeam);
         }
@@ -548,6 +560,7 @@
       // 3. Directive Box Formatting
       const directiveCard = document.getElementById('directiveCard');
       directiveCard.className = 'directive-card ' + (
+        tier.includes('ON TRACK') ? 'alert-ontrack' :
         tier.includes('ACTION') ? 'alert-action' :
         tier.includes('CRITICAL') ? 'alert-critical' : ''
       );
@@ -579,7 +592,7 @@
       tbody.innerHTML = '';
 
       if (!auditLogs || auditLogs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #94A3B8; padding: 20px;">No volunteer shifts logged for this team yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #94A3B8; padding: 22px;">No volunteer shifts logged for this team yet.</td></tr>';
         return;
       }
 
@@ -625,7 +638,6 @@
       btn.innerHTML = '<span id="syncIcon">↻</span> Refresh';
     }
 
-    // Initialize on window load
     window.addEventListener('DOMContentLoaded', initDashboard);
   </script>
 </body>
