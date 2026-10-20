@@ -1,14 +1,15 @@
 /**
  * ============================================================================
  * AYSO REGION 154 CYPRESS — GAME DAY HUB & VOLUNTEER DASHBOARD API (Code.gs)
- * Version: 4.6.1 (Full 3-Section Sync + Team_Awards Log Injection + Auto-Audit Menu)
+ * Version: 4.5.0 (Full 3-Section Sync + Team_Awards Log Injection + Auto-Audit Menu)
  * ============================================================================
  */
 
 const CONFIG = {
   SHEETS: {
     CHECKINS: 'Game Day Check-ins',
-    FALLBACK_CHECKINS: 'Form Responses 1',
+    FALLBACK_CHECKINS: 'Form Responses 3',
+    LEGACY_CHECKINS: 'Form Responses 1',
     DISPUTES: 'Form Responses 2',
     LEDGER: 'Season_Master_Ledger',
     AWARDS: 'Team_Awards',
@@ -37,10 +38,15 @@ function onOpen() {
     .addItem('🔄 Run Full Audit & Sync Ledger', 'runAuditAndSyncLedger')
     .addItem('🕵️‍♂️ Audit Dispute Tickets & MatchTrak Cross-Check', 'runAutomatedDisputeAndScheduleAudit')
     .addSeparator()
-    .addItem('📅 Sync Form Schedule Dropdowns', 'syncFormScheduleDropdowns')
+    .addItem('📅 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
     .addItem('🛠️ Repair Ledger Roster & Lock Legacy Backfill', 'repairLedgerAndLockBackfill')
     .addItem('⏰ Enable Automated Hourly Audit Trigger', 'installAutomatedAuditTriggers')
+    .addItem('🧹 Migrate Legacy Team_Awards Log Rows', 'migrateLegacyTeamAwardLogRows')
     .addToUi();
+
+  if (typeof addDiagnosticsMenu_ === 'function') {
+    addDiagnosticsMenu_();
+  }
 }
 
 /**
@@ -57,19 +63,26 @@ function doGet(e) {
       }
     }
 
+    // index.html sends ?action=getDirectory and ?action=getTeamStats&teamCode=...
+    const teamParam = params.teamCode || params.team || '';
+
     let payload;
-    if (action === 'directory') {
+    if (action === 'getdirectory' || action === 'directory') {
       payload = getDirectoryData();
-    } else if (action === 'team' && params.team) {
-      payload = getTeamStatsData(params.team);
+    } else if (action === 'getboardledger') {
+      payload = getBoardLedgerData();
+    } else if ((action === 'getteamstats' || action === 'team') && teamParam) {
+      payload = getTeamStatsData(teamParam);
     } else if (action === 'disputes') {
       payload = getDisputeAuditSummary_();
     } else {
-      payload = buildFullDashboardPayload_(params.team || '');
+      // Full Dashboard Payload (supports single-fetch frontend architecture)
+      payload = buildFullDashboardPayload_(teamParam);
     }
 
     const jsonString = JSON.stringify(payload);
 
+    // Support JSONP callback if requested
     if (params.callback) {
       return ContentService.createTextOutput(`${params.callback}(${jsonString})`)
         .setMimeType(ContentService.MimeType.JAVASCRIPT);
@@ -105,7 +118,13 @@ function doPost(e) {
     }
 
     if (action === 'override' && typeof applyBoardAwardOverride === 'function') {
-      const result = applyBoardAwardOverride(body);
+      // The web app runs as ANYONE_ANONYMOUS, so draft mode (empty allowlist) must not
+      // open point overrides to the internet: require a signed-in, allowlisted board user.
+      const session = getBoardUserSession();
+      if (session.isDraftMode || !session.isAuthorized || !Session.getActiveUser().getEmail()) {
+        throw new Error('Unauthorized: overrides require a signed-in account on the Admin_Config allowlist.');
+      }
+      const result = applyBoardAwardOverride(body.teamCode, body.awardType, body.points, body.note);
       return ContentService.createTextOutput(JSON.stringify({ status: 'ok', result: result }))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -118,46 +137,65 @@ function doPost(e) {
   }
 }
 
+/**
+ * Normalizes team strings so "08U" vs "8U", middle dots, and minor coach typos resolve identically.
+ */
 function normalizeTeamKey_(rawTeam) {
   if (!rawTeam) return '';
   let s = String(rawTeam).trim();
   if (!s) return '';
+
+  // Standardize separators (middle dot, em-dash, en-dash -> " - ")
   s = s.replace(/\s*[·•—–]\s*/g, ' - ');
   s = s.replace(/\s+-\s+/g, ' - ');
   s = s.replace(/\bCoach\s+/gi, '');
+
+  // Fix known coach spelling variations between Form and Ledger
   s = s.replace(/Brennen\s+Portalski/gi, 'Brennen Poralski');
   if (/^06U\s*-\s*Boys\s*-\s*Brennen\s+Poralski$/i.test(s)) {
     s = '06U - Boys - Brennen Portalski';
   }
   s = s.replace(/Lucky\s+Realtor/gi, 'Lucky Relator');
   s = s.replace(/Dustin\s+Breiger/gi, 'Dustin Brieger');
+
   return s.trim();
 }
 
+/**
+ * Builds a lookup key stripping leading zeros on divisions (e.g., "08U" == "8U") for fuzzy matching.
+ */
 function canonicalComparisonKey_(teamStr) {
   const norm = normalizeTeamKey_(teamStr).toLowerCase();
   return norm.replace(/^0+(\d+u)/i, '$1').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Formats display division names without leading zero if preferred on UI, while keeping exact keys.
+ */
 function cleanDivisionLabel_(divStr) {
   return String(divStr || '').trim();
 }
 
+/**
+ * Builds the complete payload for the Public Coach Dashboard (all teams, directory, categories, and logs).
+ */
 function buildFullDashboardPayload_(requestedTeam) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ledgerSheet = ss.getSheetByName(CONFIG.SHEETS.LEDGER);
   const awardsSheet = ss.getSheetByName(CONFIG.SHEETS.AWARDS);
-  const checkinsSheet = ss.getSheetByName(CONFIG.SHEETS.CHECKINS) || ss.getSheetByName(CONFIG.SHEETS.FALLBACK_CHECKINS);
+  const checkinsSheet = getGameDayCheckinsSheet(ss);
 
   if (!ledgerSheet) {
     throw new Error('Season_Master_Ledger sheet not found.');
   }
 
+  // 1. Read Team_Awards into a Map by canonical comparison key
   const awardsMap = {};
   if (awardsSheet && awardsSheet.getLastRow() > 1) {
     const awardsData = awardsSheet.getDataRange().getValues();
     for (let i = 1; i < awardsData.length; i++) {
       const r = awardsData[i];
+      if (isLegacyTeamAwardLogRow_(r)) continue;
       const tCode = String(r[0] || '').trim();
       if (!tCode) continue;
       const cKey = canonicalComparisonKey_(tCode);
@@ -174,18 +212,22 @@ function buildFullDashboardPayload_(requestedTeam) {
     }
   }
 
+  // 2. Read all Game Day Check-ins and group by canonical team key
   const checkinsByTeam = {};
   if (checkinsSheet && checkinsSheet.getLastRow() > 1) {
     const ciData = checkinsSheet.getDataRange().getValues();
     for (let i = 1; i < ciData.length; i++) {
       const row = ciData[i];
-      const role = String(row[3] || '').trim();
-      const refPos = String(row[4] || '').trim();
-      const auditStatus = String(row[23] || '').trim();
+      const role = String(row[3] || '').trim(); // Col D: Volunteer Role
+      const refPos = String(row[4] || '').trim(); // Col E: Referee Position
+
+      // Skip NOCRA / USSF paid referee rows on public team logs
+      const auditStatus = String(row[23] || '').trim(); // Col X
       if (auditStatus === 'NOCRA - No Points' || refPos.toUpperCase().includes('NOCRA')) {
         continue;
       }
 
+      // Coalesce Team from Credited Team (Col AA, idx 26), Legacy Backfill (Col AB, idx 27), or Dropdowns (Cols N-V, idx 13-21)
       let rawTeam = String(row[26] || '').trim() || String(row[27] || '').trim();
       if (!rawTeam) {
         for (let c = 13; c <= 21; c++) {
@@ -206,8 +248,10 @@ function buildFullDashboardPayload_(requestedTeam) {
       const lastName = String(row[2] || '').trim();
       const volunteerName = formatPrivacyName_(firstName, lastName);
       const timestampStr = formatDateSafe_(row[0]);
-      const pointsAwarded = Number(row[24]) || 0;
-      const auditReason = String(row[25] || '').trim();
+      const pointsAwarded = Number(row[24]) || 0; // Col Y
+      const auditReason = String(row[25] || '').trim(); // Col Z
+
+      // Extract location/field context for display note
       const fieldOrMatch = extractShiftDetail_(row, role, refPos);
 
       checkinsByTeam[cKey].push({
@@ -225,6 +269,7 @@ function buildFullDashboardPayload_(requestedTeam) {
     }
   }
 
+  // 3. Read Season_Master_Ledger (Cols A-W) to build unified Teams & Directory objects
   const ledgerData = ledgerSheet.getDataRange().getValues();
   const teams = {};
   const directory = {};
@@ -239,9 +284,10 @@ function buildFullDashboardPayload_(requestedTeam) {
     if (!teamCode || teamCode.toUpperCase().includes('NOCRA')) continue;
 
     const cKey = canonicalComparisonKey_(teamCode);
-    if (seenTeams.has(cKey)) continue;
+    if (seenTeams.has(cKey)) continue; // Guard against any duplicate rows
     seenTeams.add(cKey);
 
+    // Category Points directly from verified Season_Master_Ledger formulas (Cols D-J)
     const refPts = Math.min(CONFIG.CAPS.REFEREE, Number(row[3]) || 0);
     const fmPts = Math.min(CONFIG.CAPS.FIELD_MARSHAL, Number(row[4]) || 0);
     const setupPts = Math.min(CONFIG.CAPS.FIELD_SETUP, Number(row[5]) || 0);
@@ -250,9 +296,11 @@ function buildFullDashboardPayload_(requestedTeam) {
     const matchTrakPts = Math.min(CONFIG.CAPS.MATCHTRAK_BONUS, Number(row[8]) || 0);
     const otherAdjPts = Number(row[9]) || 0;
 
+    // Total Verified Points (Col K) — guaranteed equal to sum of D..J
     const totalPoints = refPts + fmPts + setupPts + picPts + certRefPts + matchTrakPts + otherAdjPts;
     const playoffGoal = Number(row[11]) || CONFIG.CAPS.PLAYOFF_GOAL;
 
+    // Build synthetic Check-In Log items from Team_Awards so Bottom Section matches Top & Middle
     const awardObj = awardsMap[cKey] || {
       teamCode: teamCode,
       preSeasonRefs: certRefPts,
@@ -266,24 +314,32 @@ function buildFullDashboardPayload_(requestedTeam) {
 
     const awardLogEntries = getTeamAwardsLogEntries_(awardObj, picPts, certRefPts, matchTrakPts, otherAdjPts);
     const qrLogEntries = checkinsByTeam[cKey] || [];
+
+    // Combine QR check-ins (newest first) + Team_Awards entries at the bottom of the log
     const combinedAuditLog = qrLogEntries.slice().reverse().concat(awardLogEntries);
 
+    // Categories dictionary. The canonical keys are the ones index.html activeCats
+    // and Contract_Tests.js read: Referee Assignment, Field Marshal Shift,
+    // Friday Night Field Setup, Saturday Field Setup, Picture Day,
+    // Certified Team Referees, Early Ref Scheduling Incentive, Other Adjustments.
     const categories = {
+      'Referee Assignment': refPts,
       'Referee (On-Field)': refPts,
       'Referee': refPts,
-      'Referee Assignments': refPts,
       'Early Ref Scheduling Incentive': matchTrakPts,
       'MatchTrak Compliance': matchTrakPts,
       'MatchTrak Bonus': matchTrakPts,
+      'Field Marshal Shift': fmPts,
       'Field Marshal': fmPts,
-      'Field Marshal Shifts': fmPts,
+      'Friday Night Field Setup': setupPts,
+      'Saturday Field Setup': setupPts,
       'Friday Night Setup': setupPts,
       'Field Setup': setupPts,
       'Field Set Up': setupPts,
-      'Picture Picnic Day': picPts,
       'Picture Day': picPts,
+      'Picture Picnic Day': picPts,
+      'Certified Team Referees': certRefPts,
       'Certified Ref Bonus': certRefPts,
-      'Pre-Season Certified Refs': certRefPts,
       'Administrative Adjustment': otherAdjPts,
       'Other Adjustments': otherAdjPts,
       'Admin Bonus / Adjustments (Cert Refs + Adj)': certRefPts + otherAdjPts
@@ -315,6 +371,8 @@ function buildFullDashboardPayload_(requestedTeam) {
     };
 
     teams[teamCode] = teamObj;
+
+    // Also index without leading zero (e.g., "8U - Boys - ...") so any URL param lookup succeeds
     const noZeroKey = teamCode.replace(/^0+(\d+U)/i, '$1');
     if (noZeroKey !== teamCode) {
       teams[noZeroKey] = teamObj;
@@ -332,6 +390,7 @@ function buildFullDashboardPayload_(requestedTeam) {
     });
   }
 
+  // If a single team was requested, attach its top-level properties for backwards compatibility
   let selectedTeamData = null;
   if (requestedTeam) {
     const reqKey = canonicalComparisonKey_(requestedTeam);
@@ -362,10 +421,16 @@ function buildFullDashboardPayload_(requestedTeam) {
   };
 }
 
+/**
+ * Returns data for a single team (used when ?action=team&team=... is called).
+ */
 function getTeamStatsData(teamName) {
   return buildFullDashboardPayload_(teamName);
 }
 
+/**
+ * Returns the division/team directory dictionary.
+ */
 function getDirectoryData() {
   const full = buildFullDashboardPayload_('');
   return {
@@ -375,6 +440,52 @@ function getDirectoryData() {
   };
 }
 
+/**
+ * Flat team list for board.html (?action=getBoardLedger). Same numbers as the
+ * public dashboard; status is 'Qualified' | 'In Progress' | 'At-Risk'.
+ */
+function getBoardLedgerData() {
+  const full = buildFullDashboardPayload_('');
+  const seen = new Set();
+  const teams = [];
+
+  Object.keys(full.teams).forEach(key => {
+    const t = full.teams[key];
+    if (seen.has(t.teamCode)) return; // skip the no-leading-zero alias keys
+    seen.add(t.teamCode);
+
+    let status = 'In Progress';
+    if (t.totalPoints >= t.playoffGoal) {
+      status = 'Qualified';
+    } else if (/CRITICAL|ACTION REQUIRED/i.test(t.eligibilityStatus)) {
+      status = 'At-Risk';
+    }
+
+    teams.push({
+      division: t.division,
+      teamCode: t.teamCode,
+      headCoach: t.headCoach,
+      verifiedPoints: t.totalPoints,
+      playoffGoal: t.playoffGoal,
+      refPoints: t.categories['Referee Assignment'],
+      fmPoints: t.categories['Field Marshal Shift'],
+      status: status,
+      isCompetitive: t.playoffGoal >= CONFIG.CAPS.PLAYOFF_GOAL,
+      lastAudited: t.lastAudited
+    });
+  });
+
+  return {
+    status: 'ok',
+    syncTimestamp: full.syncTimestamp,
+    teams: teams
+  };
+}
+
+/**
+ * Generates Check-In Log entries for a team's verified awards in Team_Awards
+ * so the Bottom Section Check-In Log sums to the exact Top Section total.
+ */
 function getTeamAwardsLogEntries_(awardObj, picPts, certRefPts, matchTrakPts, otherAdjPts) {
   const logs = [];
   const teamCode = awardObj.teamCode || '';
@@ -450,6 +561,9 @@ function getTeamAwardsLogEntries_(awardObj, picPts, certRefPts, matchTrakPts, ot
   return logs;
 }
 
+/**
+ * Formats volunteer name for public scoreboard privacy (e.g., "Steve A.").
+ */
 function formatPrivacyName_(first, last) {
   const f = String(first || '').trim();
   const l = String(last || '').trim();
@@ -458,6 +572,9 @@ function formatPrivacyName_(first, last) {
   return `${f} ${l.charAt(0).toUpperCase()}.`;
 }
 
+/**
+ * Standardizes role names for clean UI badges.
+ */
 function normalizeRoleLabel_(rawRole) {
   const r = String(rawRole || '').trim();
   if (/referee/i.test(r)) return 'Referee (On-Field)';
@@ -467,7 +584,11 @@ function normalizeRoleLabel_(rawRole) {
   return r || 'Volunteer Shift';
 }
 
+/**
+ * Extracts match or field details from a check-in row.
+ */
 function extractShiftDetail_(row, role, refPos) {
+  // Match selections in Cols G, H, I (indices 6, 7, 8) or Field in Col L (idx 11) or Shift Time in Col K (idx 10)
   const matchLJHS = String(row[6] || '').trim();
   const matchParkLex = String(row[7] || '').trim();
   const matchLuther = String(row[8] || '').trim();
@@ -489,6 +610,9 @@ function extractShiftDetail_(row, role, refPos) {
   return fieldName || matchStr || '';
 }
 
+/**
+ * Safely formats dates/timestamps.
+ */
 function formatDateSafe_(val) {
   if (!val) return '';
   if (Object.prototype.toString.call(val) === '[object Date]' && !isNaN(val.getTime())) {
@@ -497,6 +621,9 @@ function formatDateSafe_(val) {
   return String(val).trim();
 }
 
+/**
+ * Safely formats shift time values from Sheets.
+ */
 function formatTimeSafe_(val) {
   if (!val) return '';
   if (Object.prototype.toString.call(val) === '[object Date]' && !isNaN(val.getTime())) {
