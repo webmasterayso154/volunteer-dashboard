@@ -1,10 +1,11 @@
 /**
- * Automatically creates an administrative menu inside Google Sheets when opened.
+ * Adds the diagnostics / demo-data menu. Called from onOpen() in Code.js
+ * (Apps Script allows only one global onOpen across all files).
  */
-function onOpen() {
+function addDiagnosticsMenu_() {
   try {
     const ui = SpreadsheetApp.getUi();
-    ui.createMenu('⚽ AYSO 154 Board Tools')
+    ui.createMenu('🧪 AYSO 154 Diagnostics')
       .addItem('📊 Run Audit & Sync Ledger', 'runAuditAndSyncLedger')
       .addItem('📈 Build / Refresh Executive Summary Tab', 'setupExecutiveSummarySheet')
       .addItem('⚙️ Setup Admin Config Sheet', 'setupAdminConfigSheet')

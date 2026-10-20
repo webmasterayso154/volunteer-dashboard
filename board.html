@@ -191,7 +191,8 @@
 
   <script>
     // Live Apps Script Web App Endpoint
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLw5e8-H4Z1U9y9Z88F4y08h1h3-x2E1qF1vA/exec";
+    // Same WebApp deployment as index.html API_URL
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3o3rRzPb0MRfse8uJ6QrbqbH7JA-XgT8lX4kp5Fc3DdIekIlKbAQGN5-geZGBMFJ08w/exec";
 
     let allTeamsData = [];
     let activeTile = 'ALL';
@@ -201,6 +202,7 @@
       try {
         const res = await fetch(`${APPS_SCRIPT_URL}?action=getBoardLedger`);
         const data = await res.json();
+        if (data.status === 'error') throw new Error(data.message || 'Backend error');
         allTeamsData = data.teams || [];
         populateDivisionDropdown();
         applyAllFilters();
@@ -315,7 +317,7 @@
 
         divTeams.forEach(t => {
           const statusBadge = t.status === 'Qualified' ? 'badge-qualified' : (t.status === 'At-Risk' ? 'badge-risk' : 'badge-progress');
-          const targetPts = t.isCompetitive ? 17 : 8;
+          const targetPts = t.playoffGoal || (t.isCompetitive ? 17 : 8);
           const targetRef = t.isCompetitive ? 7 : 0;
           const inspectUrl = `index.html?team=${encodeURIComponent(t.teamCode)}`;
 

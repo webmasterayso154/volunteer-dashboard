@@ -5,9 +5,9 @@
 
 function injectGameDayScenario() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
+  const sheet = getGameDayCheckinsSheet(ss);
   if (!sheet) {
-    SpreadsheetApp.getUi().alert("Sheet 'Game Day Check-ins' (or 'Form Responses 1') not found!");
+    SpreadsheetApp.getUi().alert("Sheet 'Game Day Check-ins' (or 'Form Responses 3' / 'Form Responses 1') not found!");
     return;
   }
 
@@ -40,7 +40,7 @@ function injectGameDayScenario() {
  */
 function purgeAllMockData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
+  const sheet = getGameDayCheckinsSheet(ss);
   if (!sheet) return;
   const data = sheet.getDataRange().getValues();
   
