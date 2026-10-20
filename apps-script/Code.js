@@ -8,7 +8,8 @@
 const CONFIG = {
   SHEETS: {
     CHECKINS: 'Game Day Check-ins',
-    FALLBACK_CHECKINS: 'Form Responses 1',
+    FALLBACK_CHECKINS: 'Form Responses 3',
+    LEGACY_CHECKINS: 'Form Responses 1',
     DISPUTES: 'Form Responses 2',
     LEDGER: 'Season_Master_Ledger',
     AWARDS: 'Team_Awards',
@@ -40,6 +41,7 @@ function onOpen() {
     .addItem('📅 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
     .addItem('🛠️ Repair Ledger Roster & Lock Legacy Backfill', 'repairLedgerAndLockBackfill')
     .addItem('⏰ Enable Automated Hourly Audit Trigger', 'installAutomatedAuditTriggers')
+    .addItem('🧹 Migrate Legacy Team_Awards Log Rows', 'migrateLegacyTeamAwardLogRows')
     .addToUi();
 
   if (typeof addDiagnosticsMenu_ === 'function') {
@@ -67,6 +69,8 @@ function doGet(e) {
     let payload;
     if (action === 'getdirectory' || action === 'directory') {
       payload = getDirectoryData();
+    } else if (action === 'getboardledger') {
+      payload = getBoardLedgerData();
     } else if ((action === 'getteamstats' || action === 'team') && teamParam) {
       payload = getTeamStatsData(teamParam);
     } else if (action === 'disputes') {
@@ -114,7 +118,13 @@ function doPost(e) {
     }
 
     if (action === 'override' && typeof applyBoardAwardOverride === 'function') {
-      const result = applyBoardAwardOverride(body);
+      // The web app runs as ANYONE_ANONYMOUS, so draft mode (empty allowlist) must not
+      // open point overrides to the internet: require a signed-in, allowlisted board user.
+      const session = getBoardUserSession();
+      if (session.isDraftMode || !session.isAuthorized || !Session.getActiveUser().getEmail()) {
+        throw new Error('Unauthorized: overrides require a signed-in account on the Admin_Config allowlist.');
+      }
+      const result = applyBoardAwardOverride(body.teamCode, body.awardType, body.points, body.note);
       return ContentService.createTextOutput(JSON.stringify({ status: 'ok', result: result }))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -173,7 +183,7 @@ function buildFullDashboardPayload_(requestedTeam) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ledgerSheet = ss.getSheetByName(CONFIG.SHEETS.LEDGER);
   const awardsSheet = ss.getSheetByName(CONFIG.SHEETS.AWARDS);
-  const checkinsSheet = ss.getSheetByName(CONFIG.SHEETS.CHECKINS) || ss.getSheetByName(CONFIG.SHEETS.FALLBACK_CHECKINS);
+  const checkinsSheet = getGameDayCheckinsSheet(ss);
 
   if (!ledgerSheet) {
     throw new Error('Season_Master_Ledger sheet not found.');
@@ -185,6 +195,7 @@ function buildFullDashboardPayload_(requestedTeam) {
     const awardsData = awardsSheet.getDataRange().getValues();
     for (let i = 1; i < awardsData.length; i++) {
       const r = awardsData[i];
+      if (isLegacyTeamAwardLogRow_(r)) continue;
       const tCode = String(r[0] || '').trim();
       if (!tCode) continue;
       const cKey = canonicalComparisonKey_(tCode);
@@ -426,6 +437,48 @@ function getDirectoryData() {
     status: 'ok',
     syncTimestamp: full.syncTimestamp,
     directory: full.directory
+  };
+}
+
+/**
+ * Flat team list for board.html (?action=getBoardLedger). Same numbers as the
+ * public dashboard; status is 'Qualified' | 'In Progress' | 'At-Risk'.
+ */
+function getBoardLedgerData() {
+  const full = buildFullDashboardPayload_('');
+  const seen = new Set();
+  const teams = [];
+
+  Object.keys(full.teams).forEach(key => {
+    const t = full.teams[key];
+    if (seen.has(t.teamCode)) return; // skip the no-leading-zero alias keys
+    seen.add(t.teamCode);
+
+    let status = 'In Progress';
+    if (t.totalPoints >= t.playoffGoal) {
+      status = 'Qualified';
+    } else if (/CRITICAL|ACTION REQUIRED/i.test(t.eligibilityStatus)) {
+      status = 'At-Risk';
+    }
+
+    teams.push({
+      division: t.division,
+      teamCode: t.teamCode,
+      headCoach: t.headCoach,
+      verifiedPoints: t.totalPoints,
+      playoffGoal: t.playoffGoal,
+      refPoints: t.categories['Referee Assignment'],
+      fmPoints: t.categories['Field Marshal Shift'],
+      status: status,
+      isCompetitive: t.playoffGoal >= CONFIG.CAPS.PLAYOFF_GOAL,
+      lastAudited: t.lastAudited
+    });
+  });
+
+  return {
+    status: 'ok',
+    syncTimestamp: full.syncTimestamp,
+    teams: teams
   };
 }
 

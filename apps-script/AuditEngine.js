@@ -11,12 +11,12 @@
  */
 function runAuditAndSyncLedger() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const checkinsSheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
+  const checkinsSheet = getGameDayCheckinsSheet(ss);
   const awardsSheet = ss.getSheetByName('Team_Awards');
   const ledgerSheet = ss.getSheetByName('Season_Master_Ledger');
 
   if (!checkinsSheet || !awardsSheet || !ledgerSheet) {
-    throw new Error('Required sheets (Game Day Check-ins, Team_Awards, Season_Master_Ledger) not found.');
+    throw new Error('Required sheets (Game Day Check-ins / Form Responses 3 / Form Responses 1, Team_Awards, Season_Master_Ledger) not found.');
   }
 
   // 1. Build Canonical Team Dictionary from Team_Awards (116 teams)
@@ -25,6 +25,7 @@ function runAuditAndSyncLedger() {
   const coachLastLookup = {};
 
   for (let i = 1; i < awardsData.length; i++) {
+    if (isLegacyTeamAwardLogRow_(awardsData[i])) continue;
     const teamCode = String(awardsData[i][0] || '').trim();
     if (!teamCode) continue;
     const cKey = canonicalComparisonKey_(teamCode);
@@ -237,12 +238,12 @@ function runAuditAndSyncLedger() {
  */
 function repairLedgerAndLockBackfill() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const checkinsSheet = ss.getSheetByName('Game Day Check-ins');
+  const checkinsSheet = getGameDayCheckinsSheet(ss);
   const awardsSheet = ss.getSheetByName('Team_Awards');
   const ledgerSheet = ss.getSheetByName('Season_Master_Ledger');
 
   if (!checkinsSheet || !awardsSheet || !ledgerSheet) {
-    throw new Error('Missing one of required sheets: Game Day Check-ins, Team_Awards, or Season_Master_Ledger.');
+    throw new Error('Missing one of required sheets: Game Day Check-ins (or Form Responses 3 / Form Responses 1), Team_Awards, or Season_Master_Ledger.');
   }
 
   // 1. Lock in Col AB (Legacy_Backfill_Team) in 'Game Day Check-ins'
@@ -274,6 +275,7 @@ function repairLedgerAndLockBackfill() {
   const canonicalTeams = [];
 
   for (let i = 1; i < awardsData.length; i++) {
+    if (isLegacyTeamAwardLogRow_(awardsData[i])) continue;
     const teamCode = String(awardsData[i][0] || '').trim();
     if (!teamCode) continue;
 
@@ -297,17 +299,21 @@ function repairLedgerAndLockBackfill() {
     ledgerSheet.getRange(2, 1, canonicalTeams.length, 3).setValues(canonicalTeams);
   }
 
-  injectTraceableLedgerFormulas();
+  injectTraceableLedgerFormulas(checkinsSheet.getName());
   SpreadsheetApp.flush();
 }
 
 /**
  * Injects native Google Sheets formulas across Columns D through W for all 116 teams in Season_Master_Ledger.
  */
-function injectTraceableLedgerFormulas() {
+function injectTraceableLedgerFormulas(checkinsTabName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ledgerSheet = ss.getSheetByName('Season_Master_Ledger');
   if (!ledgerSheet) return;
+
+  // Formulas must point at whichever check-ins tab is live (Game Day Check-ins / Form Responses 3 / Form Responses 1)
+  const tabName = checkinsTabName || (getGameDayCheckinsSheet(ss) || { getName: () => 'Game Day Check-ins' }).getName();
+  const ci = `'${tabName.replace(/'/g, "''")}'`;
 
   const lastRow = ledgerSheet.getLastRow();
   if (lastRow < 2) return;
@@ -322,10 +328,10 @@ function injectTraceableLedgerFormulas() {
     const goalFormula = `=IF(REGEXMATCH($A${r}, "Playground"), 4, IF(REGEXMATCH($A${r}, "05U|5U|06U|6U"), 8, 17))`;
 
     formulaRows.push([
-      `=MIN(10, SUMIFS('Game Day Check-ins'!$Y:$Y, 'Game Day Check-ins'!$AA:$AA, $B${r}, 'Game Day Check-ins'!$D:$D, "Referee"))`, // Col D: Ref
-      `=MIN(2, SUMIFS('Game Day Check-ins'!$Y:$Y, 'Game Day Check-ins'!$AA:$AA, $B${r}, 'Game Day Check-ins'!$D:$D, "Field Marshal"))`, // Col E: FM
-      `=MIN(5, SUMIFS('Game Day Check-ins'!$Y:$Y, 'Game Day Check-ins'!$AA:$AA, $B${r}, 'Game Day Check-ins'!$D:$D, "Field Set Up"))`, // Col F: Setup
-      `=MIN(2, SUMIFS('Game Day Check-ins'!$Y:$Y, 'Game Day Check-ins'!$AA:$AA, $B${r}, 'Game Day Check-ins'!$D:$D, "*Pic*") + SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$D:$D))`, // Col G: Pic Day
+      `=MIN(10, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Referee"))`, // Col D: Ref
+      `=MIN(2, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Marshal"))`, // Col E: FM
+      `=MIN(5, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up"))`, // Col F: Setup
+      `=MIN(2, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "*Pic*") + SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$D:$D))`, // Col G: Pic Day
       `=MIN(5, SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$B:$B))`, // Col H: Cert Ref Bonus
       `=MIN(2, SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$C:$C))`, // Col I: MatchTrak Bonus
       `=SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$E:$E)`, // Col J: Other Adjustments
@@ -361,7 +367,7 @@ function injectTraceableLedgerFormulas() {
 function runAutomatedDisputeAndScheduleAudit() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const disputesSheet = ss.getSheetByName('Form Responses 2');
-  const checkinsSheet = ss.getSheetByName('Game Day Check-ins');
+  const checkinsSheet = getGameDayCheckinsSheet(ss);
   const scheduleSheet = ss.getSheetByName('Season_Master_Schedule');
   const awardsSheet = ss.getSheetByName('Team_Awards');
 

@@ -49,128 +49,38 @@ function getBoardDashboardData() {
     };
   }
 
-  const settings = (typeof getAdminConfigSettings === 'function') 
-    ? getAdminConfigSettings() 
+  const settings = (typeof getAdminConfigSettings === 'function')
+    ? getAdminConfigSettings()
     : { PlayoffThreshold: 17, RefMaxCap: 10, FieldMarshalCap: 2, FieldSetupCap: 1, PictureDayCap: 2 };
 
-  const playoffThreshold = Number(settings.PlayoffThreshold) || 17;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // Same source of truth as the public dashboard: Season_Master_Ledger + Team_Awards
+  const payload = buildFullDashboardPayload_('');
+  const seen = new Set();
+  const teamList = [];
 
-  const allTeams = [...MASTER_TEAMS];
-  if (typeof getSupplementalTeams === 'function') {
-    const supp = getSupplementalTeams();
-    supp.forEach(st => {
-      if (!allTeams.includes(st.teamCode)) allTeams.push(st.teamCode);
-    });
-  }
-
-  const respSheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
-  const respRows = (respSheet && respSheet.getLastRow() > 1) ? respSheet.getDataRange().getValues() : [];
-  
-  const awardsSheet = ss.getSheetByName('Team_Awards');
-  const awardRows = (awardsSheet && awardsSheet.getLastRow() > 1) ? awardsSheet.getDataRange().getValues() : [];
-
-  const teamAggregates = {};
-  allTeams.forEach(code => {
-    teamAggregates[code] = { ref: 0, fm: 0, setup: 0, pic: 0, certRef: 0, matchtrak: 0, awards: 0, total: 0 };
-  });
-
-  const seenVolunteerSlots = new Set();
-
-  for (let i = 1; i < respRows.length; i++) {
-    const row = respRows[i];
-    if (!row || !row[0]) continue;
-
-    const timestamp = row[0];
-    const dateStr = (timestamp instanceof Date)
-      ? Utilities.formatDate(timestamp, 'America/Los_Angeles', 'MMM d, yyyy')
-      : String(timestamp).split(' ')[0];
-
-    const email = String(row[1] || '').trim().toLowerCase();
-    const firstName = String(row[2] || '').trim();
-    const lastName = String(row[3] || '').trim();
-    const volId = email || (firstName + ' ' + lastName).trim().toLowerCase();
-
-    const dutyRaw = String(row[4] || '').trim();
-    const refPos = String(row[5] || '').trim();
-    const rRef = String(row[6] || '').trim();
-    const refTime = String(row[7] || '').trim();
-
-    const rFm = String(row[9] || '').trim();
-    const fmTime = String(row[11] || '').trim();
-
-    const rSetup = String(row[12] || '').trim();
-
-    allTeams.forEach(code => {
-      const agg = teamAggregates[code];
-      let matchedRole = '';
-      let slotTime = '';
-      let isNocra = false;
-
-      if (rRef === code || (/ref/i.test(dutyRaw) && row.indexOf(code) !== -1)) {
-        matchedRole = 'ref';
-        slotTime = refTime || 'GameTime';
-        if (/nocra|ussf/i.test(refPos)) isNocra = true;
-      } else if (rFm === code || (/marshal/i.test(dutyRaw) && row.indexOf(code) !== -1)) {
-        matchedRole = 'fm';
-        slotTime = fmTime || 'ShiftTime';
-      } else if (rSetup === code || (/set\s*up/i.test(dutyRaw) && row.indexOf(code) !== -1)) {
-        matchedRole = 'setup';
-        slotTime = 'FridayNight';
-      } else if (/picture/i.test(dutyRaw) && row.indexOf(code) !== -1) {
-        matchedRole = 'pic';
-        slotTime = 'PicShift';
-      }
-
-      if (matchedRole && !isNocra) {
-        const slotKey = volId + '_' + dateStr + '_' + normalizeTimeSlot(slotTime) + '_' + matchedRole;
-        if (!seenVolunteerSlots.has(slotKey)) {
-          seenVolunteerSlots.add(slotKey);
-          if (matchedRole === 'ref' && agg.ref < settings.RefMaxCap) agg.ref++;
-          else if (matchedRole === 'fm' && agg.fm < settings.FieldMarshalCap) agg.fm++;
-          else if (matchedRole === 'setup' && agg.setup < settings.FieldSetupCap) agg.setup++;
-          else if (matchedRole === 'pic' && agg.pic < settings.PictureDayCap) agg.pic++;
-        }
+  Object.keys(payload.teams).forEach(key => {
+    const t = payload.teams[key];
+    if (seen.has(t.teamCode)) return; // skip the no-leading-zero alias keys
+    seen.add(t.teamCode);
+    const c = t.categories;
+    teamList.push({
+      teamCode: t.teamCode,
+      division: t.division,
+      coach: t.coach,
+      totalPoints: t.totalPoints,
+      playoffGoal: t.playoffGoal,
+      qualified: t.totalPoints >= t.playoffGoal,
+      categories: {
+        ref: c['Referee Assignment'],
+        fm: c['Field Marshal Shift'],
+        setup: c['Friday Night Field Setup'],
+        pic: c['Picture Day'],
+        certRef: c['Certified Team Referees'],
+        matchtrak: c['Early Ref Scheduling Incentive'],
+        awards: c['Other Adjustments'],
+        total: t.totalPoints
       }
     });
-  }
-
-  for (let j = 1; j < awardRows.length; j++) {
-    const aRow = awardRows[j];
-    const aCode = String(aRow[1] || '').trim();
-    const aType = String(aRow[2] || '').trim();
-    const aPts = Number(aRow[3]) || 0;
-
-    if (teamAggregates[aCode]) {
-      if (aType.includes('Uniform') || aType.includes('Disqualification')) {
-        teamAggregates[aCode].ref = Math.max(0, teamAggregates[aCode].ref + aPts);
-      } else if (aType === 'Certified Team Referees') {
-        teamAggregates[aCode].certRef = Math.min(CAP_CERTIFIED_REF, teamAggregates[aCode].certRef + aPts);
-      } else if (aType === 'MatchTrak Filled by Sep 26') {
-        teamAggregates[aCode].matchtrak = Math.min(CAP_MATCHTRAK_BONUS, teamAggregates[aCode].matchtrak + aPts);
-      } else {
-        teamAggregates[aCode].awards += aPts;
-      }
-    }
-  }
-
-  const teamList = allTeams.map(code => {
-    const agg = teamAggregates[code] || { ref: 0, fm: 0, setup: 0, pic: 0, certRef: 0, matchtrak: 0, awards: 0 };
-    const maxPossible = Number(settings.RefMaxCap) + Number(settings.FieldMarshalCap) +
-      Number(settings.FieldSetupCap) + Number(settings.PictureDayCap) + CAP_CERTIFIED_REF + CAP_MATCHTRAK_BONUS;
-    const total = Math.max(0, Math.min(maxPossible, agg.ref + agg.fm + agg.setup + agg.pic + agg.certRef + agg.matchtrak + agg.awards));
-    const parts = code.split(' - ');
-    const division = parts.length >= 3 ? parts[0] + ' - ' + parts[1] : parts[0];
-    const coach = parts.length >= 3 ? parts.slice(2).join(' - ') : code;
-
-    return {
-      teamCode: code,
-      division: division,
-      coach: coach,
-      totalPoints: total,
-      qualified: total >= playoffThreshold,
-      categories: agg
-    };
   });
 
   const anomalies = scanSubmissionsForAnomalies();
@@ -189,7 +99,7 @@ function getBoardDashboardData() {
  */
 function scanSubmissionsForAnomalies() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const respSheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
+  const respSheet = getGameDayCheckinsSheet(ss);
   if (!respSheet || respSheet.getLastRow() < 2) return [];
 
   const rows = respSheet.getDataRange().getValues();
@@ -209,24 +119,25 @@ function scanSubmissionsForAnomalies() {
       ? Utilities.formatDate(rawTimestamp, 'America/Los_Angeles', 'MMM d, yyyy')
       : String(rawTimestamp).split(' ')[0];
 
-    const email = String(row[1] || '').trim().toLowerCase();
-    const firstName = String(row[2] || '').trim();
-    const lastName = String(row[3] || '').trim();
-    const fullName = (firstName + ' ' + lastName).trim() || email;
-    const role = String(row[4] || '').trim();
-    const refPos = String(row[5] || '').trim();
-    const refTeam = String(row[6] || '').trim();
-    const gameTime = String(row[7] || '').trim();
-    const refField = String(row[8] || '').trim();
-    const fmTeam = String(row[9] || '').trim();
-    const fmField = String(row[10] || '').trim();
-    const fmTime = String(row[11] || '').trim();
-    const setupTeam = String(row[12] || '').trim();
-    const setupField = String(row[13] || '').trim();
+    // Same column map as Code.js / AuditEngine.js (live tab: A Timestamp, B First, C Last, D Role, E Ref Position)
+    const email = '';
+    const firstName = String(row[1] || '').trim();
+    const lastName = String(row[2] || '').trim();
+    const fullName = (firstName + ' ' + lastName).trim();
+    const role = String(row[3] || '').trim();
+    const refPos = String(row[4] || '').trim();
+    const matchStr = String(row[6] || row[7] || row[8] || '').trim(); // Cols G-I: venue match dropdowns
+    const shiftTime = (typeof formatTimeSafe_ === 'function') ? formatTimeSafe_(row[10]) : String(row[10] || '').trim(); // Col K
+    const fieldName = String(row[11] || row[9] || row[5] || '').trim(); // Col L field, else J/F venue
 
-    const teamCode = refTeam || fmTeam || setupTeam || 'Unknown Team';
-    const field = refField || fmField || setupField || 'N/A';
-    const time = gameTime || fmTime || 'N/A';
+    let dropdownTeam = '';
+    for (let c = 13; c <= 21; c++) { // Cols N-V: division team dropdowns
+      if (String(row[c] || '').trim() !== '') { dropdownTeam = String(row[c]).trim(); break; }
+    }
+    const teamCode = String(row[26] || '').trim() || String(row[27] || '').trim() || dropdownTeam || 'Unknown Team'; // AA credited, AB backfill
+
+    const field = fieldName || matchStr || 'N/A';
+    const time = shiftTime || matchStr || 'N/A';
 
     // Normalized purely for slot/duplicate comparisons; entry.time keeps the raw
     // display value so "8:00 AM" and "8:00am" still resolve to one slot without
@@ -305,6 +216,13 @@ function scanSubmissionsForAnomalies() {
   return anomalies.reverse();
 }
 
+/**
+ * Normalizes time strings for slot comparisons ("8:00 AM" == "8:00am").
+ */
+function normalizeTimeSlot(value) {
+  return String(value || '').replace(/\s+/g, '').toLowerCase();
+}
+
 function getBoardTeamDetails(teamCode) {
   const session = getBoardUserSession();
   if (!session.isAuthorized) throw new Error("Unauthorized");
@@ -320,20 +238,12 @@ function applyBoardAwardOverride(teamCode, awardType, points, note) {
 
   const fullNote = (note ? note + " " : "") + "[Authorized by: " + session.email + "]";
 
-  if (typeof setTeamAward === 'function') {
-    setTeamAward(teamCode, awardType, pts, fullNote);
-  } else {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName('Team_Awards');
-    if (!sheet) {
-      sheet = ss.insertSheet('Team_Awards');
-      sheet.appendRow(['Timestamp', 'TeamCode', 'AwardType', 'Points', 'Note', 'Author']);
-    }
-    sheet.appendRow([new Date(), teamCode, awardType, pts, fullNote, session.email]);
-  }
+  // Writes into the team's single Team_Awards row (see TeamAwards.js)
+  const award = setTeamAward(teamCode, awardType, pts, fullNote);
 
   return {
     success: true,
+    award: award,
     updatedStats: getBoardTeamDetails(teamCode)
   };
 }

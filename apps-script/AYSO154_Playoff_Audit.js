@@ -2058,7 +2058,9 @@ function formatDateTimeSafe_(date) {
 function getGameDayCheckinsSheet(ss) {
   const targetSs = ss || ((typeof SpreadsheetApp !== 'undefined') ? SpreadsheetApp.getActiveSpreadsheet() : null);
   if (!targetSs) return null;
-  return targetSs.getSheetByName('Game Day Check-ins') || targetSs.getSheetByName('Form Responses 1');
+  return targetSs.getSheetByName('Game Day Check-ins') ||
+         targetSs.getSheetByName('Form Responses 3') ||
+         targetSs.getSheetByName('Form Responses 1');
 }
 
 /**

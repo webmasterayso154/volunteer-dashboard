@@ -24,7 +24,7 @@ const SCHEDULE_CONFIG = {
   ARCHIVE_FOLDER_ID: '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m',
   DASHBOARD_URL: 'https://webmasterayso154.github.io/volunteer-dashboard/',
   SCHEDULE_TAB_NAME: 'Master Schedule',
-  PROTECTED_IMMUTABLE_TABS: ['Season_Master_Ledger', 'Form Responses 1', 'Form Responses 2', 'Team_Awards', 'Settings', 'Admin_Config'],
+  PROTECTED_IMMUTABLE_TABS: ['Season_Master_Ledger', 'Game Day Check-ins', 'Form Responses 3', 'Form Responses 1', 'Form Responses 2', 'Team_Awards', 'Settings', 'Admin_Config'],
   FORM_DESCRIPTION: "🙌 Game day happens because of YOU! ⚽\nThank you for volunteering your time for our players and community today.\n\nQuick Steps for New Volunteers:\n1. Enter your name and role.\n2. Pick your field venue and select your match from the dropdown.\n3. Submit to log your points!\n\n📊 View live team points on the Volunteer Standings Dashboard: https://webmasterayso154.github.io/volunteer-dashboard/",
   CONFIRMATION_MESSAGE: "⚽ Thanks for checking in! 🙌\n\nYou can track live team standings and volunteer points on the Volunteer Dashboard here:\nhttps://webmasterayso154.github.io/volunteer-dashboard/",
   VENUE_TITLES: {
