@@ -121,17 +121,3 @@ function testSettingsPostAndGet() {
   setAdminConfigSetting('RefMaxCap', originalSettings.RefMaxCap);
   Logger.log("   Settings persistence validated.");
 }
-
-function setAdminConfigSetting(key, val) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Admin_Config');
-  if (!sheet) throw new Error("Admin_Config sheet missing");
-  const data = sheet.getRange("D3:E20").getValues();
-  for (let i = 0; i < data.length; i++) {
-    if (String(data[i][0]).trim() === key) {
-      sheet.getRange(3 + i, 5).setValue(val);
-      SpreadsheetApp.flush();
-      return;
-    }
-  }
-}

@@ -37,10 +37,14 @@ function onOpen() {
     .addItem('🔄 Run Full Audit & Sync Ledger', 'runAuditAndSyncLedger')
     .addItem('🕵️‍♂️ Audit Dispute Tickets & MatchTrak Cross-Check', 'runAutomatedDisputeAndScheduleAudit')
     .addSeparator()
-    .addItem('📅 Sync Form Schedule Dropdowns', 'syncFormScheduleDropdowns')
+    .addItem('📅 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
     .addItem('🛠️ Repair Ledger Roster & Lock Legacy Backfill', 'repairLedgerAndLockBackfill')
     .addItem('⏰ Enable Automated Hourly Audit Trigger', 'installAutomatedAuditTriggers')
     .addToUi();
+
+  if (typeof addDiagnosticsMenu_ === 'function') {
+    addDiagnosticsMenu_();
+  }
 }
 
 /**
@@ -57,16 +61,19 @@ function doGet(e) {
       }
     }
 
+    // index.html sends ?action=getDirectory and ?action=getTeamStats&teamCode=...
+    const teamParam = params.teamCode || params.team || '';
+
     let payload;
-    if (action === 'directory') {
+    if (action === 'getdirectory' || action === 'directory') {
       payload = getDirectoryData();
-    } else if (action === 'team' && params.team) {
-      payload = getTeamStatsData(params.team);
+    } else if ((action === 'getteamstats' || action === 'team') && teamParam) {
+      payload = getTeamStatsData(teamParam);
     } else if (action === 'disputes') {
       payload = getDisputeAuditSummary_();
     } else {
       // Full Dashboard Payload (supports single-fetch frontend architecture)
-      payload = buildFullDashboardPayload_(params.team || '');
+      payload = buildFullDashboardPayload_(teamParam);
     }
 
     const jsonString = JSON.stringify(payload);
@@ -300,23 +307,28 @@ function buildFullDashboardPayload_(requestedTeam) {
     // Combine QR check-ins (newest first) + Team_Awards entries at the bottom of the log
     const combinedAuditLog = qrLogEntries.slice().reverse().concat(awardLogEntries);
 
-    // Categories dictionary supporting all frontend key variations
+    // Categories dictionary. The canonical keys are the ones index.html activeCats
+    // and Contract_Tests.js read: Referee Assignment, Field Marshal Shift,
+    // Friday Night Field Setup, Saturday Field Setup, Picture Day,
+    // Certified Team Referees, Early Ref Scheduling Incentive, Other Adjustments.
     const categories = {
+      'Referee Assignment': refPts,
       'Referee (On-Field)': refPts,
       'Referee': refPts,
-      'Referee Assignments': refPts,
       'Early Ref Scheduling Incentive': matchTrakPts,
       'MatchTrak Compliance': matchTrakPts,
       'MatchTrak Bonus': matchTrakPts,
+      'Field Marshal Shift': fmPts,
       'Field Marshal': fmPts,
-      'Field Marshal Shifts': fmPts,
+      'Friday Night Field Setup': setupPts,
+      'Saturday Field Setup': setupPts,
       'Friday Night Setup': setupPts,
       'Field Setup': setupPts,
       'Field Set Up': setupPts,
-      'Picture Picnic Day': picPts,
       'Picture Day': picPts,
+      'Picture Picnic Day': picPts,
+      'Certified Team Referees': certRefPts,
       'Certified Ref Bonus': certRefPts,
-      'Pre-Season Certified Refs': certRefPts,
       'Administrative Adjustment': otherAdjPts,
       'Other Adjustments': otherAdjPts,
       'Admin Bonus / Adjustments (Cert Refs + Adj)': certRefPts + otherAdjPts
