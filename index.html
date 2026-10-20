@@ -642,4 +642,179 @@ class Component extends DCLogic {
 
     const showLog = this.props.showCheckInLog ?? true;
     const dirTeams = s.directory[s.division] || [];
-    const coaches = dirTeams.map(t => ({ teamCode: t.teamCode
+    const coaches = dirTeams.map(t => ({ teamCode: t.teamCode, label: 'Coach ' + t.coach }));
+
+    const total = s.stats ? (s.stats.totalPoints || 0) : 0;
+    const needed = Math.max(0, goal - total);
+    const met = needed === 0;
+    const cats = s.stats ? (s.stats.categories || {}) : {};
+
+    let pillText = met ? 'Qualified' : needed + ' to go';
+    let pillBg = met ? '#DEF7EC' : '#FEF3C7';
+    let pillFg = met ? '#059669' : '#B45309';
+    let goalSubtitle = 'of ' + goal + ' points';
+    let totalPct = Math.min(100, Math.round((total / goal) * 100)) + '%';
+    let barColor = met ? '#059669' : '#002D62';
+    let goalCaption = met
+      ? 'This team has met the ' + goal + '-point playoff qualification requirement.'
+      : needed + ' more verified ' + (needed === 1 ? 'point' : 'points') + ' needed for playoff eligibility.';
+
+    if (isPlayground) {
+      pillText = met ? 'Goal Achieved' : needed + ' to go';
+      goalSubtitle = 'of 4 volunteer points';
+      goalCaption = met
+        ? 'Great job! This Playground team has completed all 4 volunteer points.'
+        : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to reach the 4-point season goal.';
+    } else if (isU5U6) {
+      pillText = met ? 'Goal Achieved' : needed + ' to go';
+      goalSubtitle = 'of 8 target points (9 max)';
+      goalCaption = met
+        ? 'Goal completed! This team has earned ' + total + ' volunteer points toward the 8-point team goal.'
+        : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to hit the 8-point team goal (9 possible).';
+    }
+
+    // Category configurations tailored to each division's real roles
+    let activeCats = [];
+    if (isPlayground) {
+      activeCats = [
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
+        { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
+        { key: 'Other Adjustments', label: 'Board Adjustments / Credits', cap: 5 }
+      ];
+    } else if (isU5U6) {
+      activeCats = [
+        { key: 'Saturday Field Setup', label: 'Saturday Field Setup / Takedown', cap: 5 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
+        { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
+        { key: 'Other Adjustments', label: 'Board Adjustments / Credits', cap: 5 }
+      ];
+    } else if (isU8) {
+      // Force U8 to display Saturday Field Setup and Early Ref Scheduling Incentive
+      activeCats = [
+        { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
+        { key: 'Early Ref Scheduling Incentive', label: 'Early Ref Scheduling Incentive', cap: 2 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
+        { key: 'Saturday Field Setup', label: 'Saturday Field Setup', cap: 5 },
+        { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
+        { key: 'Certified Team Referees', label: 'Certified Team Referees', cap: 5 },
+        { key: 'Other Adjustments', label: 'Board Adjustments / Credits', cap: 5 }
+      ];
+    } else {
+      activeCats = [
+        { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
+        { key: 'Early Ref Scheduling Incentive', label: 'Early Ref Scheduling Incentive', cap: 2 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
+        { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
+        { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
+        { key: 'Certified Team Referees', label: 'Certified Team Referees', cap: 5 },
+        { key: 'Other Adjustments', label: 'Board Adjustments / Credits', cap: 5 }
+      ];
+    }
+
+    const audit = ((s.stats && s.stats.audit) || []).map(it => {
+      const st = String(it.status || '');
+      let bg = '#DEF7EC', fg = '#059669';
+      if (st.indexOf('Pending') !== -1) { 
+        bg = '#FEF3C7'; fg = '#B45309'; 
+      }
+      if (st.indexOf('Rejected') !== -1 || st.indexOf('Cap') !== -1 || st.indexOf('Conflict') !== -1 || st.indexOf('Duplicate') !== -1) { 
+        bg = '#FDE8E8'; fg = '#DC2626'; 
+      }
+      return { 
+        duty: it.duty, 
+        date: it.date, 
+        status: st, 
+        badgeBg: bg, 
+        badgeFg: fg, 
+        pts: it.points > 0 ? '+' + it.points : '0' 
+      };
+    });
+
+    return {
+      syncLabel: s.syncLabel,
+      divisions: Object.keys(s.directory),
+      division: s.division,
+      teamCode: s.teamCode,
+      teamLabel: s.teamLabel,
+      coaches,
+      coachDisabled: coaches.length === 0,
+      coachPlaceholder: coaches.length === 0 ? 'Choose division first...' : 'Choose head coach...',
+      showPicker: s.pickerOpen,
+      showTeamChip: !s.pickerOpen && !!s.teamLabel,
+      loading: s.loading,
+      hasStats: !!s.stats && !s.loading,
+      showIdle: !s.stats && !s.loading && !s.teamCode,
+      showReconnect: !s.stats && !s.loading && !!s.teamCode,
+      goal,
+      total,
+      goalSubtitle,
+      totalPct,
+      barColor,
+      pillText,
+      pillBg,
+      pillFg,
+      goalCaption,
+      categories: activeCats.map(c => {
+        // Robust fallback mapping to align with Code.gs V4.5 JSON outputs
+        let v = cats[c.key];
+        if (v === undefined || v === 0) {
+          if (c.key === 'Saturday Field Setup') {
+            v = cats['Saturday Field Setup'] || cats['Friday Night Setup'] || cats['Friday Night Field Setup'] || cats['Field Setup'] || 0;
+          } else if (c.key === 'Friday Night Field Setup') {
+            v = cats['Friday Night Setup'] || cats['Friday Night Field Setup'] || cats['Field Setup'] || 0;
+          } else if (c.key === 'Referee Assignment') {
+            v = cats['Referee (On-Field)'] || cats['Referee Assignment'] || 0;
+          } else if (c.key === 'Early Ref Scheduling Incentive') {
+            v = cats['Early Ref Scheduling Incentive'] || cats['MatchTrak Bonus'] || 0;
+          } else if (c.key === 'Field Marshal Shift') {
+            v = cats['Field Marshal'] || cats['Field Marshal Shift'] || 0;
+          } else if (c.key === 'Picture Day') {
+            v = cats['Picture Picnic Day'] || cats['Picture Day'] || 0;
+          } else if (c.key === 'Certified Team Referees') {
+            v = cats['Certified Team Referees'] || cats['Certified Ref Bonus'] || 0;
+          } else if (c.key === 'Other Adjustments') {
+            v = cats['Administrative Adjustment'] || cats['Other Adjustments'] || cats['Other Adjustment'] || cats['adjustment'] || 0;
+          } else {
+            v = 0;
+          }
+        }
+        return { 
+          label: c.label, 
+          val: v, 
+          cap: c.cap, 
+          pct: Math.min(100, Math.round((v / c.cap) * 100)) + '%', 
+          color: v >= c.cap ? '#059669' : '#002D62' 
+        };
+      }),
+      showLog,
+      audit,
+      hasAudit: audit.length > 0,
+      noAudit: audit.length === 0,
+      auditCount: audit.length === 1 ? '1 record' : audit.length + ' records',
+      guidelinesOpen: s.guidelinesOpen,
+      guidelinesToggle: s.guidelinesOpen ? 'Hide' : 'Show',
+      onToggleGuidelines: () => this.setState(p => ({ guidelinesOpen: !p.guidelinesOpen })),
+      onChangeTeam: () => this.setState({ pickerOpen: true }),
+      onSync: () => {
+        if (this.state.teamCode) {
+          this.fetchStats(this.state.teamCode);
+        } else {
+          this.fetchDirectory();
+        }
+      },
+      onDivisionChange: (e) => this.setState({ division: e.target.value, teamCode: '', stats: null }),
+      onCoachChange: (e) => {
+        const code = e.target.value;
+        const t = (this.state.directory[this.state.division] || []).find(x => x.teamCode === code);
+        const label = t ? this.state.division + ' \u00B7 Coach ' + t.coach : '';
+        this.setState({ teamCode: code, teamLabel: label, pickerOpen: !code });
+        this.saveTeam(this.state.division, code, label);
+        this.fetchStats(code);
+      }
+    };
+  }
+}
+</script>
+</body>
+
+</html>
