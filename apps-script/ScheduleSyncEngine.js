@@ -6,16 +6,10 @@
  * Version: v1.7.3-LOCKED-FIX
  * Last Updated: October 9, 2026, 08:45 AM PDT
  * Author: AYSO 154 Webmaster
- * 
- * CHANGELOG:
- * - [2026-10-09 08:45 AM] BUGFIX: Restored missing mathematical operators 
- *   (-, *) stripped during merge. Fixed SpreadApp typo to SpreadsheetApp.
- * - [2026-10-08 12:30 PM] SECURITY: Added assertNotProtectedTab_ to guarantee
- *   schedule ingestion NEVER accesses Season_Master_Ledger.
  * ============================================================================
  */
 
-const CONFIG = {
+const SCHEDULE_SYNC_CONFIG = {
   VERSION: 'v1.7.3-LOCKED-FIX',
   TIMEZONE: 'America/Los_Angeles',
   PRODUCTION_SHEET_ID: '1NZpCVu0ibHHQ1huBXnjN4SHNB_ahGl998ChVVMypyCk',
@@ -40,14 +34,14 @@ const CONFIG = {
 function assertNotProtectedTab_(sheet) {
   if (!sheet) throw new Error("CRITICAL: Attempted operation on null sheet.");
   const name = sheet.getName().trim();
-  if (CONFIG.PROTECTED_IMMUTABLE_TABS.includes(name)) {
+  if (SCHEDULE_SYNC_CONFIG.PROTECTED_IMMUTABLE_TABS.includes(name)) {
     throw new Error(`SECURITY ALERT: ScheduleSyncEngine attempted to touch protected tab "${name}". Operation hard-aborted to prevent data loss.`);
   }
 }
 
 function normalizeToYMD(rawDate) {
   if (!rawDate) return '';
-  if (rawDate instanceof Date) return Utilities.formatDate(rawDate, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+  if (rawDate instanceof Date) return Utilities.formatDate(rawDate, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd');
   const str = String(rawDate).trim();
   const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
   if (slashMatch) {
@@ -60,7 +54,7 @@ function normalizeToYMD(rawDate) {
   const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
   const parsed = new Date(str);
-  return !isNaN(parsed.getTime()) ? Utilities.formatDate(parsed, CONFIG.TIMEZONE, 'yyyy-MM-dd') : '';
+  return !isNaN(parsed.getTime()) ? Utilities.formatDate(parsed, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd') : '';
 }
 
 function resolveUpcomingWeekendDates() {
@@ -78,8 +72,8 @@ function resolveUpcomingWeekendDates() {
       return {
         dates: [
           startYMD,
-          Utilities.formatDate(new Date(start.getTime() + 86400000), CONFIG.TIMEZONE, 'yyyy-MM-dd'),
-          Utilities.formatDate(new Date(start.getTime() + 172800000), CONFIG.TIMEZONE, 'yyyy-MM-dd')
+          Utilities.formatDate(new Date(start.getTime() + 86400000), SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd'),
+          Utilities.formatDate(new Date(start.getTime() + 172800000), SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd')
         ],
         isOverride: true, startYMD: startYMD
       };
@@ -87,7 +81,7 @@ function resolveUpcomingWeekendDates() {
   }
 
   const now = new Date();
-  const dayStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'u');
+  const dayStr = Utilities.formatDate(now, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'u');
   const dayOfWeek = parseInt(dayStr, 10);
 
   let daysToFri = 0;
@@ -96,7 +90,7 @@ function resolveUpcomingWeekendDates() {
   else if (dayOfWeek === 6) daysToFri = -1;
   else if (dayOfWeek === 7) daysToFri = -2;
 
-  const nowYMD = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd').split('-');
+  const nowYMD = Utilities.formatDate(now, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd').split('-');
   const baseMidnight = new Date(nowYMD[0], nowYMD[1] - 1, nowYMD[2]);
   const fri = new Date(baseMidnight.getTime() + (daysToFri * 86400000));
   const sat = new Date(fri.getTime() + 86400000);
@@ -104,12 +98,12 @@ function resolveUpcomingWeekendDates() {
 
   return {
     dates: [
-      Utilities.formatDate(fri, CONFIG.TIMEZONE, 'yyyy-MM-dd'),
-      Utilities.formatDate(sat, CONFIG.TIMEZONE, 'yyyy-MM-dd'),
-      Utilities.formatDate(sun, CONFIG.TIMEZONE, 'yyyy-MM-dd')
+      Utilities.formatDate(fri, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd'),
+      Utilities.formatDate(sat, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd'),
+      Utilities.formatDate(sun, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd')
     ],
     isOverride: false,
-    startYMD: Utilities.formatDate(fri, CONFIG.TIMEZONE, 'yyyy-MM-dd')
+    startYMD: Utilities.formatDate(fri, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd')
   };
 }
 
@@ -135,9 +129,9 @@ function filterScheduleForTargetWeekend(parsedData, targetDates) {
 function formatDay(rawDate) {
   if (!rawDate) return '';
   if (typeof Utilities !== 'undefined') {
-    if (rawDate instanceof Date) return Utilities.formatDate(rawDate, CONFIG.TIMEZONE, 'EEE');
+    if (rawDate instanceof Date) return Utilities.formatDate(rawDate, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'EEE');
     const parsed = new Date(String(rawDate));
-    if (!isNaN(parsed.getTime())) return Utilities.formatDate(parsed, CONFIG.TIMEZONE, 'EEE');
+    if (!isNaN(parsed.getTime())) return Utilities.formatDate(parsed, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'EEE');
   }
   const str = String(rawDate).trim();
   if (/^sat/i.test(str)) return 'Sat';
@@ -148,7 +142,7 @@ function formatDay(rawDate) {
 
 function formatTime(rawTime) {
   if (!rawTime) return '';
-  if (typeof Utilities !== 'undefined' && rawTime instanceof Date) return Utilities.formatDate(rawTime, CONFIG.TIMEZONE, 'h:mm a');
+  if (typeof Utilities !== 'undefined' && rawTime instanceof Date) return Utilities.formatDate(rawTime, SCHEDULE_SYNC_CONFIG.TIMEZONE, 'h:mm a');
   let timeStr = String(rawTime || '').trim();
   const milMatch = timeStr.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
   if (milMatch) {
@@ -216,9 +210,9 @@ function getVenueCategory(rawField) {
 function buildScheduleDropdownOptionsByVenue(scheduleData) {
   if (!scheduleData || scheduleData.length <= 1) {
     return {
-      parkLexMatches: [CONFIG.OTHER_UNLISTED_OPTION],
-      lutherMatches: [CONFIG.LUTHER_ZERO_GAMES_OPTION, CONFIG.OTHER_UNLISTED_OPTION],
-      ljhsArnoldMatches: [CONFIG.OTHER_UNLISTED_OPTION]
+      parkLexMatches: [SCHEDULE_SYNC_CONFIG.OTHER_UNLISTED_OPTION],
+      lutherMatches: [SCHEDULE_SYNC_CONFIG.LUTHER_ZERO_GAMES_OPTION, SCHEDULE_SYNC_CONFIG.OTHER_UNLISTED_OPTION],
+      ljhsArnoldMatches: [SCHEDULE_SYNC_CONFIG.OTHER_UNLISTED_OPTION]
     };
   }
 
@@ -260,10 +254,10 @@ function buildScheduleDropdownOptionsByVenue(scheduleData) {
   const lutherMatches = [...new Set(rawLuther)];
   const ljhsArnoldMatches = [...new Set(rawLjhs)];
 
-  if (lutherMatches.length === 0) lutherMatches.push(CONFIG.LUTHER_ZERO_GAMES_OPTION);
-  parkLexMatches.push(CONFIG.OTHER_UNLISTED_OPTION);
-  lutherMatches.push(CONFIG.OTHER_UNLISTED_OPTION);
-  ljhsArnoldMatches.push(CONFIG.OTHER_UNLISTED_OPTION);
+  if (lutherMatches.length === 0) lutherMatches.push(SCHEDULE_SYNC_CONFIG.LUTHER_ZERO_GAMES_OPTION);
+  parkLexMatches.push(SCHEDULE_SYNC_CONFIG.OTHER_UNLISTED_OPTION);
+  lutherMatches.push(SCHEDULE_SYNC_CONFIG.OTHER_UNLISTED_OPTION);
+  ljhsArnoldMatches.push(SCHEDULE_SYNC_CONFIG.OTHER_UNLISTED_OPTION);
 
   return { parkLexMatches, lutherMatches, ljhsArnoldMatches };
 }
@@ -281,13 +275,13 @@ function extractDataFromFile(file) {
 }
 
 function syncContainerFormSchedule(optionalScheduleData) {
-  const form = FormApp.openById(CONFIG.PRODUCTION_FORM_ID);
+  const form = FormApp.openById(SCHEDULE_SYNC_CONFIG.PRODUCTION_FORM_ID);
   let data = optionalScheduleData;
 
   if (!data) {
-    const ss = SpreadsheetApp.openById(CONFIG.PRODUCTION_SHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SCHEDULE_TAB_NAME);
-    if (!sheet) throw new Error(`Could not find '${CONFIG.SCHEDULE_TAB_NAME}' tab.`);
+    const ss = SpreadsheetApp.openById(SCHEDULE_SYNC_CONFIG.PRODUCTION_SHEET_ID);
+    const sheet = ss.getSheetByName(SCHEDULE_SYNC_CONFIG.SCHEDULE_TAB_NAME);
+    if (!sheet) throw new Error(`Could not find '${SCHEDULE_SYNC_CONFIG.SCHEDULE_TAB_NAME}' tab.`);
     assertNotProtectedTab_(sheet);
     data = sheet.getDataRange().getDisplayValues();
   }
@@ -323,8 +317,8 @@ function syncContainerFormSchedule(optionalScheduleData) {
   applyChoices(parkLexItem, parkLexMatches);
   applyChoices(lutherItem, lutherMatches);
 
-  form.setDescription(CONFIG.FORM_DESCRIPTION);
-  form.setConfirmationMessage(CONFIG.CONFIRMATION_MESSAGE);
+  form.setDescription(SCHEDULE_SYNC_CONFIG.FORM_DESCRIPTION);
+  form.setConfirmationMessage(SCHEDULE_SYNC_CONFIG.CONFIRMATION_MESSAGE);
   form.setAcceptingResponses(true);
   Logger.log(`✅ Dropdowns updated in-place`);
 }
@@ -333,8 +327,8 @@ function autoIngestWeeklySchedule() {
   const weekendWindow = resolveUpcomingWeekendDates();
   Logger.log(`Target Weekend Window: ${weekendWindow.dates.join(', ')}`);
 
-  const dropFolder = DriveApp.getFolderById(CONFIG.DROP_FOLDER_ID);
-  const archiveFolder = DriveApp.getFolderById(CONFIG.ARCHIVE_FOLDER_ID);
+  const dropFolder = DriveApp.getFolderById(SCHEDULE_SYNC_CONFIG.DROP_FOLDER_ID);
+  const archiveFolder = DriveApp.getFolderById(SCHEDULE_SYNC_CONFIG.ARCHIVE_FOLDER_ID);
   const fileIter = dropFolder.getFiles();
   const fileList = [];
   while (fileIter.hasNext()) fileList.push(fileIter.next());
@@ -351,8 +345,8 @@ function autoIngestWeeklySchedule() {
   const filteredData = filterScheduleForTargetWeekend(parsedRaw, weekendWindow.dates);
   const totalMatches = filteredData.length - 1;
 
-  if (totalMatches < CONFIG.MIN_GAMES_THRESHOLD) {
-    const msg = `ABORTED: Found only ${totalMatches} games. Minimum threshold is ${CONFIG.MIN_GAMES_THRESHOLD}.`;
+  if (totalMatches < SCHEDULE_SYNC_CONFIG.MIN_GAMES_THRESHOLD) {
+    const msg = `ABORTED: Found only ${totalMatches} games. Minimum threshold is ${SCHEDULE_SYNC_CONFIG.MIN_GAMES_THRESHOLD}.`;
     Logger.log(msg);
     return;
   }
@@ -366,18 +360,18 @@ function autoIngestWeeklySchedule() {
                    `• 🌲 Park Lexington: ${parkLexMatches.length - 1}\n` +
                    `• 🏫 Luther Elementary: ${lutherMatches.length - 1}\n` +
                    `• 🏫 LJHS / Arnold: ${ljhsArnoldMatches.length - 1}\n\n` +
-                   `⚠️ Overwrite "${CONFIG.SCHEDULE_TAB_NAME}" and update live Form dropdowns?`;
+                   `⚠️ Overwrite "${SCHEDULE_SYNC_CONFIG.SCHEDULE_TAB_NAME}" and update live Form dropdowns?`;
     const res = ui.alert('Confirm Live Game Day Sync', prompt, ui.ButtonSet.YES_NO);
     if (res !== ui.Button.YES) return;
   } catch (headless) {}
 
-  const ss = SpreadsheetApp.openById(CONFIG.PRODUCTION_SHEET_ID);
-  let scheduleSheet = ss.getSheetByName(CONFIG.SCHEDULE_TAB_NAME);
-  if (!scheduleSheet) scheduleSheet = ss.insertSheet(CONFIG.SCHEDULE_TAB_NAME);
+  const ss = SpreadsheetApp.openById(SCHEDULE_SYNC_CONFIG.PRODUCTION_SHEET_ID);
+  let scheduleSheet = ss.getSheetByName(SCHEDULE_SYNC_CONFIG.SCHEDULE_TAB_NAME);
+  if (!scheduleSheet) scheduleSheet = ss.insertSheet(SCHEDULE_SYNC_CONFIG.SCHEDULE_TAB_NAME);
 
   assertNotProtectedTab_(scheduleSheet);
 
-  const tag = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyyMMdd_HHmmss');
+  const tag = Utilities.formatDate(new Date(), SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyyMMdd_HHmmss');
   if (scheduleSheet.getLastRow() > 1) {
     try {
       const bkp = scheduleSheet.copyTo(ss);
@@ -395,7 +389,7 @@ function autoIngestWeeklySchedule() {
     logSheet.appendRow(['Timestamp', 'Source File', 'Weekend Start', 'Total Rows', 'Park Lex', 'Luther', 'LJHS/Arnold', 'Status']);
   }
   logSheet.appendRow([
-    Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss'),
+    Utilities.formatDate(new Date(), SCHEDULE_SYNC_CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss'),
     latestFile.getName(), weekendWindow.dates[0], totalMatches,
     parkLexMatches.length - 1, lutherMatches.length - 1, ljhsArnoldMatches.length - 1, 'SUCCESS'
   ]);
