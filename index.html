@@ -4,11 +4,15 @@
   AYSO REGION 154 - VOLUNTEER STANDINGS DASHBOARD
   ============================================================================
   File: index.html
-  Version: build_20261020_v4
+  Version: build_20261020_v5
   Last Updated: October 20, 2026
   Author: AYSO 154 Webmaster
   
   CHANGELOG:
+  - [2026-10-20] UI POLISH (build_20261020_v5): Milestone cards (playoff spot secured /
+    within 5 points), Check-In Log grouped by date with two-line condensed rows,
+    emoji-free detail text, status shown as a left border (short badges for exceptions
+    only), and a max-width 480px breakpoint for small phones.
   - [2026-10-20] API RECONNECT: Linked to Web App Deployment V2 / 4.5.0
     (AKfycbz3o3rRzPb0MRfse8uJ6QrbqbH7JA-XgT8lX4kp5Fc3DdIekIlKbAQGN5-geZGBMFJ08w)
     to reflect live self-healing spreadsheet formulas and Team_Awards integration.
@@ -28,7 +32,7 @@
       // Bump together with the ?v= query on the support.js <script> tag below —
       // that query string is what actually forces mobile browsers/CDNs to fetch
       // a new copy of the runtime instead of reusing a disk-cached one.
-      var APP_BUILD_ID = 'build_20261020_v4';
+      var APP_BUILD_ID = 'build_20261020_v5';
       var RELOAD_GUARD = 'ayso_reload_guard';
 
       try {
@@ -93,7 +97,7 @@
       display: none;
     }
   </style>
-  <script src="./support.js?v=build_20261020_v4"></script>
+  <script src="./support.js?v=build_20261020_v5"></script>
 </head>
 
 <body>
@@ -140,6 +144,179 @@
         @keyframes spin {
           to {
             transform: rotate(360deg);
+          }
+        }
+
+        /* ---------- Milestone cards ---------- */
+        .milestone {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 14px 16px;
+          margin-bottom: 12px;
+          border: 1px solid;
+          border-radius: 12px;
+        }
+
+        .milestone-icon {
+          flex-shrink: 0;
+          font-size: 26px;
+          line-height: 1;
+        }
+
+        .milestone-title {
+          font-size: 15px;
+          font-weight: 800;
+          margin-bottom: 3px;
+        }
+
+        .milestone-text {
+          font-size: 13px;
+          line-height: 1.45;
+          text-wrap: pretty;
+        }
+
+        .milestone-met {
+          background: #ECFDF5;
+          border-color: #6EE7B7;
+          color: #065F46;
+          box-shadow: 0 2px 10px rgba(5, 150, 105, 0.12);
+        }
+
+        .milestone-close {
+          background: #FFFBEB;
+          border-color: #FCD34D;
+          color: #92400E;
+        }
+
+        /* ---------- Check-in log ---------- */
+        .log-day {
+          padding: 7px 16px;
+          background: #F9FAFB;
+          border-bottom: 1px solid #F3F4F6;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.4px;
+          text-transform: uppercase;
+          color: #4B5563;
+        }
+
+        .log-row {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          padding: 10px 16px 10px 13px;
+          border-bottom: 1px solid #F3F4F6;
+          border-left: 3px solid transparent;
+        }
+
+        .log-row.is-ok {
+          border-left-color: #10B981;
+        }
+
+        .log-row.is-pending {
+          border-left-color: #F59E0B;
+        }
+
+        .log-row.is-exception {
+          border-left-color: #EF4444;
+          background: #FFFBFB;
+        }
+
+        .log-line1 {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .log-role {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          min-width: 0;
+          font-size: 13px;
+          font-weight: 600;
+          color: #111827;
+        }
+
+        .log-role-text {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .log-badge {
+          flex-shrink: 0;
+          padding: 2px 6px;
+          border-radius: 4px;
+          background: #FDE8E8;
+          color: #B91C1C;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+          text-transform: uppercase;
+        }
+
+        .log-pts {
+          flex-shrink: 0;
+          min-width: 28px;
+          text-align: right;
+          font-size: 14px;
+          font-weight: 800;
+          font-variant-numeric: tabular-nums;
+          color: #002D62;
+        }
+
+        .log-pts.is-zero {
+          color: #9CA3AF;
+        }
+
+        .log-detail {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 12px;
+          color: #6B7280;
+        }
+
+        @media (max-width: 480px) {
+          .milestone {
+            gap: 10px;
+            padding: 12px 14px;
+          }
+
+          .milestone-icon {
+            font-size: 22px;
+          }
+
+          .milestone-title {
+            font-size: 14px;
+          }
+
+          .milestone-text {
+            font-size: 12px;
+          }
+
+          .log-day {
+            padding: 6px 12px;
+            font-size: 10px;
+          }
+
+          .log-row {
+            padding: 8px 12px 8px 9px;
+          }
+
+          .log-role {
+            font-size: 12.5px;
+          }
+
+          .log-pts {
+            font-size: 13px;
+          }
+
+          .log-detail {
+            font-size: 11px;
           }
         }
       </style>
@@ -290,6 +467,26 @@
             <p style="font-size: 12px; color: #6B7280; margin-top: 8px; text-wrap: pretty;">{{ goalCaption }}</p>
           </div>
 
+          <sc-if value="{{ milestoneMet }}">
+            <div class="milestone milestone-met" role="status">
+              <span class="milestone-icon" aria-hidden="true">🏆</span>
+              <div>
+                <div class="milestone-title">{{ milestoneTitle }}</div>
+                <p class="milestone-text">{{ milestoneText }}</p>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ milestoneClose }}">
+            <div class="milestone milestone-close" role="status">
+              <span class="milestone-icon" aria-hidden="true">⚠️</span>
+              <div>
+                <div class="milestone-title">Almost there!</div>
+                <p class="milestone-text">{{ milestoneText }}</p>
+              </div>
+            </div>
+          </sc-if>
+
           <div
             style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px;">
             <div
@@ -324,23 +521,25 @@
                 <span style="font-size: 11px; font-weight: 500; color: #6B7280;">{{ auditCount }}</span>
               </div>
               <sc-if value="{{ hasAudit }}">
-                <div style="display: flex; flex-direction: column;">
-                  <sc-for list="{{ audit }}" as="row">
-                    <div
-                      style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; border-bottom: 1px solid #F3F4F6;">
-                      <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
-                        <span style="font-size: 13px; font-weight: 600; color: #111827;">{{ row.duty }}</span>
-                        <span style="font-size: 11px; color: #6B7280;">{{ row.date }}</span>
-                      </span>
-                      <span style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                        <span
-                          style="font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 5px; background: {{ row.badgeBg }}; color: {{ row.badgeFg }};">{{
-                          row.status }}</span>
-                        <span
-                          style="font-size: 14px; font-weight: 800; color: #002D62; min-width: 28px; text-align: right;">{{
-                          row.pts }}</span>
-                      </span>
-                    </div>
+                <div>
+                  <sc-for list="{{ logGroups }}" as="group">
+                    <div class="log-day">{{ group.label }}</div>
+                    <sc-for list="{{ group.rows }}" as="row">
+                      <div class="log-row {{ row.cls }}" title="{{ row.status }}">
+                        <div class="log-line1">
+                          <span class="log-role">
+                            <span class="log-role-text">{{ row.role }}</span>
+                            <sc-if value="{{ row.badge }}">
+                              <span class="log-badge">{{ row.badge }}</span>
+                            </sc-if>
+                          </span>
+                          <span class="log-pts {{ row.ptsCls }}">{{ row.pts }}</span>
+                        </div>
+                        <sc-if value="{{ row.detail }}">
+                          <div class="log-detail">{{ row.detail }}</div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
                   </sc-for>
                 </div>
               </sc-if>
@@ -415,6 +614,105 @@
     data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:17,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
 const API_URL = 'https://script.google.com/macros/s/AKfycbzKCMar8YRfgDvGVHZEkljMtOqxL0OtIYXf1aZUG3xMZZS8mRBwFNFuvDW8JKGUAd1bsA/exec';
 const CACHE_DIR = 'ayso154_cached_directory';
+
+// ---------- Check-In Log formatting ----------
+// Short badges are reserved for exception statuses; normal entries use a colored left border.
+const LOG_EXCEPTION_BADGES = [
+  [/duplicate/i, 'Dup'],
+  [/cap/i, 'Cap'],
+  [/nocra/i, 'NOCRA'],
+  [/unrecognized/i, 'Team?'],
+  [/reject|denied/i, 'Rejected'],
+  [/conflict/i, 'Conflict']
+];
+const LOG_EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{20E3}]/gu;
+const WEEKDAY_ONLY_RE = /^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?$/i;
+const TIME_RE = /\b\d{1,2}:\d{2}\s*(am|pm)?\b/i;
+
+// Strips emoji and normalizes separators: "🗓️ Sat • ⏰ 8:00 AM • 📍 LJHS F1" -> "Sat · 8:00 AM · LJHS F1"
+function cleanLogText(str) {
+  return String(str || '')
+    .replace(LOG_EMOJI_RE, '')
+    .replace(/\s*[•|]\s*/g, ' · ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s·]+|[\s·]+$/g, '')
+    .trim();
+}
+
+function formatLogTime(dateStr) {
+  const m = String(dateStr || '').match(/\s(\d{1,2}):(\d{2})/);
+  if (!m) return '';
+  const h = Number(m[1]);
+  return (h % 12 || 12) + ':' + m[2] + (h < 12 ? ' AM' : ' PM');
+}
+
+function logDayKey(dateStr) {
+  const m = String(dateStr || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return {
+    key: m[0],
+    label: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  };
+}
+
+function toLogRow(it) {
+  const status = String(it.status || '');
+  const role = cleanLogText(it.role) || 'Volunteer Shift';
+  const isAward = it.source === 'Team_Awards';
+
+  // QR entries arrive as duty = "<role> (<detail>)"; award entries carry their detail in reason.
+  let raw = '';
+  const duty = String(it.duty || '');
+  if (!isAward && duty.indexOf(it.role + ' (') === 0 && duty.slice(-1) === ')') {
+    raw = duty.slice(String(it.role).length + 2, -1);
+  } else {
+    raw = isAward ? (it.reason || it.note || '') : (it.reason || '');
+  }
+  let parts = cleanLogText(raw).split(' · ').map(p => p.trim()).filter(Boolean);
+  // The date header already names the day
+  parts = parts.filter(p => !WEEKDAY_ONLY_RE.test(p));
+  if (!isAward && !parts.some(p => TIME_RE.test(p))) {
+    const t = formatLogTime(it.date);
+    if (t) parts.unshift(t);
+  }
+
+  const match = LOG_EXCEPTION_BADGES.find(([re]) => re.test(status));
+  const badge = match ? match[1] : '';
+  const pts = Number(it.points) || 0;
+
+  return {
+    role,
+    detail: parts.join(' · '),
+    status,
+    badge,
+    cls: badge ? 'is-exception' : (/pending/i.test(status) ? 'is-pending' : 'is-ok'),
+    pts: pts > 0 ? '+' + pts : String(pts),
+    ptsCls: pts === 0 ? 'is-zero' : ''
+  };
+}
+
+// Groups entries under one date header each (in the order received: newest QR check-ins first),
+// with Board / Team_Awards credits collected into a final "Board credits" group.
+function buildLogGroups(items) {
+  const groups = [];
+  const byKey = {};
+  const awards = [];
+  items.forEach(it => {
+    if (it.source === 'Team_Awards') {
+      awards.push(toLogRow(it));
+      return;
+    }
+    const day = logDayKey(it.date) || { key: 'other', label: 'Other check-ins' };
+    if (!byKey[day.key]) {
+      byKey[day.key] = { label: day.label, rows: [] };
+      groups.push(byKey[day.key]);
+    }
+    byKey[day.key].rows.push(toLogRow(it));
+  });
+  if (awards.length) groups.push({ label: 'Board credits', rows: awards });
+  return groups;
+}
 const CACHE_TIME = 'ayso154_cached_timestamp';
 const LAST_TEAM = 'ayso154_last_team';
 
@@ -711,24 +1009,24 @@ class Component extends DCLogic {
       ];
     }
 
-    const audit = ((s.stats && s.stats.audit) || []).map(it => {
-      const st = String(it.status || '');
-      let bg = '#DEF7EC', fg = '#059669';
-      if (st.indexOf('Pending') !== -1) { 
-        bg = '#FEF3C7'; fg = '#B45309'; 
-      }
-      if (st.indexOf('Rejected') !== -1 || st.indexOf('Cap') !== -1 || st.indexOf('Conflict') !== -1 || st.indexOf('Duplicate') !== -1) { 
-        bg = '#FDE8E8'; fg = '#DC2626'; 
-      }
-      return { 
-        duty: it.duty, 
-        date: it.date, 
-        status: st, 
-        badgeBg: bg, 
-        badgeFg: fg, 
-        pts: it.points > 0 ? '+' + it.points : '0' 
-      };
-    });
+    const audit = (s.stats && s.stats.audit) || [];
+    const logGroups = buildLogGroups(audit);
+
+    // Milestone cards. Competitive divisions (17-pt goal): met at 17+, "close" at 12-16
+    // (within 5 points). Playground / 05U-06U only get the celebration card at their own goal.
+    const isCompetitive = !isPlayground && !isU5U6;
+    const milestoneMet = !!s.stats && met;
+    const milestoneClose = !!s.stats && isCompetitive && !met && total >= goal - 5;
+    let milestoneTitle = '';
+    let milestoneText = '';
+    if (milestoneMet) {
+      milestoneTitle = isCompetitive ? 'Playoff spot secured!' : 'Season goal achieved!';
+      milestoneText = isCompetitive
+        ? 'Congratulations! With ' + total + ' verified points, this team has locked in its playoff eligibility slot. Thank you to every volunteer who made it happen!'
+        : 'Congratulations! This team reached its ' + goal + '-point volunteer goal for the season. Thank you to every volunteer who made it happen!';
+    } else if (milestoneClose) {
+      milestoneText = 'You are so close to your playoff spot! Reach out to your Division Director to find remaining volunteer opportunities to earn your ' + goal + ' points!';
+    }
 
     return {
       syncLabel: s.syncLabel,
@@ -786,8 +1084,13 @@ class Component extends DCLogic {
           color: v >= c.cap ? '#059669' : '#002D62' 
         };
       }),
+      milestoneMet,
+      milestoneClose,
+      milestoneTitle,
+      milestoneText,
       showLog,
       audit,
+      logGroups,
       hasAudit: audit.length > 0,
       noAudit: audit.length === 0,
       auditCount: audit.length === 1 ? '1 record' : audit.length + ' records',

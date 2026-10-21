@@ -98,6 +98,40 @@
 
     .inspect-btn { color: #0284C7; font-weight: 700; text-decoration: none; font-size: 0.82rem; }
     .inspect-btn:hover { text-decoration: underline; }
+
+    /* Tables scroll sideways instead of overflowing the page on narrow screens */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-scroll table { min-width: 720px; }
+
+    /* Phones: header/filters stack, each team row becomes a stacked card */
+    @media (max-width: 640px) {
+      header { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 16px; }
+      .brand img { height: 34px; }
+      .brand-title { font-size: 1rem; }
+      .status-banner { flex-direction: column; gap: 2px; padding: 6px 16px; }
+      main { padding: 0 12px; margin-top: 14px; }
+
+      .controls-card { padding: 12px; }
+      .filter-group { min-width: 0; width: 100%; flex-wrap: wrap; }
+      .search-input, .select-dropdown { width: 100%; }
+      .status-filters { flex-wrap: wrap; }
+
+      .division-header { flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 14px; }
+
+      .table-scroll { overflow-x: visible; }
+      .table-scroll table { min-width: 0; }
+      .table-scroll thead { display: none; }
+      .table-scroll tr { display: block; padding: 10px 14px; border-bottom: 1px solid var(--border-color); }
+      .table-scroll tr:last-child { border-bottom: none; }
+      .table-scroll tr:hover td { background: transparent; }
+      .table-scroll td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border-bottom: none; text-align: right; }
+      .table-scroll td::before { content: attr(data-label); flex-shrink: 0; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-muted); text-align: left; }
+      .table-scroll td.cell-team { display: block; padding-bottom: 8px; text-align: left; }
+      .table-scroll td.cell-team::before { content: none; }
+      .table-scroll td .progress-bar { margin: 0 0 0 auto; }
+      .pts-val { white-space: nowrap; min-width: 52px; }
+      .progress-bar { width: 72px; }
+    }
   </style>
 </head>
 <body>
@@ -299,6 +333,7 @@
               <div class="division-title">${divName}</div>
               <div class="division-badge">${pct}% Cypress Cup Qualified (${qualCount}/${total})</div>
             </div>
+            <div class="table-scroll">
             <table>
               <thead>
                 <tr>
@@ -315,40 +350,40 @@
 
         divTeams.forEach(t => {
           const statusBadge = t.status === 'Qualified' ? 'badge-qualified' : (t.status === 'At-Risk' ? 'badge-risk' : 'badge-progress');
-          const targetPts = t.isCompetitive ? 17 : 8;
+          const targetPts = t.playoffGoal || (t.isCompetitive ? 17 : 8);
           const targetRef = t.isCompetitive ? 7 : 0;
           const inspectUrl = `index.html?team=${encodeURIComponent(t.teamCode)}`;
 
           html += `
             <tr>
-              <td>
+              <td class="cell-team">
                 <div class="team-title">${t.teamCode}</div>
                 <div class="coach-name">Head Coach: ${t.headCoach}</div>
               </td>
-              <td>
+              <td data-label="Verified Points">
                 <div class="progress-bar"><div class="progress-fill" style="width: ${Math.min(100, (t.verifiedPoints / targetPts) * 100)}%;"></div></div>
-                <strong>${t.verifiedPoints}</strong> / ${targetPts}
+                <span class="pts-val"><strong>${t.verifiedPoints}</strong> / ${targetPts}</span>
               </td>
-              <td>
+              <td data-label="Referee Points">
                 ${t.isCompetitive ? `
                   <div class="progress-bar"><div class="progress-fill green" style="width: ${Math.min(100, (t.refPoints / targetRef) * 100)}%;"></div></div>
-                  <strong>${t.refPoints}</strong> /${targetRef}
+                  <span class="pts-val"><strong>${t.refPoints}</strong> / ${targetRef}</span>
                 ` : '<span style="color: var(--text-muted);">Non-Competitive</span>'}
               </td>
-              <td>
+              <td data-label="Field Marshal">
                 ${t.isCompetitive ? `
                   <span style="color: ${t.fmPoints >= 2 ? 'var(--green)' : '#D97706'}; font-weight: 700;">
                     ${t.fmPoints >= 2 ? '● 2/2 Complete' : `○ ${t.fmPoints}/2 Incomplete`}
                   </span>
                 ` : 'N/A'}
               </td>
-              <td><span class="badge-status ${statusBadge}">${t.status}</span></td>
-              <td><a href="${inspectUrl}" target="_blank" class="inspect-btn">Inspect ↗</a></td>
+              <td data-label="Status"><span class="badge-status ${statusBadge}">${t.status}</span></td>
+              <td data-label="Board Action"><a href="${inspectUrl}" target="_blank" class="inspect-btn">Inspect ↗</a></td>
             </tr>
           `;
         });
 
-        html += `</tbody></table></div>`;
+        html += `</tbody></table></div></div>`;
       }
 
       container.innerHTML = html;

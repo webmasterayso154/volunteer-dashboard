@@ -236,7 +236,8 @@ function buildFullDashboardPayload_(requestedTeam) {
         adjustment: Number(r[4]) || 0,
         reason: String(r[5] || '').trim(),
         grantedBy: String(r[6] || 'Board Admin').trim(),
-        lastUpdated: r[7] ? formatDateSafe_(r[7]) : 'Season Award'
+        lastUpdated: r[7] ? formatDateSafe_(r[7]) : 'Season Award',
+        firstGameSetupBonus: Number(r[8]) || 0 // Col I: First Game Setup Bonus (Board enters 5)
       };
     }
   }
@@ -338,10 +339,18 @@ function buildFullDashboardPayload_(requestedTeam) {
       adjustment: otherAdjPts,
       reason: 'Board Verified Credit',
       grantedBy: 'Board Admin',
-      lastUpdated: 'Season Award'
+      lastUpdated: 'Season Award',
+      firstGameSetupBonus: 0
     };
 
-    const awardLogEntries = getTeamAwardsLogEntries_(awardObj, picPts, certRefPts, matchTrakPts, otherAdjPts);
+    // Ledger Col J = Team_Awards Col E + First Game Setup Bonus top-up (5 - setup points).
+    // Split it back out so the Check-In Log shows the bonus as its own line and still sums to the total.
+    const setupBonusTopUp = awardObj.firstGameSetupBonus >= 5
+      ? Math.max(0, Math.min(5, otherAdjPts - (Number(awardObj.adjustment) || 0)))
+      : 0;
+    const manualAdjPts = otherAdjPts - setupBonusTopUp;
+
+    const awardLogEntries = getTeamAwardsLogEntries_(awardObj, picPts, certRefPts, matchTrakPts, manualAdjPts, setupBonusTopUp);
     const qrLogEntries = checkinsByTeam[cKey] || [];
 
     // Combine QR check-ins (newest first) + Team_Awards entries at the bottom of the log
@@ -371,7 +380,8 @@ function buildFullDashboardPayload_(requestedTeam) {
       'Certified Ref Bonus': certRefPts,
       'Administrative Adjustment': otherAdjPts,
       'Other Adjustments': otherAdjPts,
-      'Admin Bonus / Adjustments (Cert Refs + Adj)': certRefPts + otherAdjPts
+      'Admin Bonus / Adjustments (Cert Refs + Adj)': certRefPts + otherAdjPts,
+      'First Game Setup Bonus': setupBonusTopUp
     };
 
     const teamObj = {
@@ -515,7 +525,7 @@ function getBoardLedgerData() {
  * Generates Check-In Log entries for a team's verified awards in Team_Awards
  * so the Bottom Section Check-In Log sums to the exact Top Section total.
  */
-function getTeamAwardsLogEntries_(awardObj, picPts, certRefPts, matchTrakPts, otherAdjPts) {
+function getTeamAwardsLogEntries_(awardObj, picPts, certRefPts, matchTrakPts, otherAdjPts, setupBonusTopUp) {
   const logs = [];
   const teamCode = awardObj.teamCode || '';
   const grantedBy = awardObj.grantedBy || 'Board Admin';
@@ -565,6 +575,22 @@ function getTeamAwardsLogEntries_(awardObj, picPts, certRefPts, matchTrakPts, ot
       status: 'Recorded',
       reason: `Picture Day tent check-in credit (+${picPts} pt${picPts > 1 ? 's' : ''})`,
       note: `Picture Day tent check-in credit (+${picPts} pt${picPts > 1 ? 's' : ''})`,
+      team: teamCode,
+      source: 'Team_Awards'
+    });
+  }
+
+  if (setupBonusTopUp > 0) {
+    logs.push({
+      timestamp: lastUpdated,
+      date: lastUpdated,
+      volunteer: grantedBy,
+      role: 'First Game Setup Bonus',
+      duty: 'First Game Setup Bonus (Board end-of-season review)',
+      points: setupBonusTopUp,
+      status: 'Recorded',
+      reason: `Field Setup credit brought to 5 pts for first-game-of-weekend setup (+${setupBonusTopUp} pt${setupBonusTopUp > 1 ? 's' : ''})`,
+      note: `Field Setup credit brought to 5 pts for first-game-of-weekend setup (+${setupBonusTopUp} pt${setupBonusTopUp > 1 ? 's' : ''})`,
       team: teamCode,
       source: 'Team_Awards'
     });
