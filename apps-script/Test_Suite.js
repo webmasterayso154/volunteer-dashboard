@@ -43,7 +43,7 @@ function runAllDiagnostics() {
 function testSheetStructure() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = ss.getSheets().map(s => s.getName());
-  const hasGameDay = sheets.includes('Game Day Check-ins') || sheets.includes('Form Responses 1');
+  const hasGameDay = sheets.includes('Game Day Check-ins') || sheets.includes('Form Responses 3') || sheets.includes('Form Responses 1');
   if (!hasGameDay) throw new Error("Missing sheet: Game Day Check-ins (or Form Responses 1)");
   const required = ['Team_Awards', 'Admin_Config'];
   const missing = required.filter(r => !sheets.includes(r));
@@ -70,7 +70,7 @@ function testDirectoryContract() {
 
 function testCalculationAndCaps() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const respSheet = ss.getSheetByName('Game Day Check-ins') || ss.getSheetByName('Form Responses 1');
+  const respSheet = getGameDayCheckinsSheet(ss);
   const now = new Date();
 
   // Baseline delta check: accommodate pre-existing rows in staging
@@ -120,18 +120,4 @@ function testSettingsPostAndGet() {
 
   setAdminConfigSetting('RefMaxCap', originalSettings.RefMaxCap);
   Logger.log("   Settings persistence validated.");
-}
-
-function setAdminConfigSetting(key, val) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Admin_Config');
-  if (!sheet) throw new Error("Admin_Config sheet missing");
-  const data = sheet.getRange("D3:E20").getValues();
-  for (let i = 0; i < data.length; i++) {
-    if (String(data[i][0]).trim() === key) {
-      sheet.getRange(3 + i, 5).setValue(val);
-      SpreadsheetApp.flush();
-      return;
-    }
-  }
 }

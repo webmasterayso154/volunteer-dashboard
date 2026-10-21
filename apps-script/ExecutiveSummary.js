@@ -88,9 +88,10 @@ function setupExecutiveSummarySheet(targetSpreadsheet) {
     .setFontColor(brandSubheaderTxt)
     .setFontWeight("bold");
 
-  const targetCheckInTab = (ss && typeof ss.getSheetByName === 'function' && ss.getSheetByName('Form Responses 1') && !ss.getSheetByName('Game Day Check-ins'))
-    ? 'Form Responses 1'
-    : 'Game Day Check-ins';
+  const liveCheckInSheet = (ss && typeof ss.getSheetByName === 'function' && typeof getGameDayCheckinsSheet === 'function')
+    ? getGameDayCheckinsSheet(ss)
+    : null;
+  const targetCheckInTab = liveCheckInSheet ? liveCheckInSheet.getName() : 'Game Day Check-ins';
 
   const kpiData = [
     ["Total Volunteer Check-In Submissions", `=MAX(0, COUNTA('${targetCheckInTab}'!A2:A))`, "100.0%", "Raw intake from Google Form"],

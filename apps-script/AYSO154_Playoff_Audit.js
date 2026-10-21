@@ -2050,16 +2050,7 @@ function formatDateTimeSafe_(date) {
   return new Date(date).toISOString();
 }
 
-/**
- * Helper to retrieve the Game Day Check-ins sheet with fallback to legacy Form Responses 1.
- * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [ss]
- * @returns {GoogleAppsScript.Spreadsheet.Sheet|null}
- */
-function getGameDayCheckinsSheet(ss) {
-  const targetSs = ss || ((typeof SpreadsheetApp !== 'undefined') ? SpreadsheetApp.getActiveSpreadsheet() : null);
-  if (!targetSs) return null;
-  return targetSs.getSheetByName('Game Day Check-ins') || targetSs.getSheetByName('Form Responses 1');
-}
+// getGameDayCheckinsSheet(ss) is declared once in Code.js (shared global scope).
 
 /**
  * Helper to retrieve the Audit Submissions sheet with fallbacks to Form Responses 2, Playoff_Audit_Responses, and Form Responses.
@@ -2087,7 +2078,6 @@ if (typeof module !== 'undefined' && module.exports) {
     menuExportDisputeDossiers,
     menuApplyGemDecision,
     createPlayoffAuditMenu,
-    getGameDayCheckinsSheet,
     getAuditSubmissionsSheet,
     ADJUDICATION_SHEET,
     AUDIT,

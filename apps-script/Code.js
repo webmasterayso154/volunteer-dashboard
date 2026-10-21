@@ -30,6 +30,32 @@ const CONFIG = {
 };
 
 /**
+ * Returns the live check-ins tab: 'Game Day Check-ins', else 'Form Responses 3', else 'Form Responses 1'.
+ * Declared here (not in a feature file) because Code.js, AuditEngine.js, BoardApp.js,
+ * ExecutiveSummary.js, Mock_Submissions.js and Test_Suite.js all call it.
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [ss] defaults to the active spreadsheet
+ * @returns {GoogleAppsScript.Spreadsheet.Sheet|null}
+ */
+function getGameDayCheckinsSheet(ss) {
+  const targetSs = ss || SpreadsheetApp.getActiveSpreadsheet();
+  if (!targetSs) return null;
+  return targetSs.getSheetByName(CONFIG.SHEETS.CHECKINS) ||
+         targetSs.getSheetByName(CONFIG.SHEETS.FALLBACK_CHECKINS) ||
+         targetSs.getSheetByName(CONFIG.SHEETS.LEGACY_CHECKINS);
+}
+
+/**
+ * True for Team_Awards rows written in the old append-log layout
+ * [Timestamp, TeamCode, AwardType, Points, Note, Author] — i.e. a date in Col A.
+ * The live layout is one row per team with the Team Code in Col A.
+ */
+function isLegacyTeamAwardLogRow_(row) {
+  const a = row ? row[0] : '';
+  if (Object.prototype.toString.call(a) === '[object Date]') return true;
+  return /^\d{4}-\d{2}-\d{2}/.test(String(a || '').trim());
+}
+
+/**
  * Adds custom administrative menu on spreadsheet open.
  */
 function onOpen() {
@@ -117,7 +143,10 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    if (action === 'override' && typeof applyBoardAwardOverride === 'function') {
+    if (action === 'override') {
+      if (typeof applyBoardAwardOverride !== 'function' || typeof getBoardUserSession !== 'function') {
+        throw new Error('Board override handler not installed (BoardApp.gs missing).');
+      }
       // The web app runs as ANYONE_ANONYMOUS, so draft mode (empty allowlist) must not
       // open point overrides to the internet: require a signed-in, allowlisted board user.
       const session = getBoardUserSession();
