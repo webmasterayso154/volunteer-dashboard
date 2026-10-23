@@ -299,13 +299,6 @@ function repairLedgerAndLockBackfill() {
     ledgerSheet.getRange(2, 1, canonicalTeams.length, 3).setValues(canonicalTeams);
   }
 
-  // Team_Awards Col I: Board-entered end-of-season "First Game Setup Bonus" (enter 5 to award).
-  // Only label the header when the cell is empty so a manually renamed header is never overwritten.
-  const bonusHeaderCell = awardsSheet.getRange(1, 9);
-  if (!String(bonusHeaderCell.getValue() || '').trim()) {
-    bonusHeaderCell.setValue('First Game Setup Bonus');
-  }
-
   injectTraceableLedgerFormulas(checkinsSheet.getName());
   SpreadsheetApp.flush();
 }
@@ -331,9 +324,8 @@ function injectTraceableLedgerFormulas(checkinsTabName) {
 
   for (let i = 0; i < numTeams; i++) {
     const r = i + 2;
-    // Playoff goal: Playground = 4, 05U/06U = 8, Competitive (08U+) = 17.
-    // Anchored with a word boundary so "16U" is not mistaken for "6U".
-    const goalFormula = `=IF(REGEXMATCH($A${r}, "Playground"), 4, IF(REGEXMATCH($A${r}, "^0?[56]U\\b"), 8, 17))`;
+    // Playoff goal: Playground = 4, 05U/06U = 8, Competitive (08U+) = 17
+    const goalFormula = `=IF(REGEXMATCH($A${r}, "Playground"), 4, IF(REGEXMATCH($A${r}, "05U|5U|06U|6U"), 8, 17))`;
 
     formulaRows.push([
       `=MIN(10, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Referee"))`, // Col D: Ref
@@ -342,10 +334,7 @@ function injectTraceableLedgerFormulas(checkinsTabName) {
       `=MIN(2, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "*Pic*") + SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$D:$D))`, // Col G: Pic Day
       `=MIN(5, SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$B:$B))`, // Col H: Cert Ref Bonus
       `=MIN(2, SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$C:$C))`, // Col I: MatchTrak Bonus
-      // Col J: Other Adjustments (Team_Awards Col E) + First Game Setup Bonus top-up.
-      // When Team_Awards Col I is 5, Board Adjustments receives (5 - earned setup points),
-      // so setup-related credit totals exactly 5 instead of stacking on top of Col F.
-      `=SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$E:$E) + IF(SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$I:$I)>=5, MAX(0, 5 - F${r}), 0)`,
+      `=SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$E:$E)`, // Col J: Other Adjustments
       `=SUM(D${r}:J${r})`, // Col K: Current Verified Points
       goalFormula, // Col L: Playoff Goal
       `=MAX(0, 2 - E${r})`, // Col M: Pending FM Obligations

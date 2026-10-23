@@ -1,68 +1,24 @@
 /**
  * ============================================================================
- * AYSO REGION 154 - PRODUCTION SCHEDULE & DRIVE INGEST ENGINE
- * ============================================================================
- * File: ScheduleSyncEngine.gs
- * Version: v1.7.3-LOCKED-FIX
- * Last Updated: October 9, 2026, 08:45 AM PDT
- * Author: AYSO 154 Webmaster
- * 
- * CHANGELOG:
- * - [2026-10-09 08:45 AM] BUGFIX: Restored missing mathematical operators 
- *   (-, *) stripped during merge. Fixed SpreadApp typo to SpreadsheetApp.
- * - [2026-10-08 12:30 PM] SECURITY: Added assertNotProtectedTab_ to guarantee
- *   schedule ingestion NEVER accesses Season_Master_Ledger.
+ * AYSO REGION 154 — SCHEDULE SYNC ENGINE (ScheduleSyncEngine.gs)
+ * Version: build_20261021_v5 (Strict Fri–Sun Window; Excludes Thursday Outliers)
  * ============================================================================
  */
 
 const SCHEDULE_CONFIG = {
-  VERSION: 'v1.7.3-LOCKED-FIX',
+  DRIVE_FOLDER_ID: '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv',
+  SCHEDULE_TAB_NAME: 'Master_Schedule',
+  SEASON_SCHEDULE_TAB_NAME: 'Season_Master_Schedule',
+  SYNC_LOG_TAB_NAME: 'Schedule_Sync_Log',
   TIMEZONE: 'America/Los_Angeles',
-  PRODUCTION_SHEET_ID: '1RWPNUjVeRRcHiI18b8_IzLn1RzKHG3hLJvIbZjWq6Bc',
-  PRODUCTION_FORM_ID: '1gIenxzkQeBGcbJZrt_ujp9WTfXg_1HUD_BgHDjLS3cI',
-  DROP_FOLDER_ID: '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv',
-  ARCHIVE_FOLDER_ID: '1F1BxAQrb7hzwUt2dSSgedUCp4u1pqV5m',
-  DASHBOARD_URL: 'https://webmasterayso154.github.io/volunteer-dashboard/',
-  SCHEDULE_TAB_NAME: 'Master Schedule',
-  PROTECTED_IMMUTABLE_TABS: ['Season_Master_Ledger', 'Game Day Check-ins', 'Form Responses 3', 'Form Responses 1', 'Form Responses 2', 'Team_Awards', 'Settings', 'Admin_Config'],
-  FORM_DESCRIPTION: "🙌 Game day happens because of YOU! ⚽\nThank you for volunteering your time for our players and community today.\n\nQuick Steps for New Volunteers:\n1. Enter your name and role.\n2. Pick your field venue and select your match from the dropdown.\n3. Submit to log your points!\n\n📊 View live team points on the Volunteer Standings Dashboard: https://webmasterayso154.github.io/volunteer-dashboard/",
-  CONFIRMATION_MESSAGE: "⚽ Thanks for checking in! 🙌\n\nYou can track live team standings and volunteer points on the Volunteer Dashboard here:\nhttps://webmasterayso154.github.io/volunteer-dashboard/",
-  VENUE_TITLES: {
-    PARK_LEX: 'Select Match - 🌲 Park Lexington (Denni & Cerritos)',
-    LUTHER: 'Select Match - 🏫 Luther Elementary',
-    LJHS_ARNOLD: 'Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary'
-  },
-  LUTHER_ZERO_GAMES_OPTION: '⚠️ No games currently scheduled at Luther Elementary',
-  OTHER_UNLISTED_OPTION: '⚠️ Other / Rescheduled / Unlisted Match',
-  MIN_GAMES_THRESHOLD: 5
+  MIN_GAMES_THRESHOLD: 5,
+  UNLISTED_MATCH_OPTION: '⚠️ Other / Rescheduled / Unlisted Match'
 };
 
-function assertNotProtectedTab_(sheet) {
-  if (!sheet) throw new Error("CRITICAL: Attempted operation on null sheet.");
-  const name = sheet.getName().trim();
-  if (SCHEDULE_CONFIG.PROTECTED_IMMUTABLE_TABS.includes(name)) {
-    throw new Error(`SECURITY ALERT: ScheduleSyncEngine attempted to touch protected tab "${name}". Operation hard-aborted to prevent data loss.`);
-  }
-}
-
-function normalizeToYMD(rawDate) {
-  if (!rawDate) return '';
-  if (rawDate instanceof Date) return Utilities.formatDate(rawDate, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd');
-  const str = String(rawDate).trim();
-  const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if (slashMatch) {
-    const m = slashMatch[1].padStart(2, '0');
-    const d = slashMatch[2].padStart(2, '0');
-    let y = slashMatch[3];
-    if (y.length === 2) y = '20' + y;
-    return `${y}-${m}-${d}`;
-  }
-  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
-  const parsed = new Date(str);
-  return !isNaN(parsed.getTime()) ? Utilities.formatDate(parsed, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd') : '';
-}
-
+/**
+ * Resolves the upcoming Friday–Sunday date window (excludes Thursday outliers).
+ * @return {{dates: string[], isOverride: boolean, startYMD: string}}
+ */
 function resolveUpcomingWeekendDates() {
   let overrideDateStr = null;
   try {
@@ -74,20 +30,21 @@ function resolveUpcomingWeekendDates() {
     const startYMD = normalizeToYMD(overrideDateStr);
     if (startYMD) {
       const parts = startYMD.split('-');
-      const start = new Date(parts[0], parts[1] - 1, parts[2]);
+      const start = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
       return {
         dates: [
-          startYMD,
-          Utilities.formatDate(new Date(start.getTime() + 86400000), SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd'),
-          Utilities.formatDate(new Date(start.getTime() + 172800000), SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd')
+          startYMD, // Friday
+          Utilities.formatDate(new Date(start.getTime() + 86400000), SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd'),  // Saturday
+          Utilities.formatDate(new Date(start.getTime() + 172800000), SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd') // Sunday
         ],
-        isOverride: true, startYMD: startYMD
+        isOverride: true,
+        startYMD: startYMD
       };
     }
   }
 
   const now = new Date();
-  const dayStr = Utilities.formatDate(now, SCHEDULE_CONFIG.TIMEZONE, 'u');
+  const dayStr = Utilities.formatDate(now, SCHEDULE_CONFIG.TIMEZONE, 'u'); // 1 = Mon ... 7 = Sun
   const dayOfWeek = parseInt(dayStr, 10);
 
   let daysToFri = 0;
@@ -97,309 +54,402 @@ function resolveUpcomingWeekendDates() {
   else if (dayOfWeek === 7) daysToFri = -2;
 
   const nowYMD = Utilities.formatDate(now, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd').split('-');
-  const baseMidnight = new Date(nowYMD[0], nowYMD[1] - 1, nowYMD[2]);
+  const baseMidnight = new Date(Number(nowYMD[0]), Number(nowYMD[1]) - 1, Number(nowYMD[2]));
   const fri = new Date(baseMidnight.getTime() + (daysToFri * 86400000));
   const sat = new Date(fri.getTime() + 86400000);
   const sun = new Date(fri.getTime() + 172800000);
 
   return {
     dates: [
-      Utilities.formatDate(fri, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd'),
-      Utilities.formatDate(sat, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd'),
-      Utilities.formatDate(sun, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd')
+      Utilities.formatDate(fri, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd'), // Friday
+      Utilities.formatDate(sat, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd'), // Saturday
+      Utilities.formatDate(sun, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd')  // Sunday
     ],
     isOverride: false,
     startYMD: Utilities.formatDate(fri, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd')
   };
 }
 
-function filterScheduleForTargetWeekend(parsedData, targetDates) {
-  if (!parsedData || parsedData.length <= 1) return [];
-  const headers = parsedData[0];
-  const dateIdx = headers.findIndex(h => /date|day/i.test(String(h || '')));
-  if (dateIdx === -1) return parsedData;
-
-  const targetSet = new Set(targetDates);
-  const filtered = [headers];
-
-  for (let i = 1; i < parsedData.length; i++) {
-    const row = parsedData[i];
-    if (!row || row.length === 0) continue;
-    if (targetSet.has(normalizeToYMD(row[dateIdx]))) {
-      filtered.push(row);
-    }
-  }
-  return filtered;
-}
-
-function formatDay(rawDate) {
-  if (!rawDate) return '';
-  if (typeof Utilities !== 'undefined') {
-    if (rawDate instanceof Date) return Utilities.formatDate(rawDate, SCHEDULE_CONFIG.TIMEZONE, 'EEE');
-    const parsed = new Date(String(rawDate));
-    if (!isNaN(parsed.getTime())) return Utilities.formatDate(parsed, SCHEDULE_CONFIG.TIMEZONE, 'EEE');
-  }
-  const str = String(rawDate).trim();
-  if (/^sat/i.test(str)) return 'Sat';
-  if (/^sun/i.test(str)) return 'Sun';
-  if (/^fri/i.test(str)) return 'Fri';
-  return str;
-}
-
-function formatTime(rawTime) {
-  if (!rawTime) return '';
-  if (typeof Utilities !== 'undefined' && rawTime instanceof Date) return Utilities.formatDate(rawTime, SCHEDULE_CONFIG.TIMEZONE, 'h:mm a');
-  let timeStr = String(rawTime || '').trim();
-  const milMatch = timeStr.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-  if (milMatch) {
-    let hour = parseInt(milMatch[1], 10);
-    const min = milMatch[2];
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    if (hour > 12) hour -= 12;
-    if (hour === 0) hour = 12;
-    return `${hour}:${min} ${ampm}`;
-  }
-  timeStr = timeStr.replace(/(\d{1,2}:\d{2}):\d{2}/, '$1');
-  return timeStr.replace(/\s*([AaPp][Mm])/, ' $1').toUpperCase();
-}
-
-function formatField(rawField) {
-  if (!rawField) return '';
-  const f = String(rawField).trim();
-  if (/luther/i.test(f)) {
-    const m = f.match(/field\s*#?\s*(\d+)/i);
-    return m ? `Luther Field ${m[1]}` : 'Luther Field';
-  }
-  if (/park lex/i.test(f) || /denni/i.test(f)) {
-    if (/turf/i.test(f) || /art/i.test(f)) return 'Park Lex Turf';
-    if (/grass/i.test(f)) return 'Park Lex Grass';
-    return 'Park Lex';
-  }
-  if (/lexington|ljhs/i.test(f)) {
-    const m = f.match(/field\s*#?\s*(\d+)/i);
-    return m ? `LJHS Field ${m[1]}` : 'LJHS';
-  }
-  if (/arnold/i.test(f)) {
-    const m = f.match(/field\s*#?\s*(\d+)/i);
-    return m ? `Arnold Field ${m[1]}` : 'Arnold';
-  }
-  return f;
-}
-
-function formatDivision(rawDiv) {
-  if (!rawDiv) return '';
-  const d = String(rawDiv).trim();
-  let m = d.match(/^([BGbg])(?:U|u)?(\d{1,2})/);
-  if (m) return `${m[2].padStart(2, '0')}U-${m[1].toUpperCase()}`;
-  m = d.match(/^(\d{1,2})(?:U|u)?\s*([BGbg])/);
-  if (m) return `${m[1].padStart(2, '0')}U-${m[2].toUpperCase()}`;
-  m = d.match(/^(\d{1,2})UX\s*([BGbg])/i);
-  if (m) return `${m[1].padStart(2, '0')}UX-${m[2].toUpperCase()}`;
-  return d;
-}
-
-function formatTeam(rawTeam) {
-  if (!rawTeam) return '';
-  let t = String(rawTeam).trim();
-  t = t.replace(/^\d+[-_]/, '');
-  return t.replace(/^E154[-_]/i, '').trim();
-}
-
-function getVenueCategory(rawField) {
-  if (!rawField) return 'LJHS_ARNOLD';
-  const f = String(rawField).trim().toLowerCase();
-  if (f.includes('park lex') || f.includes('denni') || f.includes('cerritos')) return 'PARK_LEX';
-  if (f.includes('luther')) return 'LUTHER';
-  return 'LJHS_ARNOLD';
-}
-
-function buildScheduleDropdownOptionsByVenue(scheduleData) {
-  if (!scheduleData || scheduleData.length <= 1) {
-    return {
-      parkLexMatches: [SCHEDULE_CONFIG.OTHER_UNLISTED_OPTION],
-      lutherMatches: [SCHEDULE_CONFIG.LUTHER_ZERO_GAMES_OPTION, SCHEDULE_CONFIG.OTHER_UNLISTED_OPTION],
-      ljhsArnoldMatches: [SCHEDULE_CONFIG.OTHER_UNLISTED_OPTION]
-    };
-  }
-
-  const headers = scheduleData[0].map(h => String(h || '').trim());
-  const dateIdx = headers.findIndex(h => /date|day/i.test(h));
-  const timeIdx = headers.findIndex(h => /^time$/i.test(h) || /game time/i.test(h) || (/time/i.test(h) && !/date/i.test(h)));
-  const fieldIdx = headers.findIndex(h => /field/i.test(h));
-  const divIdx = headers.findIndex(h => /div/i.test(h));
-  const homeIdx = headers.findIndex(h => /home/i.test(h));
-  const awayIdx = headers.findIndex(h => /away/i.test(h));
-
-  const rawPark = [], rawLuther = [], rawLjhs = [];
-
-  for (let i = 1; i < scheduleData.length; i++) {
-    const row = scheduleData[i];
-    if (!row || row.length === 0) continue;
-
-    const timeStr = formatTime(timeIdx !== -1 ? row[timeIdx] : '');
-    const fieldStr = formatField(fieldIdx !== -1 ? row[fieldIdx] : '');
-    if (!timeStr || !fieldStr || timeStr.includes('###')) continue;
-
-    const dayStr = formatDay(dateIdx !== -1 ? row[dateIdx] : '');
-    const divStr = formatDivision(divIdx !== -1 ? row[divIdx] : '');
-    const homeStr = formatTeam(homeIdx !== -1 ? row[homeIdx] : '');
-    const awayStr = formatTeam(awayIdx !== -1 ? row[awayIdx] : '');
-
-    const matchup = (homeStr && awayStr) ? `${homeStr} vs ${awayStr}` : (homeStr || awayStr);
-    const dayPrefix = dayStr ? `🗓️ ${dayStr} • ` : '';
-    const divPrefix = divStr ? ` • ⚽ ${divStr}: ` : ' • ⚽ ';
-    const matchString = `${dayPrefix}⏰ ${timeStr} • 📍 ${fieldStr}${divPrefix}${matchup}`.trim();
-
-    const venue = getVenueCategory(fieldIdx !== -1 ? row[fieldIdx] : '');
-    if (venue === 'PARK_LEX') rawPark.push(matchString);
-    else if (venue === 'LUTHER') rawLuther.push(matchString);
-    else rawLjhs.push(matchString);
-  }
-
-  const parkLexMatches = [...new Set(rawPark)];
-  const lutherMatches = [...new Set(rawLuther)];
-  const ljhsArnoldMatches = [...new Set(rawLjhs)];
-
-  if (lutherMatches.length === 0) lutherMatches.push(SCHEDULE_CONFIG.LUTHER_ZERO_GAMES_OPTION);
-  parkLexMatches.push(SCHEDULE_CONFIG.OTHER_UNLISTED_OPTION);
-  lutherMatches.push(SCHEDULE_CONFIG.OTHER_UNLISTED_OPTION);
-  ljhsArnoldMatches.push(SCHEDULE_CONFIG.OTHER_UNLISTED_OPTION);
-
-  return { parkLexMatches, lutherMatches, ljhsArnoldMatches };
-}
-
-function extractDataFromFile(file) {
-  const mime = file.getMimeType();
-  if (mime === MimeType.GOOGLE_SHEETS || mime === 'application/vnd.google-apps.spreadsheet') {
-    const ss = SpreadsheetApp.openById(file.getId());
-    return ss.getSheets()[0].getDataRange().getDisplayValues();
-  }
-  const blob = file.getBlob();
-  const content = blob.getDataAsString('UTF-8') || blob.getDataAsString();
-  if (!content || !content.trim()) throw new Error(`File "${file.getName()}" is empty.`);
-  return Utilities.parseCsv(content);
-}
-
-function syncContainerFormSchedule(optionalScheduleData) {
-  const form = FormApp.openById(SCHEDULE_CONFIG.PRODUCTION_FORM_ID);
-  let data = optionalScheduleData;
-
-  if (!data) {
-    const ss = SpreadsheetApp.openById(SCHEDULE_CONFIG.PRODUCTION_SHEET_ID);
-    const sheet = ss.getSheetByName(SCHEDULE_CONFIG.SCHEDULE_TAB_NAME);
-    if (!sheet) throw new Error(`Could not find '${SCHEDULE_CONFIG.SCHEDULE_TAB_NAME}' tab.`);
-    assertNotProtectedTab_(sheet);
-    data = sheet.getDataRange().getDisplayValues();
-  }
-
-  const { parkLexMatches, lutherMatches, ljhsArnoldMatches } = buildScheduleDropdownOptionsByVenue(data);
-
-  const allItems = form.getItems();
-  let ljhsItem = null, parkLexItem = null, lutherItem = null;
-
-  allItems.forEach(item => {
-    const title = item.getTitle().toLowerCase();
-    const type = item.getType();
-    const isChoiceType = (type === FormApp.ItemType.LIST || type === FormApp.ItemType.MULTIPLE_CHOICE || type === FormApp.ItemType.CHECKBOX);
-
-    if (isChoiceType) {
-      if ((title.includes('lexington') || title.includes('arnold')) && !title.includes('park')) ljhsItem = item;
-      else if (title.includes('park lex') || title.includes('denni') || title.includes('cerritos')) parkLexItem = item;
-      else if (title.includes('luther')) lutherItem = item;
-    }
-  });
-
-  if (!ljhsItem || !parkLexItem || !lutherItem) {
-    throw new Error(`Missing venue target(s). Check item titles in Sections 3, 4, or 5.`);
-  }
-
-  const applyChoices = (targetItem, choices) => {
-    if (targetItem.getType() === FormApp.ItemType.LIST) targetItem.asListItem().setChoiceValues(choices);
-    else if (targetItem.getType() === FormApp.ItemType.MULTIPLE_CHOICE) targetItem.asMultipleChoiceItem().setChoiceValues(choices);
-    else if (targetItem.getType() === FormApp.ItemType.CHECKBOX) targetItem.asCheckboxItem().setChoiceValues(choices);
-  };
-
-  applyChoices(ljhsItem, ljhsArnoldMatches);
-  applyChoices(parkLexItem, parkLexMatches);
-  applyChoices(lutherItem, lutherMatches);
-
-  form.setDescription(SCHEDULE_CONFIG.FORM_DESCRIPTION);
-  form.setConfirmationMessage(SCHEDULE_CONFIG.CONFIRMATION_MESSAGE);
-  form.setAcceptingResponses(true);
-  Logger.log(`✅ Dropdowns updated in-place`);
-}
-
+/**
+ * Main automated/manual entry point:
+ * Finds newest schedule CSV in Drive, filters to Fri–Sun only, updates Master_Schedule,
+ * merges into Season_Master_Schedule, and updates live Google Form dropdown lists.
+ */
 function autoIngestWeeklySchedule() {
-  const weekendWindow = resolveUpcomingWeekendDates();
-  Logger.log(`Target Weekend Window: ${weekendWindow.dates.join(', ')}`);
-
-  const dropFolder = DriveApp.getFolderById(SCHEDULE_CONFIG.DROP_FOLDER_ID);
-  const archiveFolder = DriveApp.getFolderById(SCHEDULE_CONFIG.ARCHIVE_FOLDER_ID);
-  const fileIter = dropFolder.getFiles();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const folder = DriveApp.getFolderById(SCHEDULE_CONFIG.DRIVE_FOLDER_ID);
+  const files = folder.getFiles();
   const fileList = [];
-  while (fileIter.hasNext()) fileList.push(fileIter.next());
+
+  while (files.hasNext()) {
+    const f = files.next();
+    const name = f.getName().toLowerCase();
+    if (name.endsWith('.csv') || f.getMimeType() === MimeType.CSV || f.getMimeType() === MimeType.GOOGLE_SHEETS) {
+      fileList.push(f);
+    }
+  }
 
   if (fileList.length === 0) {
-    Logger.log("No new CSV in drop folder. Running dropdown refresh from existing Master Schedule.");
-    syncContainerFormSchedule();
+    Logger.log('ABORTED: No schedule files found in Drive folder.');
     return;
   }
 
-  fileList.sort((a, b) => b.getDateCreated().getTime() - a.getDateCreated().getTime());
+  // Sort newest first
+  fileList.sort(function(a, b) {
+    return b.getLastUpdated().getTime() - a.getLastUpdated().getTime();
+  });
+
+  const weekendWindow = resolveUpcomingWeekendDates();
   const latestFile = fileList[0];
   const parsedRaw = extractDataFromFile(latestFile);
   const filteredData = filterScheduleForTargetWeekend(parsedRaw, weekendWindow.dates);
   const totalMatches = filteredData.length - 1;
 
   if (totalMatches < SCHEDULE_CONFIG.MIN_GAMES_THRESHOLD) {
-    const msg = `ABORTED: Found only ${totalMatches} games. Minimum threshold is ${SCHEDULE_CONFIG.MIN_GAMES_THRESHOLD}.`;
+    const msg = `ABORTED: Found only ${totalMatches} games for ${weekendWindow.dates.join(', ')}. Minimum threshold is ${SCHEDULE_CONFIG.MIN_GAMES_THRESHOLD}.`;
     Logger.log(msg);
+    logScheduleSyncEvent(latestFile.getName(), weekendWindow.startYMD, totalMatches, 0, 0, 0, 'ABORTED_LOW_COUNT');
     return;
   }
 
   const { parkLexMatches, lutherMatches, ljhsArnoldMatches } = buildScheduleDropdownOptionsByVenue(filteredData);
+  const startDateLabel = weekendWindow.dates[0];
+  const endDateLabel = weekendWindow.dates[weekendWindow.dates.length - 1];
 
   try {
     const ui = SpreadsheetApp.getUi();
-    const prompt = `TARGET WEEKEND: ${weekendWindow.dates[0]} to ${weekendWindow.dates[2]}\n` +
+    const prompt = `TARGET DATES (Fri–Sun Only): ${startDateLabel} to ${endDateLabel}\n` +
                    `MATCHES IDENTIFIED (${totalMatches} total):\n` +
-                   `• 🌲 Park Lexington: ${parkLexMatches.length - 1}\n` +
+                   `• 🏟️ Park Lexington: ${parkLexMatches.length - 1}\n` +
                    `• 🏫 Luther Elementary: ${lutherMatches.length - 1}\n` +
                    `• 🏫 LJHS / Arnold: ${ljhsArnoldMatches.length - 1}\n\n` +
                    `⚠️ Overwrite "${SCHEDULE_CONFIG.SCHEDULE_TAB_NAME}" and update live Form dropdowns?`;
     const res = ui.alert('Confirm Live Game Day Sync', prompt, ui.ButtonSet.YES_NO);
     if (res !== ui.Button.YES) return;
-  } catch (headless) {}
-
-  const ss = SpreadsheetApp.openById(SCHEDULE_CONFIG.PRODUCTION_SHEET_ID);
-  let scheduleSheet = ss.getSheetByName(SCHEDULE_CONFIG.SCHEDULE_TAB_NAME);
-  if (!scheduleSheet) scheduleSheet = ss.insertSheet(SCHEDULE_CONFIG.SCHEDULE_TAB_NAME);
-
-  assertNotProtectedTab_(scheduleSheet);
-
-  const tag = Utilities.formatDate(new Date(), SCHEDULE_CONFIG.TIMEZONE, 'yyyyMMdd_HHmmss');
-  if (scheduleSheet.getLastRow() > 1) {
-    try {
-      const bkp = scheduleSheet.copyTo(ss);
-      bkp.setName(`Master_Schedule_Backup_${tag}`);
-    } catch (err) {}
+  } catch (e) {
+    Logger.log('Headless/trigger execution detected — proceeding without UI prompt.');
   }
 
-  scheduleSheet.clearContents();
-  scheduleSheet.getRange(1, 1, filteredData.length, filteredData[0].length).setValues(filteredData);
+  // 1. Write filtered Fri–Sun schedule to Master_Schedule
+  writeScheduleToSheet(ss, SCHEDULE_CONFIG.SCHEDULE_TAB_NAME, filteredData);
 
-  syncContainerFormSchedule(filteredData);
+  // 2. Upsert into cumulative Season_Master_Schedule (by Game #)
+  upsertSeasonMasterSchedule(ss, filteredData);
 
-  let logSheet = ss.getSheetByName('Schedule_Sync_Log') || ss.insertSheet('Schedule_Sync_Log');
-  if (logSheet.getLastRow() === 0) {
-    logSheet.appendRow(['Timestamp', 'Source File', 'Weekend Start', 'Total Rows', 'Park Lex', 'Luther', 'LJHS/Arnold', 'Status']);
+  // 3. Push venue match lists to live linked Google Form dropdowns
+  updateLiveFormMatchDropdowns(ss, weekendWindow.dates, parkLexMatches, lutherMatches, ljhsArnoldMatches);
+
+  // 4. Log sync event
+  logScheduleSyncEvent(
+    latestFile.getName(),
+    weekendWindow.startYMD,
+    totalMatches,
+    parkLexMatches.length - 1,
+    lutherMatches.length - 1,
+    ljhsArnoldMatches.length - 1,
+    'SUCCESS'
+  );
+}
+
+/**
+ * Extracts 2D array from CSV or Google Sheet file.
+ */
+function extractDataFromFile(file) {
+  if (file.getMimeType() === MimeType.GOOGLE_SHEETS) {
+    return SpreadsheetApp.openById(file.getId()).getSheets()[0].getDataRange().getDisplayValues();
   }
-  logSheet.appendRow([
-    Utilities.formatDate(new Date(), SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss'),
-    latestFile.getName(), weekendWindow.dates[0], totalMatches,
-    parkLexMatches.length - 1, lutherMatches.length - 1, ljhsArnoldMatches.length - 1, 'SUCCESS'
-  ]);
+  const csvText = file.getBlob().getDataAsString();
+  return Utilities.parseCsv(csvText);
+}
 
-  try { latestFile.moveTo(archiveFolder); } catch (e) {}
-  Logger.log("🏆 AUTO INGEST & FORM SYNC COMPLETED SUCCESSFULLY.");
+/**
+ * Filters raw CSV rows so ONLY rows matching targetDates (Fri, Sat, Sun) and non-BYE fields remain.
+ */
+function filterScheduleForTargetWeekend(rawRows, targetDates) {
+  if (!rawRows || rawRows.length === 0) return [];
+  const header = rawRows[0];
+  const dateIdx = header.indexOf('Date');
+  const fieldIdx = header.indexOf('Field');
+  if (dateIdx === -1) throw new Error('Schedule CSV is missing "Date" column.');
+
+  const dateSet = {};
+  for (let i = 0; i < targetDates.length; i++) {
+    dateSet[targetDates[i]] = true;
+  }
+
+  const out = [header];
+  for (let r = 1; r < rawRows.length; r++) {
+    const row = rawRows[r];
+    const rowDate = normalizeToYMD(row[dateIdx]);
+    const fieldVal = fieldIdx !== -1 ? String(row[fieldIdx] || '').toUpperCase() : '';
+    if (rowDate && dateSet[rowDate] && fieldVal.indexOf('BYE') === -1) {
+      const cloned = row.slice();
+      cloned[dateIdx] = rowDate;
+      out.push(cloned);
+    }
+  }
+  return out;
+}
+
+/**
+ * Builds formatted dropdown strings grouped by the 3 venue dropdowns on the Game Day Form.
+ */
+function buildScheduleDropdownOptionsByVenue(filteredData) {
+  const parkLexMatches = [];
+  const lutherMatches = [];
+  const ljhsArnoldMatches = [];
+
+  if (!filteredData || filteredData.length < 2) {
+    return {
+      parkLexMatches: [SCHEDULE_CONFIG.UNLISTED_MATCH_OPTION],
+      lutherMatches: [SCHEDULE_CONFIG.UNLISTED_MATCH_OPTION],
+      ljhsArnoldMatches: [SCHEDULE_CONFIG.UNLISTED_MATCH_OPTION]
+    };
+  }
+
+  const h = filteredData[0];
+  const idxDate = h.indexOf('Date');
+  const idxTime = h.indexOf('Time');
+  const idxDiv = h.indexOf('Division');
+  const idxField = h.indexOf('Field');
+  const idxHome = h.indexOf('Home Team');
+  const idxAway = h.indexOf('Away Team');
+  const idxCanceled = h.indexOf('Canceled');
+  const idxPostponed = h.indexOf('Postponed');
+
+  // Sort chronologically by Date + Time + Field
+  const body = filteredData.slice(1).sort(function(a, b) {
+    const da = String(a[idxDate] || '') + ' ' + normalizeTimeSortable(a[idxTime]);
+    const db = String(b[idxDate] || '') + ' ' + normalizeTimeSortable(b[idxTime]);
+    if (da !== db) return da < db ? -1 : 1;
+    return String(a[idxField] || '').localeCompare(String(b[idxField] || ''));
+  });
+
+  for (let i = 0; i < body.length; i++) {
+    const row = body[i];
+    if (idxCanceled !== -1 && String(row[idxCanceled] || '').toUpperCase() === 'Y') continue;
+    if (idxPostponed !== -1 && String(row[idxPostponed] || '').toUpperCase() === 'Y') continue;
+
+    const rawField = String(row[idxField] || '');
+    if (!rawField || rawField.toUpperCase().indexOf('BYE') !== -1) continue;
+
+    const dayLabel = formatDayAbbrev(row[idxDate]);
+    const timeLabel = formatTime12Hr(row[idxTime]);
+    const shortField = formatShortFieldName(rawField);
+    const divLabel = formatShortDivision(row[idxDiv]);
+    const homeShort = formatShortTeamName(row[idxHome]);
+    const awayShort = formatShortTeamName(row[idxAway]);
+
+    const optionStr = `🗓️ ${dayLabel} • ⏰ ${timeLabel} • 📍 ${shortField} • ⚽ ${divLabel}: ${homeShort} vs ${awayShort}`;
+
+    const upperField = rawField.toUpperCase();
+    if (upperField.indexOf('PARK LEX') !== -1) {
+      if (parkLexMatches.indexOf(optionStr) === -1) parkLexMatches.push(optionStr);
+    } else if (upperField.indexOf('LUTHER') !== -1) {
+      if (lutherMatches.indexOf(optionStr) === -1) lutherMatches.push(optionStr);
+    } else if (upperField.indexOf('LEXINGTON JHS') !== -1 || upperField.indexOf('LJHS') !== -1 || upperField.indexOf('ARNOLD') !== -1) {
+      if (ljhsArnoldMatches.indexOf(optionStr) === -1) ljhsArnoldMatches.push(optionStr);
+    }
+  }
+
+  parkLexMatches.push(SCHEDULE_CONFIG.UNLISTED_MATCH_OPTION);
+  lutherMatches.push(SCHEDULE_CONFIG.UNLISTED_MATCH_OPTION);
+  ljhsArnoldMatches.push(SCHEDULE_CONFIG.UNLISTED_MATCH_OPTION);
+
+  return { parkLexMatches, lutherMatches, ljhsArnoldMatches };
+}
+
+/**
+ * Updates the 3 venue match dropdown questions on the linked Google Form.
+ */
+function updateLiveFormMatchDropdowns(ss, weekendDates, parkLexMatches, lutherMatches, ljhsArnoldMatches) {
+  const formUrl = ss.getFormUrl();
+  if (!formUrl) {
+    Logger.log('No linked Google Form found on this spreadsheet.');
+    return;
+  }
+
+  const form = FormApp.openByUrl(formUrl);
+  const items = form.getItems(FormApp.ItemType.LIST);
+  const dateRangeBadge = formatWeekendBadge(weekendDates);
+
+  for (let i = 0; i < items.length; i++) {
+    const listItem = items[i].asListItem();
+    const title = listItem.getTitle();
+    if (title.indexOf('Select Match') === -1) continue;
+
+    if (title.indexOf('Park Lex') !== -1) {
+      listItem.setTitle(`Select Match - 🏟️ Park Lex (${dateRangeBadge})`);
+      listItem.setChoiceValues(parkLexMatches);
+    } else if (title.indexOf('Luther') !== -1) {
+      listItem.setTitle(`Select Match - 🏫 Luther Elementary (${dateRangeBadge})`);
+      listItem.setChoiceValues(lutherMatches);
+    } else if (title.indexOf('Lexington Junior High') !== -1 || title.indexOf('LJHS') !== -1) {
+      listItem.setTitle(`Select Match - 🏫 Lexington Junior High (LJHS) or Arnold Elementary (${dateRangeBadge})`);
+      listItem.setChoiceValues(ljhsArnoldMatches);
+    }
+  }
+}
+
+/**
+ * Writes filtered schedule to Master_Schedule tab.
+ */
+function writeScheduleToSheet(ss, sheetName, data) {
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) sheet = ss.insertSheet(sheetName);
+  sheet.clearContents();
+  if (data && data.length > 0) {
+    sheet.getRange(1, 1, data.length, data[0].length).setValues(data);
+  }
+}
+
+/**
+ * Upserts filtered weekend matches into cumulative Season_Master_Schedule by Game #.
+ */
+function upsertSeasonMasterSchedule(ss, filteredData) {
+  if (!filteredData || filteredData.length < 2) return;
+  let seasonSheet = ss.getSheetByName(SCHEDULE_CONFIG.SEASON_SCHEDULE_TAB_NAME);
+  if (!seasonSheet) {
+    seasonSheet = ss.insertSheet(SCHEDULE_CONFIG.SEASON_SCHEDULE_TAB_NAME);
+    seasonSheet.getRange(1, 1, filteredData.length, filteredData[0].length).setValues(filteredData);
+    return;
+  }
+
+  const existing = seasonSheet.getDataRange().getValues();
+  if (existing.length < 1) {
+    seasonSheet.getRange(1, 1, filteredData.length, filteredData[0].length).setValues(filteredData);
+    return;
+  }
+
+  const header = existing[0];
+  const gameNumIdx = header.indexOf('Game #');
+  if (gameNumIdx === -1) return;
+
+  const rowMap = {};
+  for (let r = 1; r < existing.length; r++) {
+    const gNum = String(existing[r][gameNumIdx] || '').trim();
+    if (gNum) rowMap[gNum] = r;
+  }
+
+  for (let i = 1; i < filteredData.length; i++) {
+    const newRow = filteredData[i];
+    const gNum = String(newRow[gameNumIdx] || '').trim();
+    if (gNum && rowMap.hasOwnProperty(gNum)) {
+      existing[rowMap[gNum]] = newRow;
+    } else {
+      existing.push(newRow);
+    }
+  }
+
+  seasonSheet.clearContents();
+  seasonSheet.getRange(1, 1, existing.length, existing[0].length).setValues(existing);
+}
+
+/**
+ * Appends a row to Schedule_Sync_Log.
+ */
+function logScheduleSyncEvent(sourceFile, weekendStart, totalRows, parkLexCount, lutherCount, ljhsArnoldCount, status) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let logSheet = ss.getSheetByName(SCHEDULE_CONFIG.SYNC_LOG_TAB_NAME);
+  if (!logSheet) {
+    logSheet = ss.insertSheet(SCHEDULE_CONFIG.SYNC_LOG_TAB_NAME);
+    logSheet.appendRow(['Timestamp', 'Source File', 'Weekend Start', 'Total Rows', 'Park Lex Games', 'Luther Games', 'LJHS/Arnold Games', 'Status']);
+  }
+  const ts = Utilities.formatDate(new Date(), SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+  logSheet.appendRow([ts, sourceFile, weekendStart, totalRows, parkLexCount, lutherCount, ljhsArnoldCount, status]);
+}
+
+/* ==================== FORMATTING HELPERS ==================== */
+
+function normalizeToYMD(val) {
+  if (!val) return null;
+  if (Object.prototype.toString.call(val) === '[object Date]' && !isNaN(val.getTime())) {
+    return Utilities.formatDate(val, SCHEDULE_CONFIG.TIMEZONE, 'yyyy-MM-dd');
+  }
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const mdy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if (mdy) {
+    const mm = ('0' + mdy[1]).slice(-2);
+    const dd = ('0' + mdy[2]).slice(-2);
+    const yyyy = mdy[3].length === 2 ? '20' + mdy[3] : mdy[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return null;
+}
+
+function formatDayAbbrev(ymd) {
+  const norm = normalizeToYMD(ymd);
+  if (!norm) return '';
+  const p = norm.split('-');
+  const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  return Utilities.formatDate(d, SCHEDULE_CONFIG.TIMEZONE, 'EEE');
+}
+
+function normalizeTimeSortable(val) {
+  if (!val) return '00:00:00';
+  if (Object.prototype.toString.call(val) === '[object Date]') {
+    return Utilities.formatDate(val, SCHEDULE_CONFIG.TIMEZONE, 'HH:mm:ss');
+  }
+  const s = String(val).trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (m) return ('0' + m[1]).slice(-2) + ':' + m[2] + ':00';
+  return s;
+}
+
+function formatTime12Hr(val) {
+  const norm = normalizeTimeSortable(val);
+  const m = norm.match(/^(\d{2}):(\d{2})/);
+  if (!m) return String(val || '');
+  let hh = parseInt(m[1], 10);
+  const mm = m[2];
+  const ampm = hh >= 12 ? 'PM' : 'AM';
+  if (hh === 0) hh = 12;
+  else if (hh > 12) hh = hh - 12;
+  return `${hh}:${mm} ${ampm}`;
+}
+
+function formatShortFieldName(rawField) {
+  const f = String(rawField || '');
+  const upper = f.toUpperCase();
+  if (upper.indexOf('PARK LEX') !== -1) {
+    return upper.indexOf('TURF') !== -1 ? 'Park Lex Turf' : 'Park Lex Grass';
+  }
+  if (upper.indexOf('LUTHER') !== -1) {
+    const m = f.match(/Field\s*(\d+)/i);
+    return m ? `Luther Field ${m[1]}` : 'Luther';
+  }
+  if (upper.indexOf('ARNOLD') !== -1) {
+    const m = f.match(/Field\s*(\d+)/i);
+    return m ? `Arnold Field ${m[1]}` : 'Arnold';
+  }
+  if (upper.indexOf('LEXINGTON JHS') !== -1 || upper.indexOf('LJHS') !== -1) {
+    const m = f.match(/Field\s*(\d+)/i);
+    return m ? `LJHS Field ${m[1]}` : 'LJHS';
+  }
+  return f;
+}
+
+function formatShortDivision(rawDiv) {
+  const d = String(rawDiv || '').trim().toUpperCase();
+  const m = d.match(/^([BG])U(\d{1,2})$/);
+  if (m) {
+    const age = ('0' + m[2]).slice(-2) + 'U';
+    return `${age}-${m[1]}`;
+  }
+  return d;
+}
+
+function formatShortTeamName(rawTeam) {
+  const t = String(rawTeam || '').trim();
+  return t.replace(/^E154-/i, '');
+}
+
+function formatWeekendBadge(dates) {
+  if (!dates || dates.length === 0) return '';
+  const first = dates[0].split('-');
+  const last = dates[dates.length - 1].split('-');
+  const dStart = new Date(Number(first[0]), Number(first[1]) - 1, Number(first[2]));
+  const monthAbbrev = Utilities.formatDate(dStart, SCHEDULE_CONFIG.TIMEZONE, 'MMM');
+  return `${monthAbbrev} ${parseInt(first[2], 10)}-${parseInt(last[2], 10)}`;
 }

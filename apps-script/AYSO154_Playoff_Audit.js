@@ -2052,21 +2052,7 @@ function formatDateTimeSafe_(date) {
 
 // getGameDayCheckinsSheet(ss) is declared once in Code.js (shared global scope).
 
-/**
- * Helper to retrieve the Audit Submissions sheet with fallbacks to Form Responses 2, Playoff_Audit_Responses, and Form Responses.
- * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [ss]
- * @returns {GoogleAppsScript.Spreadsheet.Sheet|null}
- */
-function getAuditSubmissionsSheet(ss) {
-  const targetSs = ss || ((typeof SpreadsheetApp !== 'undefined') ? SpreadsheetApp.getActiveSpreadsheet() : null);
-  if (!targetSs) return null;
-  return targetSs.getSheetByName('Audit Submissions') ||
-         targetSs.getSheetByName('Form Responses 2') ||
-         targetSs.getSheetByName(ADJUDICATION_SHEET.PLAYOFF_RESPONSES) ||
-         targetSs.getSheetByName(SHEET.RESPONSES) ||
-         targetSs.getSheetByName(SHEET.LEGACY_RESPONSES) ||
-         targetSs.getSheetByName('Form Responses');
-}
+
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {

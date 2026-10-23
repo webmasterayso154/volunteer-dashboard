@@ -1,55 +1,46 @@
 /**
- * Adds the diagnostics / demo-data menu. Called from onOpen() in Code.js
- * (Apps Script allows only one global onOpen across all files).
+ * ============================================================================
+ * AYSO REGION 154 - BOARD TOOLS & RUNWAY MENU
+ * ============================================================================
+ * File: Test_Menu.gs
+ * Version: v4.0.0
+ * Author: AYSO 154 Webmaster
+ * ============================================================================
  */
-function addDiagnosticsMenu_() {
+
+function onOpen() {
   try {
     const ui = SpreadsheetApp.getUi();
-    ui.createMenu('🧪 AYSO 154 Diagnostics')
+    ui.createMenu('⚽ AYSO 154 Board Tools')
+      .addItem('🔍 Run Proactive Points & Runway Verification', 'runWeeklyPointReconciliation')
+      .addItem('📢 Generate Division Director Action Alerts', 'generateDivisionDirectorAlerts')
       .addItem('📊 Run Audit & Sync Ledger', 'runAuditAndSyncLedger')
-      .addItem('📈 Build / Refresh Executive Summary Tab', 'setupExecutiveSummarySheet')
-      .addItem('⚙️ Setup Admin Config Sheet', 'setupAdminConfigSheet')
+      .addSeparator()
       .addItem('🔄 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
       .addSeparator()
-      .addItem('▶ Run System Diagnostics', 'menuRunDiagnostics')
-      .addSeparator()
-      .addItem('➕ Inject Demo Game Day Submissions', 'menuInjectData')
-      .addItem('🗑️ Purge All Demo & Test Data', 'menuPurgeData')
-      .addSeparator()
       .addItem('🔍 Inspect Test Team Stats (Faheem Armanyous)', 'menuInspectTeam')
-      .addSeparator()
-      .addItem('📋 Export Playoff Dispute Dossiers (for Gem)', 'menuExportDisputeDossiers')
-      .addItem('⚖️ Apply Gem Adjudication Decision', 'menuApplyGemDecision')
       .addToUi();
   } catch (e) {
     Logger.log('onOpen skipped in non-interactive context: ' + e.message);
   }
 }
 
-function menuRunDiagnostics() {
-  const ui = SpreadsheetApp.getUi();
-  ui.alert("Running tests... Click OK, then check Extensions > Apps Script > Execution Log when complete.");
-  runAllDiagnostics();
-}
-
-function menuInjectData() {
-  injectGameDayScenario();
-  SpreadsheetApp.getUi().alert("Mock game day check-ins have been added. Open your GitHub dashboard to verify live standings!");
-}
-
-function menuPurgeData() {
-  purgeAllMockData();
-  SpreadsheetApp.getUi().alert("All mock data has been purged from the sheet.");
-}
-
 function menuInspectTeam() {
-  const stats = getTeamStatsData(TEST_TEAM_CODE);
+  const TEST_TEAM_CODE = "10U - Boys - Faheem Armanyous";
+  const stats = (typeof getTeamStatsData === 'function') ? getTeamStatsData(TEST_TEAM_CODE) : null;
   const ui = SpreadsheetApp.getUi();
-  const msg = `Team: ${TEST_TEAM_CODE}\n` +
-              `Total Points: ${stats.totalPoints}\n` +
-              `Ref Points: ${stats.categories['Referee Assignment']} / 17\n` +
-              `FM Points: ${stats.categories['Field Marshal Shift']} / 2\n` +
-              `Setup Points: ${stats.categories['Friday Night Field Setup']} / 1\n` +
-              `Logged Submissions: ${stats.audit.length}`;
-  ui.alert("Team Standings Inspection", msg, ui.ButtonSet.OK);
+  if (!stats) {
+    ui.alert("Inspection failed: getTeamStatsData function not found.");
+    return;
+  }
+  const r = stats.proactiveRunway;
+  const msg = `Team: ${TEST_TEAM_CODE}\n\n` +
+              `Status Tier: ${r.statusTier}\n` +
+              `Points Banked: ${r.verifiedPoints} / ${stats.playoffGoal}\n` +
+              `Projected with Full Setup: ${r.projectedWithFullSetup} / ${stats.playoffGoal}\n` +
+              `Ref Matches Needed: ${r.refMatchTarget}\n` +
+              `Home Ref Capacity: ${r.homeRefCapacity} pts (${r.homeGamesRemaining} home matches)\n` +
+              `Target Run-Rate: ${r.targetShiftsPerWeek} refs/wk over next 5 weeks\n\n` +
+              `Directive:\n${r.actionDirective}`;
+  ui.alert("Proactive Runway Inspection", msg, ui.ButtonSet.OK);
 }
