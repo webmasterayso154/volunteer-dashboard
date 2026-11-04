@@ -46,7 +46,7 @@ function setupAdminConfigSheet() {
 
   // Default Global Settings Data (Starting Row 3)
   const defaultSettings = [
-    ["PlayoffThreshold", 17],
+    ["PlayoffThreshold", 15],
     ["RefMaxCap", 10],
     ["FieldMarshalCap", 2],
     ["FieldSetupCap", 1],
@@ -120,7 +120,7 @@ function getAdminConfigSettings() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(ADMIN_CONFIG_SHEET);
   const defaults = {
-    PlayoffThreshold: 17,
+    PlayoffThreshold: 15,
     RefMaxCap: 10,
     FieldMarshalCap: 2,
     FieldSetupCap: 1,
