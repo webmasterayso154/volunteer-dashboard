@@ -10,10 +10,11 @@
  * - v1.0 (Aug 2026): Initial secure board authentication and rollup engine.
  * - v2.0 (Sep 8, 2026): Added direct HTML rendering routing in doGet.
  * - v3.0 (Sep 9, 2026): Calibrated to support Dual ARs per home match, exclude paid 
- *                      NOCRA refs, enforce individual slot deduplication, and support 
- *                      same-day Field Marshal shifts.
+ *                       NOCRA refs, enforce individual slot deduplication, and support 
+ *                       same-day Field Marshal shifts.
  * - v3.1 (Sep 9, 2026): Updated anomaly engine to label NOCRA assignments with
- *                      neutral status "NOCRA - No Points".
+ *                       neutral status "NOCRA - No Points".
+ * - v3.2 (Nov 3, 2026): Updated playoff qualification threshold from 17 to 15.
  * ============================================================================
  */
 
@@ -51,9 +52,9 @@ function getBoardDashboardData() {
 
   const settings = (typeof getAdminConfigSettings === 'function') 
     ? getAdminConfigSettings() 
-    : { PlayoffThreshold: 17, RefMaxCap: 10, FieldMarshalCap: 2, FieldSetupCap: 1, PictureDayCap: 2 };
+    : { PlayoffThreshold: 15, RefMaxCap: 10, FieldMarshalCap: 2, FieldSetupCap: 1, PictureDayCap: 2 };
 
-  const playoffThreshold = Number(settings.PlayoffThreshold) || 17;
+  const playoffThreshold = Number(settings.PlayoffThreshold) || 15;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   const allTeams = [...MASTER_TEAMS];
