@@ -118,7 +118,7 @@
 
   <div class="status-banner">
     <div><span class="status-dot">●</span> Connected to Live Season Master Ledger</div>
-    <div>Target: 17 Points (Min 7 Referee Points for Competitive Divisions)</div>
+    <div>Target: 15 Points (Min 7 Referee Points for Competitive Divisions)</div>
   </div>
 
   <main>
@@ -315,7 +315,7 @@
 
         divTeams.forEach(t => {
           const statusBadge = t.status === 'Qualified' ? 'badge-qualified' : (t.status === 'At-Risk' ? 'badge-risk' : 'badge-progress');
-          const targetPts = t.isCompetitive ? 17 : 8;
+          const targetPts = t.isCompetitive ? 15 : 8;
           const targetRef = t.isCompetitive ? 7 : 0;
           const inspectUrl = `index.html?team=${encodeURIComponent(t.teamCode)}`;
 
@@ -388,7 +388,7 @@
           refPoints: 7,
           fmPoints: 2,
           isCompetitive: true,
-          status: "In Progress"
+          status: "Qualified"
         },
         {
           division: "10U - Boys",
