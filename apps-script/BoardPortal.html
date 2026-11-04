@@ -242,7 +242,7 @@
   </header>
 
   <div class="banner">
-    ⚽ POST-SEASON ELIGIBILITY: Each team is required to have a minimum of 17 points to be eligible for post-season play (Cypress Cup & Playoffs)!
+    ⚽ POST-SEASON ELIGIBILITY: Each team is required to have a minimum of 15 points to be eligible for post-season play (Cypress Cup & Playoffs)!
   </div>
 
   <div id="draftBanner" class="draft-badge" style="display: none;">
@@ -272,7 +272,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-label">Playoff Threshold</div>
-          <div class="stat-value" id="statThreshold">17 pts</div>
+          <div class="stat-value" id="statThreshold">15 pts</div>
         </div>
       </div>
 
@@ -283,8 +283,8 @@
         </select>
         <select id="statusFilter" class="input-control" onchange="filterTeams()">
           <option value="">All Statuses</option>
-          <option value="qualified">Qualified (17+)</option>
-          <option value="pending">In Progress (&lt;17)</option>
+          <option value="qualified">Qualified (15+)</option>
+          <option value="pending">In Progress (&lt;15)</option>
         </select>
       </div>
 
@@ -370,7 +370,7 @@
         badge.style.display = 'inline-block';
       }
 
-      document.getElementById('statThreshold').innerText = (data.settings.PlayoffThreshold || 17) + " pts";
+      document.getElementById('statThreshold').innerText = (data.settings.PlayoffThreshold || 15) + " pts";
       document.getElementById('statTotalTeams').innerText = data.teams.length;
       document.getElementById('statQualified').innerText = data.teams.filter(t => t.qualified).length;
 
@@ -484,7 +484,7 @@
         return;
       }
 
-      const threshold = globalData.settings.PlayoffThreshold || 17;
+      const threshold = globalData.settings.PlayoffThreshold || 15;
 
       teams.forEach(t => {
         const pct = Math.min(100, Math.round((t.totalPoints / threshold) * 100));
@@ -550,7 +550,7 @@
 
       document.getElementById('modalDivision').innerText = team.division;
       document.getElementById('modalTeamName').innerText = team.coach;
-      document.getElementById('modalScoreSummary').innerText = 'Total Points: ' + team.totalPoints + ' (Playoff Goal: ' + (globalData.settings.PlayoffThreshold || 17) + ' pts)';
+      document.getElementById('modalScoreSummary').innerText = 'Total Points: ' + team.totalPoints + ' (Playoff Goal: ' + (globalData.settings.PlayoffThreshold || 15) + ' pts)';
       document.getElementById('modalAuditList').innerHTML = '<div style="padding: 12px; color: var(--text-muted);">Fetching detailed audit records...</div>';
       handleOverrideTypeChange();
       document.getElementById('detailModal').style.display = 'flex';
