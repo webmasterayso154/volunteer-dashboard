@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * AYSO REGION 154 CYPRESS — GAME DAY HUB & VOLUNTEER DASHBOARD API (Code.gs)
- * Version: 4.5.1 (Full 3-Section Sync + Team_Awards Log Injection + Auto-Audit Menu)
+ * Version: 4.5.0 (Full 3-Section Sync + Team_Awards Log Injection + Auto-Audit Menu)
  * ============================================================================
  */
 
@@ -289,7 +289,7 @@ function buildFullDashboardPayload_(requestedTeam) {
         volunteer: volunteerName,
         role: normalizeRoleLabel_(role),
         duty: normalizeRoleLabel_(role) + (fieldOrMatch ? ` (${fieldOrMatch})` : ''),
-        status: auditStatus || (pointsAwarded > 0 ? 'Recorded' : 'Pending'),
+       status: auditStatus || 'Recorded',
         points: pointsAwarded,
         reason: auditReason || fieldOrMatch,
         note: auditReason || fieldOrMatch,
