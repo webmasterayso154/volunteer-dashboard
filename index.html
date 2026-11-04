@@ -4,16 +4,15 @@
   AYSO REGION 154 - VOLUNTEER STANDINGS DASHBOARD
   ============================================================================
   File: index.html
-  Version: build_20261020_v4
-  Last Updated: October 20, 2026
+  Version: build_20261103_v1
+  Last Updated: November 3, 2026
   Author: AYSO 154 Webmaster
   
   CHANGELOG:
-  - [2026-10-20] API RECONNECT: Linked to Web App Deployment V2 / 4.5.0
-    (AKfycbz3o3rRzPb0MRfse8uJ6QrbqbH7JA-XgT8lX4kp5Fc3DdIekIlKbAQGN5-geZGBMFJ08w)
-    to reflect live self-healing spreadsheet formulas and Team_Awards integration.
-  - [2026-10-20] CACHE BUMP: Bumped APP_BUILD_ID to build_20261020_v4
-    to force client devices and edge CDNs to bypass the maintenance screen cache.
+  - [2026-11-03] THRESHOLD UPDATE: Reduced competitive division playoff 
+    qualification requirement from 17 to 15 points.
+  - [2026-11-03] CACHE BUMP: Bumped APP_BUILD_ID to build_20261103_v1 to bust 
+    stale client-side and CDN cached scripts.
   ============================================================================
 -->
 <html>
@@ -28,7 +27,7 @@
       // Bump together with the ?v= query on the support.js <script> tag below —
       // that query string is what actually forces mobile browsers/CDNs to fetch
       // a new copy of the runtime instead of reusing a disk-cached one.
-      var APP_BUILD_ID = 'build_20261020_v4';
+      var APP_BUILD_ID = 'build_20261103_v1';
       var RELOAD_GUARD = 'ayso_reload_guard';
 
       try {
@@ -93,7 +92,7 @@
       display: none;
     }
   </style>
-  <script src="./support.js?v=build_20261020_v4"></script>
+  <script src="./support.js?v=build_20261103_v1"></script>
 </head>
 
 <body>
@@ -376,7 +375,7 @@
                 <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive
                   Divisions (U8 - U19 &amp; EXTRA)</div>
                 <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a
-                  minimum of 17 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points
+                  minimum of 15 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points
                   are earned through Referee assignments (up to 10 on-field), Early Ref Scheduling Incentive (max 2),
                   Field Marshal (max 2), Friday Setup (Saturday for U8) (max 5), and Picture Day (max 2).</p>
               </div>
@@ -412,7 +411,7 @@
   </x-dc>
 
   <script type="text/x-dc" data-dc-script
-    data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:17,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
+    data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:15,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
 const API_URL = 'https://script.google.com/macros/s/AKfycbzKCMar8YRfgDvGVHZEkljMtOqxL0OtIYXf1aZUG3xMZZS8mRBwFNFuvDW8JKGUAd1bsA/exec';
 const CACHE_DIR = 'ayso154_cached_directory';
 const CACHE_TIME = 'ayso154_cached_timestamp';
@@ -633,7 +632,7 @@ class Component extends DCLogic {
     const isU8 = combinedString.includes('08U') || /\b8U\b/.test(combinedString);
     
     // Set division-specific target goals
-    let goal = this.props.pointsGoal ?? 17;
+    let goal = this.props.pointsGoal ?? 15;
     if (isPlayground) {
       goal = 4;
     } else if (isU5U6) {
