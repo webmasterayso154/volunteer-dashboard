@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * AYSO REGION 154 CYPRESS — GAME DAY HUB & VOLUNTEER DASHBOARD API (Code.gs)
- * Version: 4.5.0 (Full 3-Section Sync + Team_Awards Log Injection + Auto-Audit Menu)
+ * Version: 4.5.1 (Full 3-Section Sync + Team_Awards Log Injection + Auto-Audit Menu)
  * ============================================================================
  */
 
@@ -25,7 +25,7 @@ const CONFIG = {
     PICTURE_DAY: 2,
     CERTIFIED_REF: 5,
     MATCHTRAK_BONUS: 2,
-    PLAYOFF_GOAL: 17
+    PLAYOFF_GOAL: 15
   }
 };
 
