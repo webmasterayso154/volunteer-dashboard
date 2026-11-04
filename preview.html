@@ -304,7 +304,7 @@
           <div class="tier-box">
             <div class="tier-name">Tier 1: Banked Verified</div>
             <div class="tier-pts" id="ptsVerified">0</div>
-            <div class="tier-goal-sub">Goal: <span id="goalPtsVerified">17</span> pts</div>
+            <div class="tier-goal-sub">Goal: <span id="goalPtsVerified">15</span> pts</div>
           </div>
           <div class="tier-box">
             <div class="tier-name">Tier 2: Projected Base</div>
@@ -536,7 +536,7 @@
 
     function renderRunwayCard(teamCode, stats) {
       const r = stats.proactiveRunway || {};
-      const goal = stats.playoffGoal || 17;
+      const goal = stats.playoffGoal || 15;
 
       document.getElementById('teamDisplayTitle').innerText = teamCode;
       document.getElementById('teamDisplayCoach').innerText = `Playoff Target: ${goal} Points`;
@@ -568,7 +568,7 @@
       document.getElementById('directiveBody').innerText = r.actionDirective || 'Complete scheduled matches.';
 
       // 4. Action Runway Metrics
-      document.getElementById('metricGap').innerText = (r.gapTo17 !== undefined ? r.gapTo17 : Math.max(0, goal - (stats.totalPoints || 0))) + ' pts';
+      document.getElementById('metricGap').innerText = (r.gapTo15 !== undefined ? r.gapTo15 : (r.gapTo17 !== undefined ? r.gapTo17 : Math.max(0, goal - (stats.totalPoints || 0)))) + ' pts';
       document.getElementById('metricRefNeeded').innerText = r.refMatchTarget || 0;
       document.getElementById('metricRunRate').innerText = (r.targetShiftsPerWeek !== undefined ? r.targetShiftsPerWeek : 0) + ' shifts/wk';
       document.getElementById('metricCapacity').innerText = `${r.homeRefCapacity || 0} pts (${r.homeGamesRemaining || 0} home matches)`;
