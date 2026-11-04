@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * AYSO REGION 154 CYPRESS — AUTOMATED AUDIT & DISPUTE ENGINE (AuditEngine.gs)
- * Version: 4.5.0 (Check-In Auditor + Formula Injector + Automated Dispute Verifier)
+ * Version: 4.5.1 (Check-In Auditor + Formula Injector + Automated Dispute Verifier)
  * ============================================================================
  */
 
@@ -324,8 +324,8 @@ function injectTraceableLedgerFormulas(checkinsTabName) {
 
   for (let i = 0; i < numTeams; i++) {
     const r = i + 2;
-    // Playoff goal: Playground = 4, 05U/06U = 8, Competitive (08U+) = 17
-    const goalFormula = `=IF(REGEXMATCH($A${r}, "Playground"), 4, IF(REGEXMATCH($A${r}, "05U|5U|06U|6U"), 8, 17))`;
+    // Playoff goal: Playground = 4, 05U/06U = 8, Competitive (08U+) = 15
+    const goalFormula = `=IF(REGEXMATCH($A${r}, "Playground"), 4, IF(REGEXMATCH($A${r}, "05U|5U|06U|6U"), 8, 15))`;
 
     formulaRows.push([
       `=MIN(10, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Referee"))`, // Col D: Ref
@@ -340,7 +340,7 @@ function injectTraceableLedgerFormulas(checkinsTabName) {
       `=MAX(0, 2 - E${r})`, // Col M: Pending FM Obligations
       `=K${r} + M${r}`, // Col N: Projected Base Points
       `=N${r} + MAX(0, 5 - F${r})`, // Col O: Projected with Full Setup
-      `=MAX(0, L${r} - O${r})`, // Col P: Gap to 17 (With Full Setup)
+      `=MAX(0, L${r} - O${r})`, // Col P: Gap to 15 (With Full Setup)
       `=MAX(0, L${r} - N${r})`, // Col Q: Ref Match Target
       `0`, // Col R: Home Games Remaining
       `=R${r}*2`, // Col S: Home Ref Capacity
