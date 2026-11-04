@@ -17,7 +17,7 @@ const AUDIT = Object.freeze({
   SEASON: 'Fall 2026',
   FORM_TITLE: 'Cypress AYSO Region 154 — Volunteer Point Review',
   SPREADSHEET_NAME: 'AYSO 154 - 2026 Playoff Audit Responses',
-  REQUIRED_POINTS: 17,
+  REQUIRED_POINTS: 15,
   MAX_SHIFTS_PER_CHALLENGE: 5,
   POSTING_DELAY_HOURS: 48,
   LOOKBACK_DAYS: 14,
@@ -168,11 +168,11 @@ function buildAuditForm_(form) {
   // This PageBreakItem begins the threshold page. Role choices jump here.
   const thresholdPage = form.addPageBreakItem()
     .setTitle('Check the Team Dashboard First')
-    .setHelpText('Teams at 17 verified points are already qualified and do not need a review.');
+    .setHelpText('Teams at 15 verified points are already qualified and do not need a review.');
 
   const points = form.addListItem()
     .setTitle('How many verified points are currently shown for your team?')
-    .setHelpText('Use the live dashboard total. Choose 17+ if the team has already qualified.')
+    .setHelpText('Use the live dashboard total. Choose 15+ if the team has already qualified.')
     .setRequired(true);
 
   // PAGE 3 — team identity.
@@ -202,7 +202,7 @@ function buildAuditForm_(form) {
   const more2 = addMoreShiftQuestion_(form, 3);
 
   const shift3Page = form.addPageBreakItem().setTitle('Missing Shift 3');
-  addShiftQuestions_(form, 3, true);
+  addShiftQuestions_(form, 2, true);
   const more3 = addMoreShiftQuestion_(form, 4);
 
   const shift4Page = form.addPageBreakItem().setTitle('Missing Shift 4');
@@ -264,7 +264,7 @@ function buildAuditForm_(form) {
   const qualifiedExitPage = form.addPageBreakItem()
     .setTitle('Your Team Is Already Qualified')
     .setHelpText(
-      'Your team has reached the 17 verified points required for post-season eligibility. ' +
+      'Your team has reached the 15 verified points required for post-season eligibility. ' +
       'Additional points do not change qualification or seeding, so no audit request is needed.'
     );
 
@@ -280,7 +280,7 @@ function buildAuditForm_(form) {
   for (let p = 0; p < AUDIT.REQUIRED_POINTS; p++) {
     pointChoices.push(points.createChoice(String(p), identityPage));
   }
-  pointChoices.push(points.createChoice('17 or more — team is qualified', qualifiedExitPage));
+  pointChoices.push(points.createChoice('15 or more — team is qualified', qualifiedExitPage));
   points.setChoices(pointChoices);
 
   more1.setChoices([
@@ -750,7 +750,7 @@ function formDescriptionForPhase_(now) {
   const intro =
     'FALL 2026 POST-SEASON ELIGIBILITY\n\n' +
     'This private link is for rostered Head Coaches and Team Managers. Submit one consolidated ' +
-    'request per team challenge. Teams with 17 verified points are already qualified.\n\n';
+    'request per team challenge. Teams with 15 verified points are already qualified.\n\n';
   if (now <= standardCutoff) {
     return intro +
       'STANDARD REQUEST DEADLINE: Sunday, November 8 at 5:00 PM Pacific Time.\n' +
@@ -954,8 +954,8 @@ function refreshDashboard() {
   const rows = [
     ['Region 154 Fall 2026 Volunteer Point Review', ''],
     ['Last Refreshed', new Date()],
-    ['Teams at 17+', '=COUNTIF(' + teamName + '!' + col(th['Current Verified Points']) + '2:' + col(th['Current Verified Points']) + ',">=17")'],
-    ['Teams below 17', '=COUNTIFS(' + teamName + '!' + col(th['Current Verified Points']) + '2:' + col(th['Current Verified Points']) + ',"<17",' + teamName + '!' + col(th['Team Code']) + '2:' + col(th['Team Code']) + ',"<>")'],
+    ['Teams at 15+', '=COUNTIF(' + teamName + '!' + col(th['Current Verified Points']) + '2:' + col(th['Current Verified Points']) + ',">=15")'],
+    ['Teams below 15', '=COUNTIFS(' + teamName + '!' + col(th['Current Verified Points']) + '2:' + col(th['Current Verified Points']) + ',"<15",' + teamName + '!' + col(th['Team Code']) + '2:' + col(th['Team Code']) + ',"<>")'],
     ['Open Tickets', '=COUNTIFS(' + queueName + '!' + col(qh['Ticket ID']) + '2:' + col(qh['Ticket ID']) + ',"<>",' + queueName + '!' + col(qh['Workflow Status']) + '2:' + col(qh['Workflow Status']) + ',"<>Closed")'],
     ['Needs Information', '=COUNTIF(' + queueName + '!' + col(qh['Workflow Status']) + '2:' + col(qh['Workflow Status']) + ',"Needs Information")'],
     ['Unassigned Open Tickets', '=COUNTIFS(' + queueName + '!' + col(qh['Auditor Assigned']) + '2:' + col(qh['Auditor Assigned']) + ',"",' + queueName + '!' + col(qh['Ticket ID']) + '2:' + col(qh['Ticket ID']) + ',"<>",' + queueName + '!' + col(qh['Workflow Status']) + '2:' + col(qh['Workflow Status']) + ',"<>Closed")'],
@@ -1343,7 +1343,7 @@ function getTeamLedgerPreCheck_(teamCode, masterSs) {
   const matchtrakPts = idxMatch !== -1 ? Number(matchRow[idxMatch]) || 0 : 0;
   const otherPts = idxOther !== -1 ? Number(matchRow[idxOther]) || 0 : 0;
   const totalPts = idxTotal !== -1 ? Number(matchRow[idxTotal]) || 0 : (refPts + fmPts + setupPts + picPts + certRefPts + matchtrakPts + otherPts);
-  const playoffGoal = idxGoal !== -1 ? Number(matchRow[idxGoal]) || 17 : 17;
+  const playoffGoal = idxGoal !== -1 ? Number(matchRow[idxGoal]) || 15 : 15;
   const playoffStatus = idxStatus !== -1 ? String(matchRow[idxStatus] || '').trim() : (totalPts >= playoffGoal ? 'Qualified' : `${playoffGoal - totalPts} pts needed`);
 
   const isAlreadyQualified = totalPts >= playoffGoal;
@@ -1593,7 +1593,7 @@ function formatDisputeDossier(ticket) {
     `- **Received:** ${t.received} | **Priority:** ${t.priority} | **Timely:** ${t.timely}`,
     '',
     `#### 📊 Season Master Ledger Pre-Check`,
-    `- **Verified Points:** **${l.totalPts !== undefined ? l.totalPts : 'N/A'}** / ${l.playoffGoal || 17} pts (${l.playoffStatus || 'Unknown'})`,
+    `- **Verified Points:** **${l.totalPts !== undefined ? l.totalPts : 'N/A'}** / ${l.playoffGoal || 15} pts (${l.playoffStatus || 'Unknown'})`,
     `- **Current Breakdown:** Ref: ${b.refPts || 0}/10 | FM: ${b.fmPts || 0}/2 | Setup: ${b.setupPts || 0}/5 | Pic: ${b.picPts || 0}/2 | CertRef: ${b.certRefPts || 0}/5 | MatchTrak: ${b.matchtrakPts || 0}/2 | Other: ${b.otherPts || 0}`,
     `- **Qualification Status:** ${l.isAlreadyQualified ? '🏆 **ALREADY QUALIFIED**' : `⏳ **${l.pointsNeeded || 0} pts needed**`}`
   ];
@@ -1627,7 +1627,7 @@ function formatDisputeDossier(ticket) {
   lines.push(
     '',
     `#### 🤖 Suggested Gem Adjudication Prompt`,
-    `> "Please evaluate ticket \`${t.ticketId}\` for team \`${t.team.teamCode}\`. Volunteer \`${t.shifts.map(s => s.volunteerName).join(', ')}\` claimed shift(s) in \`${t.shifts.map(s => s.category).join(', ')}\`. The team has ${l.totalPts !== undefined ? l.totalPts : 'N/A'}/${l.playoffGoal || 17} pts. Cross-reference against physical tent records/match cards. If verified, approve points into target column ('pictureDay' or 'adjustment'). If cap is exceeded or unverified, deny with reason."`
+    `> "Please evaluate ticket \`${t.ticketId}\` for team \`${t.team.teamCode}\`. Volunteer \`${t.shifts.map(s => s.volunteerName).join(', ')}\` claimed shift(s) in \`${t.shifts.map(s => s.category).join(', ')}\`. The team has ${l.totalPts !== undefined ? l.totalPts : 'N/A'}/${l.playoffGoal || 15} pts. Cross-reference against physical tent records/match cards. If verified, approve points into target column ('pictureDay' or 'adjustment'). If cap is exceeded or unverified, deny with reason."`
   );
 
   return lines.join('\n');
