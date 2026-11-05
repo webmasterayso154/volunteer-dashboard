@@ -6,28 +6,61 @@
  */
 
 const CONFIG = {
-  SHEETS: {
-    CHECKINS: 'Game Day Check-ins',
-    FALLBACK_CHECKINS: 'Form Responses 3',
-    LEGACY_CHECKINS: 'Form Responses 1',
-    DISPUTES: 'Form Responses 2',
-    LEDGER: 'Season_Master_Ledger',
-    AWARDS: 'Team_Awards',
-    SCHEDULE: 'Season_Master_Schedule',
-    ADMIN: 'Admin_Config',
-    SETTINGS: 'Settings',
-    DISPUTE_REPORT: 'Dispute_Audit_Report'
+  get SHEETS() {
+    return (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.SHEETS)
+      ? VOLUNTEER_POLICY.SHEETS
+      : {
+          CHECKINS: 'Game Day Check-ins',
+          FALLBACK_CHECKINS: 'Form Responses 3',
+          LEGACY_CHECKINS: 'Form Responses 1',
+          DISPUTES: 'Form Responses 2',
+          LEDGER: 'Season_Master_Ledger',
+          AWARDS: 'Team_Awards',
+          SCHEDULE: 'Season_Master_Schedule',
+          ADMIN: 'Admin_Config',
+          SETTINGS: 'Settings',
+          DISPUTE_REPORT: 'Dispute_Audit_Report'
+        };
   },
-  CAPS: {
-    REFEREE: 10,
-    FIELD_MARSHAL: 2,
-    FIELD_SETUP: 5,
-    PICTURE_DAY: 2,
-    CERTIFIED_REF: 5,
-    MATCHTRAK_BONUS: 2,
-    PLAYOFF_GOAL: 15
+  get CAPS() {
+    const caps = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS)
+      ? VOLUNTEER_POLICY.CATEGORY_CAPS
+      : { REFEREE: 10, FIELD_MARSHAL: 2, FIELD_SETUP: 5, PICTURE_DAY: 2, CERTIFIED_REF: 5, MATCHTRAK_BONUS: 2, OTHER_ADJUSTMENTS: 5 };
+    const thresholds = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.THRESHOLDS)
+      ? VOLUNTEER_POLICY.THRESHOLDS
+      : { DEFAULT: 17 };
+    return {
+      REFEREE: caps.REFEREE !== undefined ? caps.REFEREE : 10,
+      FIELD_MARSHAL: caps.FIELD_MARSHAL !== undefined ? caps.FIELD_MARSHAL : 2,
+      FIELD_SETUP: caps.FIELD_SETUP !== undefined ? caps.FIELD_SETUP : 5,
+      PICTURE_DAY: caps.PICTURE_DAY !== undefined ? caps.PICTURE_DAY : 2,
+      CERTIFIED_REF: caps.CERTIFIED_REF !== undefined ? caps.CERTIFIED_REF : 5,
+      MATCHTRAK_BONUS: caps.MATCHTRAK_BONUS !== undefined ? caps.MATCHTRAK_BONUS : 2,
+      OTHER_ADJUSTMENTS: caps.OTHER_ADJUSTMENTS !== undefined ? caps.OTHER_ADJUSTMENTS : 5,
+      PLAYOFF_GOAL: thresholds.DEFAULT !== undefined ? thresholds.DEFAULT : 17
+    };
   }
 };
+
+/**
+ * 68-Team Canonical Fall 2026 Master Roster
+ */
+var MASTER_TEAMS = (typeof MASTER_TEAMS !== 'undefined') ? MASTER_TEAMS : [
+  "Playground - Playground",
+  "05U - Boys - Stefan Colvey", "05U - Boys - Casey Harpham", "05U - Boys - Ryan Loza", "05U - Boys - Ankit Vasa", "05U - Boys - Greg Weber",
+  "05U - Girls - Priscilla Alvardo", "05U - Girls - Tim Bouahom", "05U - Girls - Ramzi Nasr", "05U - Girls - Saul Ruiz",
+  "06U - Boys - Matt Davis", "06U - Boys - Ryan Fox", "06U - Boys - Christian Hughes", "06U - Boys - James Moore", "06U - Boys - Brennen Portalski", "06U - Boys - Jonathan Salcido", "06U - Boys - Mark Sandoval",
+  "06U - Girls - Chris Baker", "06U - Girls - Chris Brooks", "06U - Girls - Robert Campbell", "06U - Girls - Jesse Hernandez", "06U - Girls - John Lindley", "06U - Girls - Matthew Ramos", "06U - Girls - Lucky Relator", "06U - Girls - Jonathan Vasquez",
+  "08U - Boys - Justin Bice", "08U - Boys - Andrew Evango", "08U - Boys - Casey Harpham", "08U - Boys - Jesse Hernandez", "08U - Boys - Michael Kelly", "08U - Boys - Patrick McCartin", "08U - Boys - Juan Rodriguez", "08U - Boys - Roberto Rojas", "08U - Boys - Amanda Towers", "08U - Boys - Ryan West",
+  "08U - Girls - Robert Campbell", "08U - Girls - Ryan Loza", "08U - Girls - Matthew Ramos", "08U - Girls - Juan Rodriguez", "08U - Girls - Crystal Van Maanen", "08U - Girls - Ankit Vasa",
+  "10U - Boys - Faheem Armanyous", "10U - Boys - Andrew Evango", "10U - Boys - Harold Huang", "10U - Boys - Michael Lewis", "10U - Boys - Jose Mendoza", "10U - Boys - Joshua Palafox",
+  "10U - Girls - Dustin Brieger", "10U - Girls - Ryan Bulatao", "10U - Girls - Dawn Caires", "10U - Girls - Josie Cotton", "10U - Girls - Donald Martin",
+  "12U - Boys - Faheem Armanyous", "12U - Boys - Jonathan Flores", "12U - Boys - Isaiah Hicks", "12U - Boys - Michael Lewis",
+  "12U - Girls - Saul Alvarez", "12U - Girls - David Corado", "12U - Girls - Carlos Cruz", "12U - Girls - Fernando Huerta",
+  "14U - Boys - Mina Abader", "14U - Boys - Christian Villalobos", "14U - Girls - Ray Garcia", "14U - Girls - Matt Miller",
+  "16U - Boys - Donald Martin", "16U - Girls - Chris Brooks",
+  "19U - Boys - Jennifer Deselm", "19U - Girls - Josh Palafox"
+];
 
 /**
  * Returns the live check-ins tab: 'Game Day Check-ins', else 'Form Responses 3', else 'Form Responses 1'.
@@ -89,6 +122,19 @@ function doGet(e) {
       }
     }
 
+    if (action === 'policy' || action === 'config') {
+      const policyData = (typeof VOLUNTEER_POLICY !== 'undefined')
+        ? VOLUNTEER_POLICY
+        : { status: 'default', message: 'VOLUNTEER_POLICY not initialized' };
+      const jsonString = JSON.stringify(policyData);
+      if (params.callback) {
+        return ContentService.createTextOutput(`${params.callback}(${jsonString})`)
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      }
+      return ContentService.createTextOutput(jsonString)
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // index.html sends ?action=getDirectory and ?action=getTeamStats&teamCode=...
     const teamParam = params.teamCode || params.team || '';
 
@@ -97,6 +143,8 @@ function doGet(e) {
       payload = getDirectoryData();
     } else if (action === 'getboardledger') {
       payload = getBoardLedgerData();
+    } else if (action === 'getallstandings' || action === 'standings') {
+      payload = getAllStandingsData();
     } else if ((action === 'getteamstats' || action === 'team') && teamParam) {
       payload = getTeamStatsData(teamParam);
     } else if (action === 'disputes') {
@@ -327,7 +375,13 @@ function buildFullDashboardPayload_(requestedTeam) {
 
     // Total Verified Points (Col K) — guaranteed equal to sum of D..J
     const totalPoints = refPts + fmPts + setupPts + picPts + certRefPts + matchTrakPts + otherAdjPts;
-    const playoffGoal = Number(row[11]) || CONFIG.CAPS.PLAYOFF_GOAL;
+    const playoffGoal = (row[11] !== undefined && row[11] !== '' && !isNaN(Number(row[11])) && Number(row[11]) > 0)
+      ? Number(row[11])
+      : (typeof getPlayoffGoalForTeam === 'function' ? getPlayoffGoalForTeam(teamCode || division) : (CONFIG.CAPS.PLAYOFF_GOAL || 17));
+    const pointsNeeded = Math.max(0, playoffGoal - totalPoints);
+    const isClinched = totalPoints >= playoffGoal;
+    const rawStatus = String(row[20] || '').trim();
+    const eligibilityStatus = isClinched ? '🟢 CLINCHED' : (rawStatus || 'In Progress');
 
     // Build synthetic Check-In Log items from Team_Awards so Bottom Section matches Top & Middle
     const awardObj = awardsMap[cKey] || {
@@ -380,9 +434,11 @@ function buildFullDashboardPayload_(requestedTeam) {
       coach: headCoach,
       headCoach: headCoach,
       totalPoints: totalPoints,
+      verifiedPoints: totalPoints,
       playoffGoal: playoffGoal,
-      pointsNeeded: Math.max(0, playoffGoal - totalPoints),
-      eligibilityStatus: String(row[20] || ''),
+      pointsNeeded: pointsNeeded,
+      isClinched: isClinched,
+      eligibilityStatus: eligibilityStatus,
       actionDirective: String(row[21] || ''),
       lastAudited: formatDateSafe_(row[22]),
       categories: categories,
@@ -415,6 +471,7 @@ function buildFullDashboardPayload_(requestedTeam) {
       coach: headCoach,
       label: `${division} · Coach ${headCoach}`,
       totalPoints: totalPoints,
+      verifiedPoints: totalPoints,
       playoffGoal: playoffGoal
     });
   }
@@ -440,8 +497,15 @@ function buildFullDashboardPayload_(requestedTeam) {
     teams: teams,
     ...(selectedTeamData ? {
       teamCode: selectedTeamData.teamCode,
+      division: selectedTeamData.division,
+      headCoach: selectedTeamData.headCoach,
       totalPoints: selectedTeamData.totalPoints,
+      verifiedPoints: selectedTeamData.totalPoints,
       playoffGoal: selectedTeamData.playoffGoal,
+      pointsNeeded: selectedTeamData.pointsNeeded,
+      isClinched: selectedTeamData.isClinched,
+      eligibilityStatus: selectedTeamData.eligibilityStatus,
+      actionDirective: selectedTeamData.actionDirective,
       categories: selectedTeamData.categories,
       categoryBreakdown: selectedTeamData.categoryBreakdown,
       audit: selectedTeamData.audit,
@@ -454,7 +518,103 @@ function buildFullDashboardPayload_(requestedTeam) {
  * Returns data for a single team (used when ?action=team&team=... is called).
  */
 function getTeamStatsData(teamName) {
-  return buildFullDashboardPayload_(teamName);
+  const full = buildFullDashboardPayload_(teamName);
+  if (teamName && full.teams) {
+    const reqKey = canonicalComparisonKey_(teamName);
+    for (const k in full.teams) {
+      if (canonicalComparisonKey_(k) === reqKey) {
+        const t = full.teams[k];
+        const verifiedPoints = Number(t.totalPoints || 0);
+        const playoffGoal = (t.playoffGoal !== undefined && t.playoffGoal !== null && !isNaN(t.playoffGoal))
+          ? Number(t.playoffGoal)
+          : (typeof getPlayoffGoalForTeam === 'function' ? getPlayoffGoalForTeam(t.teamCode) : 17);
+        const pointsNeeded = Math.max(0, playoffGoal - verifiedPoints);
+        const isClinched = verifiedPoints >= playoffGoal;
+        const eligibilityStatus = isClinched ? '🟢 CLINCHED' : (t.eligibilityStatus || 'In Progress');
+
+        return {
+          status: 'ok',
+          teamCode: t.teamCode,
+          division: t.division,
+          coach: t.headCoach,
+          headCoach: t.headCoach,
+          verifiedPoints: verifiedPoints,
+          totalPoints: verifiedPoints,
+          playoffGoal: playoffGoal,
+          pointsNeeded: pointsNeeded,
+          isClinched: isClinched,
+          eligibilityStatus: eligibilityStatus,
+          actionDirective: t.actionDirective,
+          lastAudited: t.lastAudited,
+          categories: t.categories,
+          categoryBreakdown: t.categoryBreakdown,
+          audit: t.audit,
+          logs: t.logs
+        };
+      }
+    }
+  }
+
+  // Fallback for team not in ledger
+  const fallbackGoal = typeof getPlayoffGoalForTeam === 'function' ? getPlayoffGoalForTeam(teamName) : 17;
+  return {
+    status: 'ok',
+    teamCode: teamName,
+    verifiedPoints: 0,
+    totalPoints: 0,
+    playoffGoal: fallbackGoal,
+    pointsNeeded: fallbackGoal,
+    isClinched: false,
+    eligibilityStatus: 'In Progress',
+    categories: {},
+    categoryBreakdown: [],
+    audit: [],
+    logs: []
+  };
+}
+
+/**
+ * Returns all team standings data, deriving threshold from Column L first, falling back to getPlayoffGoalForTeam(teamCode).
+ */
+function getAllStandingsData() {
+  const full = buildFullDashboardPayload_('');
+  const seen = new Set();
+  const standings = [];
+
+  Object.keys(full.teams || {}).forEach(key => {
+    const t = full.teams[key];
+    if (seen.has(t.teamCode)) return;
+    seen.add(t.teamCode);
+
+    const verifiedPoints = Number(t.totalPoints || 0);
+    const playoffGoal = (t.playoffGoal !== undefined && t.playoffGoal !== null && !isNaN(t.playoffGoal))
+      ? Number(t.playoffGoal)
+      : (typeof getPlayoffGoalForTeam === 'function' ? getPlayoffGoalForTeam(t.teamCode) : 17);
+    const pointsNeeded = Math.max(0, playoffGoal - verifiedPoints);
+    const isClinched = verifiedPoints >= playoffGoal;
+    const status = isClinched ? '🟢 CLINCHED' : (pointsNeeded <= 3 ? '🟠 ACTION REQUIRED' : 'In Progress');
+
+    standings.push({
+      division: t.division,
+      teamCode: t.teamCode,
+      headCoach: t.headCoach,
+      verifiedPoints: verifiedPoints,
+      totalPoints: verifiedPoints,
+      playoffGoal: playoffGoal,
+      pointsNeeded: pointsNeeded,
+      isClinched: isClinched,
+      status: status,
+      categories: t.categories,
+      lastAudited: t.lastAudited
+    });
+  });
+
+  return {
+    status: 'ok',
+    syncTimestamp: full.syncTimestamp,
+    standings: standings,
+    teams: standings
+  };
 }
 
 /**
@@ -483,10 +643,17 @@ function getBoardLedgerData() {
     if (seen.has(t.teamCode)) return; // skip the no-leading-zero alias keys
     seen.add(t.teamCode);
 
+    const verifiedPoints = Number(t.totalPoints || 0);
+    const playoffGoal = (t.playoffGoal !== undefined && t.playoffGoal !== null && !isNaN(t.playoffGoal))
+      ? Number(t.playoffGoal)
+      : (typeof getPlayoffGoalForTeam === 'function' ? getPlayoffGoalForTeam(t.teamCode) : 17);
+    const pointsNeeded = Math.max(0, playoffGoal - verifiedPoints);
+    const isClinched = verifiedPoints >= playoffGoal;
+
     let status = 'In Progress';
-    if (t.totalPoints >= t.playoffGoal) {
+    if (isClinched) {
       status = 'Qualified';
-    } else if (/CRITICAL|ACTION REQUIRED/i.test(t.eligibilityStatus)) {
+    } else if (/CRITICAL|ACTION REQUIRED/i.test(t.eligibilityStatus) || pointsNeeded <= 3) {
       status = 'At-Risk';
     }
 
@@ -494,15 +661,24 @@ function getBoardLedgerData() {
       division: t.division,
       teamCode: t.teamCode,
       headCoach: t.headCoach,
-      verifiedPoints: t.totalPoints,
-      playoffGoal: t.playoffGoal,
+      verifiedPoints: verifiedPoints,
+      playoffGoal: playoffGoal,
+      pointsNeeded: pointsNeeded,
+      isClinched: isClinched,
       refPoints: t.categories['Referee Assignment'],
       fmPoints: t.categories['Field Marshal Shift'],
       status: status,
-      isCompetitive: t.playoffGoal >= CONFIG.CAPS.PLAYOFF_GOAL,
+      isCompetitive: playoffGoal >= 17,
       lastAudited: t.lastAudited
     });
   });
+
+  return {
+    status: 'ok',
+    syncTimestamp: full.syncTimestamp,
+    teams: teams
+  };
+}
 
   return {
     status: 'ok',
@@ -659,4 +835,20 @@ function formatTimeSafe_(val) {
     return Utilities.formatDate(val, Session.getScriptTimeZone() || 'America/Los_Angeles', 'h:mm a');
   }
   return String(val).trim();
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    CONFIG,
+    MASTER_TEAMS,
+    getPlayoffGoalForTeam,
+    getTeamStatsData,
+    getAllStandingsData,
+    buildFullDashboardPayload_,
+    getBoardLedgerData,
+    getDirectoryData,
+    getGameDayCheckinsSheet,
+    canonicalComparisonKey_,
+    normalizeTeamKey_
+  };
 }

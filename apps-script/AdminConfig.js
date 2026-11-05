@@ -1,7 +1,103 @@
 /**
- * AYSO Region 154 - Admin Configuration Engine
- * Generates and reads the unified Admin_Config control tab.
+ * ============================================================================
+ * AYSO REGION 154 - MASTER VOLUNTEER POLICY & ADMIN CONFIGURATION (SSOT)
+ * ============================================================================
+ * Single Source of Truth for all volunteer point rules, division qualification
+ * thresholds, category caps, and Google Sheets formula generators.
  */
+
+const VOLUNTEER_POLICY = Object.freeze({
+  THRESHOLDS: Object.freeze({
+    PLAYGROUND: 4,
+    U5_U6: 7,
+    U8: 15,
+    U10_U19: 17,
+    DEFAULT: 17
+  }),
+  CATEGORY_CAPS: Object.freeze({
+    FIELD_SETUP: 5,
+    REFEREE: 10,
+    FIELD_MARSHAL: 2,
+    PICTURE_DAY: 2,
+    CERTIFIED_REF: 5,
+    MATCHTRAK_BONUS: 2,
+    OTHER_ADJUSTMENTS: 5
+  }),
+  AUDIT: Object.freeze({
+    POSTING_DELAY_HOURS: 48,
+    LOOKBACK_DAYS: 14,
+    MAX_SHIFTS_PER_CHALLENGE: 5
+  }),
+  SHEETS: Object.freeze({
+    LEDGER: 'Season_Master_Ledger',
+    CHECKINS: 'Game Day Check-ins',
+    FALLBACK_CHECKINS: 'Form Responses 3',
+    LEGACY_CHECKINS: 'Form Responses 1',
+    DISPUTES: 'Form Responses 2',
+    AWARDS: 'Team_Awards',
+    SCHEDULE: 'Season_Master_Schedule',
+    ADMIN: 'Admin_Config',
+    SETTINGS: 'Settings',
+    DISPUTE_REPORT: 'Dispute_Audit_Report'
+  })
+});
+
+/**
+ * Resolves the division playoff qualification goal for a given team code or division string.
+ * @param {string} teamCodeOrDivision Team code or division string (e.g. '05U', '8U', '10U - Boys - Coach')
+ * @returns {number} Required qualification points
+ */
+function getPlayoffGoalForTeam(teamCodeOrDivision) {
+  if (!teamCodeOrDivision) return VOLUNTEER_POLICY.THRESHOLDS.DEFAULT;
+  const s = String(teamCodeOrDivision).trim().toUpperCase();
+  const t = VOLUNTEER_POLICY.THRESHOLDS;
+
+  if (/PLAYGROUND|SCHOOLYARD/i.test(s)) {
+    return t.PLAYGROUND;
+  }
+  // 5U & 6U: e.g. 05U, 5U, 06U, 6U, BU05, GU06, BU5, GU6, 5UB, 6UG, etc.
+  if (/(?:^|[^\d])0?[56]U\b/i.test(s) || /\b[BG]U0?[56]\b/i.test(s) || /-[056]U/i.test(s) || /\b0?[56]U[BG]\b/i.test(s)) {
+    return t.U5_U6;
+  }
+  // 8U: e.g. 08U, 8U, BU08, GU08, BU8, GU8, 8UB, 8UG, etc.
+  if (/(?:^|[^\d])0?8U\b/i.test(s) || /\b[BG]U0?8\b/i.test(s) || /-0?8U/i.test(s) || /\b0?8U[BG]\b/i.test(s)) {
+    return t.U8;
+  }
+  // 10U through 19U (10U, 12U, 14U, 16U, 19U)
+  if (/(?:^|[^\d])1[02469]U\b/i.test(s) || /\b[BG]U1[02469]\b/i.test(s) || /-1[02469]U/i.test(s) || /\b1[02469]U[BG]\b/i.test(s)) {
+    return t.U10_U19;
+  }
+
+  // Fallback regex matching general division pattern:
+  const match = s.match(/(?:U0?(\d+)|0?(\d+)U)/i);
+  if (match) {
+    const divNum = parseInt(match[1] || match[2], 10);
+    if (divNum === 5 || divNum === 6) return t.U5_U6;
+    if (divNum === 8) return t.U8;
+    if (divNum >= 10 && divNum <= 19) return t.U10_U19;
+  }
+
+  return t.DEFAULT;
+}
+
+/**
+ * Dynamically generates the Google Sheets formula for Column L (Playoff Goal) using VOLUNTEER_POLICY.THRESHOLDS.
+ * @param {number} rowNumber Row index in Season_Master_Ledger
+ * @returns {string} Formula string
+ */
+function getLedgerGoalFormula(rowNumber) {
+  const t = VOLUNTEER_POLICY.THRESHOLDS;
+  return `=IF(REGEXMATCH($A${rowNumber}, "Playground"), ${t.PLAYGROUND}, IF(REGEXMATCH($A${rowNumber}, "05U|5U|06U|6U"), ${t.U5_U6}, IF(REGEXMATCH($A${rowNumber}, "08U|8U"), ${t.U8}, ${t.U10_U19})))`;
+}
+
+/**
+ * Dynamically generates the Google Sheets formula for Column P (Gap to Playoff Goal with Full Setup).
+ * @param {number} rowNumber Row index in Season_Master_Ledger
+ * @returns {string} Formula string
+ */
+function getLedgerGapFormula(rowNumber) {
+  return `=MAX(0, L${rowNumber} - O${rowNumber})`;
+}
 
 const ADMIN_CONFIG_SHEET = "Admin_Config";
 var PRODUCTION_SHEET_ID = (typeof PRODUCTION_SHEET_ID !== 'undefined') ? PRODUCTION_SHEET_ID : "1RWPNUjVeRRcHiI18b8_IzLn1RzKHG3hLJvIbZjWq6Bc";
@@ -46,11 +142,11 @@ function setupAdminConfigSheet() {
 
   // Default Global Settings Data (Starting Row 3)
   const defaultSettings = [
-    ["PlayoffThreshold", 15],
-    ["RefMaxCap", 10],
-    ["FieldMarshalCap", 2],
-    ["FieldSetupCap", 1],
-    ["PictureDayCap", 2],
+    ["PlayoffThreshold", VOLUNTEER_POLICY.THRESHOLDS.DEFAULT],
+    ["RefMaxCap", VOLUNTEER_POLICY.CATEGORY_CAPS.REFEREE],
+    ["FieldMarshalCap", VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_MARSHAL],
+    ["FieldSetupCap", VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP],
+    ["PictureDayCap", VOLUNTEER_POLICY.CATEGORY_CAPS.PICTURE_DAY],
     ["StandingsFrozen", false]
   ];
   sheet.getRange("D3:E8").setValues(defaultSettings);
@@ -120,11 +216,11 @@ function getAdminConfigSettings() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(ADMIN_CONFIG_SHEET);
   const defaults = {
-    PlayoffThreshold: 15,
-    RefMaxCap: 10,
-    FieldMarshalCap: 2,
-    FieldSetupCap: 1,
-    PictureDayCap: 2,
+    PlayoffThreshold: VOLUNTEER_POLICY.THRESHOLDS.DEFAULT,
+    RefMaxCap: VOLUNTEER_POLICY.CATEGORY_CAPS.REFEREE,
+    FieldMarshalCap: VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_MARSHAL,
+    FieldSetupCap: VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP,
+    PictureDayCap: VOLUNTEER_POLICY.CATEGORY_CAPS.PICTURE_DAY,
     StandingsFrozen: false
   };
 
@@ -191,4 +287,18 @@ function getSupplementalTeams() {
   });
 
   return teams;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    VOLUNTEER_POLICY,
+    getPlayoffGoalForTeam,
+    getLedgerGoalFormula,
+    getLedgerGapFormula,
+    setupAdminConfigSheet,
+    getAuthorizedBoardEmails,
+    getAdminConfigSettings,
+    setAdminConfigSetting,
+    getSupplementalTeams
+  };
 }

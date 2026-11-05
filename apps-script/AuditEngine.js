@@ -11,9 +11,12 @@
  */
 function runAuditAndSyncLedger() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.SHEETS)
+    ? VOLUNTEER_POLICY.SHEETS
+    : { CHECKINS: 'Game Day Check-ins', AWARDS: 'Team_Awards', LEDGER: 'Season_Master_Ledger' };
   const checkinsSheet = getGameDayCheckinsSheet(ss);
-  const awardsSheet = ss.getSheetByName('Team_Awards');
-  const ledgerSheet = ss.getSheetByName('Season_Master_Ledger');
+  const awardsSheet = ss.getSheetByName(sheets.AWARDS);
+  const ledgerSheet = ss.getSheetByName(sheets.LEDGER);
 
   if (!checkinsSheet || !awardsSheet || !ledgerSheet) {
     throw new Error('Required sheets (Game Day Check-ins / Form Responses 3 / Form Responses 1, Team_Awards, Season_Master_Ledger) not found.');
@@ -56,9 +59,12 @@ function runAuditAndSyncLedger() {
   ]]);
 
   // Track caps & duplicates during chronological scan
+  const policyCaps = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS)
+    ? VOLUNTEER_POLICY.CATEGORY_CAPS
+    : { FIELD_SETUP: 5, FIELD_MARSHAL: 2, REFEREE: 10 };
   const seenCheckins = new Set();
   const setupDateTeamSet = new Set(); // Caps Field Setup at 1 pt per team per date
-  const teamCategoryTallies = {}; // Tracks cumulative Ref (max 10), FM (max 2), Setup (max 5)
+  const teamCategoryTallies = {}; // Tracks cumulative Ref, FM, Setup
 
   const auditOutputs = []; // Rows 2..lastRow for Cols X..AB (5 cols)
 
@@ -155,11 +161,11 @@ function runAuditAndSyncLedger() {
         ]);
         continue;
       }
-      if (teamCategoryTallies[matchedTeam].setup >= 5) {
+      if (teamCategoryTallies[matchedTeam].setup >= policyCaps.FIELD_SETUP) {
         auditOutputs.push([
           'Cap Reached',
           0,
-          `Team already reached 5-point season Field Setup maximum`,
+          `Team already reached ${policyCaps.FIELD_SETUP}-point season Field Setup maximum`,
           matchedTeam,
           legacyBackfill
         ]);
@@ -175,11 +181,11 @@ function runAuditAndSyncLedger() {
         legacyBackfill
       ]);
     } else if (/marshal/i.test(role)) {
-      if (teamCategoryTallies[matchedTeam].fm >= 2) {
+      if (teamCategoryTallies[matchedTeam].fm >= policyCaps.FIELD_MARSHAL) {
         auditOutputs.push([
           'Cap Reached',
           0,
-          `Team already reached 2-point season Field Marshal maximum`,
+          `Team already reached ${policyCaps.FIELD_MARSHAL}-point season Field Marshal maximum`,
           matchedTeam,
           legacyBackfill
         ]);
@@ -195,11 +201,11 @@ function runAuditAndSyncLedger() {
       ]);
     } else {
       // Referee or Picture Day check-in
-      if (/referee/i.test(role) && teamCategoryTallies[matchedTeam].ref >= 10) {
+      if (/referee/i.test(role) && teamCategoryTallies[matchedTeam].ref >= policyCaps.REFEREE) {
         auditOutputs.push([
           'Cap Reached',
           0,
-          `Team already reached 10-point season Referee maximum`,
+          `Team already reached ${policyCaps.REFEREE}-point season Referee maximum`,
           matchedTeam,
           legacyBackfill
         ]);
@@ -238,9 +244,12 @@ function runAuditAndSyncLedger() {
  */
 function repairLedgerAndLockBackfill() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.SHEETS)
+    ? VOLUNTEER_POLICY.SHEETS
+    : { CHECKINS: 'Game Day Check-ins', AWARDS: 'Team_Awards', LEDGER: 'Season_Master_Ledger' };
   const checkinsSheet = getGameDayCheckinsSheet(ss);
-  const awardsSheet = ss.getSheetByName('Team_Awards');
-  const ledgerSheet = ss.getSheetByName('Season_Master_Ledger');
+  const awardsSheet = ss.getSheetByName(sheets.AWARDS);
+  const ledgerSheet = ss.getSheetByName(sheets.LEDGER);
 
   if (!checkinsSheet || !awardsSheet || !ledgerSheet) {
     throw new Error('Missing one of required sheets: Game Day Check-ins (or Form Responses 3 / Form Responses 1), Team_Awards, or Season_Master_Ledger.');
@@ -304,43 +313,70 @@ function repairLedgerAndLockBackfill() {
 }
 
 /**
- * Injects native Google Sheets formulas across Columns D through W for all 116 teams in Season_Master_Ledger.
+ * Injects native Google Sheets formulas across Columns D through W for all teams in Season_Master_Ledger.
  */
 function injectTraceableLedgerFormulas(checkinsTabName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const ledgerSheet = ss.getSheetByName('Season_Master_Ledger');
+  const ledgerName = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.SHEETS)
+    ? VOLUNTEER_POLICY.SHEETS.LEDGER
+    : 'Season_Master_Ledger';
+  const ledgerSheet = ss.getSheetByName(ledgerName);
   if (!ledgerSheet) return;
-
-  // Formulas must point at whichever check-ins tab is live (Game Day Check-ins / Form Responses 3 / Form Responses 1)
-  const tabName = checkinsTabName || (getGameDayCheckinsSheet(ss) || { getName: () => 'Game Day Check-ins' }).getName();
-  const ci = `'${tabName.replace(/'/g, "''")}'`;
 
   const lastRow = ledgerSheet.getLastRow();
   if (lastRow < 2) return;
 
-  const numTeams = lastRow - 1;
+  injectFormulasIntoLedger_(ledgerSheet, 2, lastRow, checkinsTabName);
+}
+
+/**
+ * Core Formula Injector for Season_Master_Ledger.
+ * Injects dynamic SSOT-derived formulas across Columns D through W without hardcoded numbers.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Target ledger sheet
+ * @param {number} startRow Starting row number (e.g. 2)
+ * @param {number} endRow Ending row number
+ * @param {string} [checkinsTabName] Optional checkins tab name
+ */
+function injectFormulasIntoLedger_(sheet, startRow, endRow, checkinsTabName) {
+  if (!sheet) return;
+  const ss = sheet.getParent ? sheet.getParent() : SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.SHEETS)
+    ? VOLUNTEER_POLICY.SHEETS
+    : { CHECKINS: 'Game Day Check-ins', AWARDS: 'Team_Awards', LEDGER: 'Season_Master_Ledger' };
+  const tabName = checkinsTabName || (getGameDayCheckinsSheet(ss) || { getName: () => sheets.CHECKINS }).getName();
+  const ci = `'${tabName.replace(/'/g, "''")}'`;
+  const awardsTab = sheets.AWARDS || 'Team_Awards';
+
+  const caps = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS)
+    ? VOLUNTEER_POLICY.CATEGORY_CAPS
+    : { REFEREE: 10, FIELD_MARSHAL: 2, FIELD_SETUP: 5, PICTURE_DAY: 2, CERTIFIED_REF: 5, MATCHTRAK_BONUS: 2, OTHER_ADJUSTMENTS: 5 };
+
   const formulaRows = [];
   const nowStamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/Los_Angeles', 'yyyy-MM-dd HH:mm:ss');
 
-  for (let i = 0; i < numTeams; i++) {
-    const r = i + 2;
-    // Playoff goal: Playground = 4, 05U/06U = 8, Competitive (08U+) = 15
-    const goalFormula = `=IF(REGEXMATCH($A${r}, "Playground"), 4, IF(REGEXMATCH($A${r}, "05U|5U|06U|6U"), 8, 15))`;
+  for (let r = startRow; r <= endRow; r++) {
+    const goalFormula = (typeof getLedgerGoalFormula === 'function')
+      ? getLedgerGoalFormula(r)
+      : `=IF(REGEXMATCH($A${r}, "Playground"), 4, IF(REGEXMATCH($A${r}, "05U|5U|06U|6U"), 7, IF(REGEXMATCH($A${r}, "08U|8U"), 15, 17)))`;
+
+    const gapFormula = (typeof getLedgerGapFormula === 'function')
+      ? getLedgerGapFormula(r)
+      : `=MAX(0, L${r} - O${r})`;
 
     formulaRows.push([
-      `=MIN(10, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Referee"))`, // Col D: Ref
-      `=MIN(2, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Marshal"))`, // Col E: FM
-      `=MIN(5, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up"))`, // Col F: Setup
-      `=MIN(2, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "*Pic*") + SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$D:$D))`, // Col G: Pic Day
-      `=MIN(5, SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$B:$B))`, // Col H: Cert Ref Bonus
-      `=MIN(2, SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$C:$C))`, // Col I: MatchTrak Bonus
-      `=SUMIF(Team_Awards!$A:$A, $B${r}, Team_Awards!$E:$E)`, // Col J: Other Adjustments
+      `=MIN(${caps.REFEREE}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Referee"))`, // Col D: Ref
+      `=MIN(${caps.FIELD_MARSHAL}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Marshal"))`, // Col E: FM
+      `=MIN(${caps.FIELD_SETUP}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up"))`, // Col F: Setup
+      `=MIN(${caps.PICTURE_DAY}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "*Pic*") + SUMIF(${awardsTab}!$A:$A, $B${r}, ${awardsTab}!$D:$D))`, // Col G: Pic Day
+      `=MIN(${caps.CERTIFIED_REF || 5}, SUMIF(${awardsTab}!$A:$A, $B${r}, ${awardsTab}!$B:$B))`, // Col H: Cert Ref Bonus
+      `=MIN(${caps.MATCHTRAK_BONUS || 2}, SUMIF(${awardsTab}!$A:$A, $B${r}, ${awardsTab}!$C:$C))`, // Col I: MatchTrak Bonus
+      `=SUMIF(${awardsTab}!$A:$A, $B${r}, ${awardsTab}!$E:$E)`, // Col J: Other Adjustments
       `=SUM(D${r}:J${r})`, // Col K: Current Verified Points
       goalFormula, // Col L: Playoff Goal
-      `=MAX(0, 2 - E${r})`, // Col M: Pending FM Obligations
+      `=MAX(0, ${caps.FIELD_MARSHAL} - E${r})`, // Col M: Pending FM Obligations
       `=K${r} + M${r}`, // Col N: Projected Base Points
-      `=N${r} + MAX(0, 5 - F${r})`, // Col O: Projected with Full Setup
-      `=MAX(0, L${r} - O${r})`, // Col P: Gap to 15 (With Full Setup)
+      `=N${r} + MAX(0, ${caps.FIELD_SETUP} - F${r})`, // Col O: Projected with Full Setup
+      gapFormula, // Col P: Gap to Playoff Goal (With Full Setup)
       `=MAX(0, L${r} - N${r})`, // Col Q: Ref Match Target
       `0`, // Col R: Home Games Remaining
       `=R${r}*2`, // Col S: Home Ref Capacity
@@ -351,7 +387,14 @@ function injectTraceableLedgerFormulas(checkinsTabName) {
     ]);
   }
 
-  ledgerSheet.getRange(2, 4, formulaRows.length, 20).setValues(formulaRows);
+  // Ensure Column P header remains generic
+  try {
+    sheet.getRange(1, 16).setValue('Gap to Playoff Goal (With Full Setup)');
+  } catch (e) {}
+
+  if (formulaRows.length > 0) {
+    sheet.getRange(startRow, 4, formulaRows.length, 20).setValues(formulaRows);
+  }
 }
 
 /**
@@ -573,4 +616,17 @@ function installAutomatedAuditTriggers() {
     .everyHours(1)
     .create();
   SpreadsheetApp.getActiveSpreadsheet().toast('✅ Automated Hourly Audit Trigger installed!', 'AYSO 154 Automation', 5);
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    runAuditAndSyncLedger,
+    repairLedgerAndLockBackfill,
+    injectTraceableLedgerFormulas,
+    injectFormulasIntoLedger_,
+    runAutomatedDisputeAndScheduleAudit,
+    getDisputeAuditSummary_,
+    extractDateOnlyKey_,
+    extractLastNameTokens_
+  };
 }

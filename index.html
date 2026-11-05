@@ -92,7 +92,7 @@
       display: none;
     }
   </style>
-  <script src="./support.js?v=build_20261103_v1"></script>
+  <script src="./support.js?v=build_20261104_tier_v2"></script>
 </head>
 
 <body>
@@ -372,27 +372,20 @@
             <div
               style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
               <div>
-                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive
-                  Divisions (U8 - U19 &amp; EXTRA)</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Teams must earn a
-                  minimum of 15 total verified points to qualify for post-season play (Cypress Cup and Playoffs). Points
-                  are earned through Referee assignments (up to 10 on-field), Early Ref Scheduling Incentive (max 2),
-                  Field Marshal (max 2), Friday Setup (Saturday for U8) (max 5), and Picture Day (max 2).</p>
+                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (10U through 19U)</div>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Competitive divisions (10U through 19U) must earn a minimum of <strong>17 verified points</strong> to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Early Ref Scheduling Incentive (max 2), Field Marshal (max 2), Friday Setup (max 5), and Picture Day (max 2).</p>
               </div>
               <div>
-                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">U5 &amp; U6
-                  Divisions</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 8 volunteer
-                  points out of 9 possible. Points are earned through Saturday morning setup/takedown (up to 5 points),
-                  Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points), and Picture Picnic Day (max 2 points).
-                </p>
+                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">08U (8U) Division</div>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 8U must earn a minimum of <strong>15 verified points</strong>. Points are earned through Referee assignments, Certified Ref Bonus, MatchTrak Bonus, and Saturday Field Setup.</p>
               </div>
               <div>
-                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playground Division
-                </div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 volunteer
-                  points (4 points possible). Points are earned through Field Marshal shifts during Weeks 4 &amp; 10
-                  (max 2 points) and Picture Picnic Day shifts (max 2 points).</p>
+                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">05U &amp; 06U (5U &amp; 6U) Divisions</div>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 5U &amp; 6U must earn a minimum of <strong>7 verified points</strong>. Points are earned through Saturday morning setup/takedown (up to 5 points), Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points), and Picture Picnic Day (max 2 points).</p>
+              </div>
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playground / Schoolyard Division</div>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 verified points (4 points possible). Points are earned through Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points) and Picture Picnic Day shifts (max 2 points).</p>
               </div>
             </div>
           </sc-if>
@@ -632,12 +625,11 @@ class Component extends DCLogic {
     const isU8 = combinedString.includes('08U') || /\b8U\b/.test(combinedString);
     
     // Set division-specific target goals
-    let goal = this.props.pointsGoal ?? 15;
-    if (isPlayground) {
-      goal = 4;
-    } else if (isU5U6) {
-      goal = 8;
-    }
+    let goal = (s.stats && s.stats.playoffGoal)
+      ? s.stats.playoffGoal
+      : (typeof getPlayoffGoalForTeam === 'function'
+          ? getPlayoffGoalForTeam(combinedString)
+          : (isPlayground ? 4 : (isU5U6 ? 7 : (isU8 ? 15 : (this.props.pointsGoal ?? 17)))));
 
     const showLog = this.props.showCheckInLog ?? true;
     const dirTeams = s.directory[s.division] || [];
@@ -666,10 +658,15 @@ class Component extends DCLogic {
         : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to reach the 4-point season goal.';
     } else if (isU5U6) {
       pillText = met ? 'Goal Achieved' : needed + ' to go';
-      goalSubtitle = 'of 8 target points (9 max)';
+      goalSubtitle = 'of 7 target points (9 max)';
       goalCaption = met
-        ? 'Goal completed! This team has earned ' + total + ' volunteer points toward the 8-point team goal.'
-        : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to hit the 8-point team goal (9 possible).';
+        ? 'Goal completed! This team has earned ' + total + ' volunteer points toward the 7-point team goal.'
+        : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to hit the 7-point team goal (9 possible).';
+    } else if (isU8) {
+      goalSubtitle = 'of 15 points';
+      goalCaption = met
+        ? 'This team has met the 15-point playoff qualification requirement.'
+        : needed + ' more verified ' + (needed === 1 ? 'point' : 'points') + ' needed for playoff eligibility.';
     }
 
     // Category configurations tailored to each division's real roles

@@ -1909,3 +1909,27 @@
     throw err;
   });
 })();
+
+function getPlayoffGoalForTeam(teamCode) {
+  if (!teamCode) return 17;
+  var s = String(teamCode).trim().toUpperCase();
+  if (/PLAYGROUND|SCHOOLYARD/i.test(s)) return 4;
+  if (/(?:^|[^\d])0?[56]U\b/i.test(s) || /\b[BG]U0?[56]\b/i.test(s) || /-[056]U/i.test(s) || /\b0?[56]U[BG]\b/i.test(s)) return 7;
+  if (/(?:^|[^\d])0?8U\b/i.test(s) || /\b[BG]U0?8\b/i.test(s) || /-0?8U/i.test(s) || /\b0?8U[BG]\b/i.test(s)) return 15;
+  if (/(?:^|[^\d])1[02469]U\b/i.test(s) || /\b[BG]U1[02469]\b/i.test(s) || /-1[02469]U/i.test(s) || /\b1[02469]U[BG]\b/i.test(s)) return 17;
+  var match = s.match(/(?:U0?(\d+)|0?(\d+)U)/i);
+  if (match) {
+    var divNum = parseInt(match[1] || match[2], 10);
+    if (divNum === 5 || divNum === 6) return 7;
+    if (divNum === 8) return 15;
+    if (divNum >= 10 && divNum <= 19) return 17;
+  }
+  return 17;
+}
+
+if (typeof window !== "undefined") {
+  window.getPlayoffGoalForTeam = getPlayoffGoalForTeam;
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports.getPlayoffGoalForTeam = getPlayoffGoalForTeam;
+}

@@ -49,16 +49,15 @@ console.log('  ✅ Dual-transport parser handles plain JSON, JSONP wrappers, and
 // 2. Division-Specific Goal Rules & UI Category Mappings
 console.log('\n▶ Test 2: Division-Specific Goals & Category Mapping Verification');
 
+// Load SSOT policy
+const { VOLUNTEER_POLICY, getPlayoffGoalForTeam } = require('../apps-script/AdminConfig.js');
+
 function getDivisionConfig(division, pointsGoalProp = 17) {
   const isPlayground = division.includes('Playground');
-  const isU5U6 = division.startsWith('05U') || division.startsWith('06U');
+  const isU5U6 = division.startsWith('05U') || division.startsWith('06U') || division.startsWith('5U') || division.startsWith('6U');
+  const isU8 = division.startsWith('08U') || division.startsWith('8U');
   
-  let goal = pointsGoalProp ?? 17;
-  if (isPlayground) {
-    goal = 4;
-  } else if (isU5U6) {
-    goal = 8;
-  }
+  const goal = getPlayoffGoalForTeam ? getPlayoffGoalForTeam(division) : (isPlayground ? 4 : (isU5U6 ? 7 : (isU8 ? 15 : 17)));
 
   let activeCats = [];
   if (isPlayground) {
@@ -89,9 +88,13 @@ const config10U = getDivisionConfig('10U - Boys');
 assert.strictEqual(config10U.goal, 17, '10U goal must be 17 points');
 assert.strictEqual(config10U.activeCats.length, 4, '10U must display 4 category bars');
 
+// 08U
+const config08U = getDivisionConfig('08U - Boys');
+assert.strictEqual(config08U.goal, 15, '08U goal must be 15 points');
+
 // U6
 const config06U = getDivisionConfig('06U - Girls');
-assert.strictEqual(config06U.goal, 8, '06U goal must be 8 points');
+assert.strictEqual(config06U.goal, 7, '06U goal must be 7 points');
 assert.strictEqual(config06U.activeCats.length, 3, '06U must display 3 category bars (no Ref bar)');
 
 // Playground
@@ -99,7 +102,7 @@ const configPlayground = getDivisionConfig('Playground - Playground');
 assert.strictEqual(configPlayground.goal, 4, 'Playground goal must be 4 points');
 assert.strictEqual(configPlayground.activeCats.length, 2, 'Playground must display 2 category bars');
 
-console.log('  ✅ Division-specific target goals verified: Competitive (17 pts), U5/U6 (8 pts), Playground (4 pts).');
+console.log('  ✅ Division-specific target goals verified: Competitive (17 pts), 8U (15 pts), U5/U6 (7 pts), Playground (4 pts).');
 
 // 3. Status Badge Color and Formatting Contract
 console.log('\n▶ Test 3: Status Badge Formatting & Privacy Contract');

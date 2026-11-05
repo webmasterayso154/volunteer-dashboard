@@ -17,7 +17,7 @@ const AUDIT = Object.freeze({
   SEASON: 'Fall 2026',
   FORM_TITLE: 'Cypress AYSO Region 154 — Volunteer Point Review',
   SPREADSHEET_NAME: 'AYSO 154 - 2026 Playoff Audit Responses',
-  REQUIRED_POINTS: 15,
+  REQUIRED_POINTS: (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.THRESHOLDS) ? VOLUNTEER_POLICY.THRESHOLDS.DEFAULT : 17,
   MAX_SHIFTS_PER_CHALLENGE: 5,
   POSTING_DELAY_HOURS: 48,
   LOOKBACK_DAYS: 14,
@@ -165,14 +165,18 @@ function buildAuditForm_(form) {
     .setHelpText('One rostered Head Coach or Team Manager should submit each team challenge.')
     .setRequired(true);
 
+  const t = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.THRESHOLDS)
+    ? VOLUNTEER_POLICY.THRESHOLDS
+    : { PLAYGROUND: 4, U5_U6: 7, U8: 15, U10_U19: 17, DEFAULT: 17 };
+
   // This PageBreakItem begins the threshold page. Role choices jump here.
   const thresholdPage = form.addPageBreakItem()
     .setTitle('Check the Team Dashboard First')
-    .setHelpText('Teams at 15 verified points are already qualified and do not need a review.');
+    .setHelpText(`Teams with verified points meeting their division goal (5U/6U: ${t.U5_U6} pts, 8U: ${t.U8} pts, 10U–19U: ${t.U10_U19} pts) are already qualified and do not need a review.`);
 
   const points = form.addListItem()
     .setTitle('How many verified points are currently shown for your team?')
-    .setHelpText('Use the live dashboard total. Choose 15+ if the team has already qualified.')
+    .setHelpText(`Use the live dashboard total. Teams meeting their division goal (5U/6U: ${t.U5_U6} pts, 8U: ${t.U8} pts, 10U–19U: ${t.U10_U19} pts) are already qualified and do not need a review.`)
     .setRequired(true);
 
   // PAGE 3 — team identity.
@@ -276,11 +280,15 @@ function buildAuditForm_(form) {
     role.createChoice('Parent / Volunteer / Other', roleExitPage)
   ]);
 
-  const pointChoices = [];
-  for (let p = 0; p < AUDIT.REQUIRED_POINTS; p++) {
+  const pointChoices = [
+    points.createChoice(`${t.U5_U6} or more — team is qualified (5U/6U Only)`, qualifiedExitPage),
+    points.createChoice(`${t.U8} or more — team is qualified (8U Only)`, qualifiedExitPage),
+    points.createChoice(`${t.U10_U19} or more — team is qualified (10U–19U)`, qualifiedExitPage),
+    points.createChoice('Below division goal — review requested', identityPage)
+  ];
+  for (let p = 0; p < t.DEFAULT; p++) {
     pointChoices.push(points.createChoice(String(p), identityPage));
   }
-  pointChoices.push(points.createChoice('15 or more — team is qualified', qualifiedExitPage));
   points.setChoices(pointChoices);
 
   more1.setChoices([
@@ -747,10 +755,13 @@ function refreshFormPhase() {
 function formDescriptionForPhase_(now) {
   const standardCutoff = new Date(AUDIT.STANDARD_CUTOFF);
   const finalCutoff = new Date(AUDIT.FINAL_EXCEPTION_CUTOFF);
+  const t = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.THRESHOLDS)
+    ? VOLUNTEER_POLICY.THRESHOLDS
+    : { PLAYGROUND: 4, U5_U6: 7, U8: 15, U10_U19: 17, DEFAULT: 17 };
   const intro =
     'FALL 2026 POST-SEASON ELIGIBILITY\n\n' +
     'This private link is for rostered Head Coaches and Team Managers. Submit one consolidated ' +
-    'request per team challenge. Teams with 15 verified points are already qualified.\n\n';
+    `request per team challenge. Teams with verified points meeting their division goal (5U/6U: ${t.U5_U6} pts, 8U: ${t.U8} pts, 10U+: ${t.U10_U19} pts) are already qualified and do not need a review.\n\n`;
   if (now <= standardCutoff) {
     return intro +
       'STANDARD REQUEST DEADLINE: Sunday, November 8 at 5:00 PM Pacific Time.\n' +
@@ -1343,7 +1354,9 @@ function getTeamLedgerPreCheck_(teamCode, masterSs) {
   const matchtrakPts = idxMatch !== -1 ? Number(matchRow[idxMatch]) || 0 : 0;
   const otherPts = idxOther !== -1 ? Number(matchRow[idxOther]) || 0 : 0;
   const totalPts = idxTotal !== -1 ? Number(matchRow[idxTotal]) || 0 : (refPts + fmPts + setupPts + picPts + certRefPts + matchtrakPts + otherPts);
-  const playoffGoal = idxGoal !== -1 ? Number(matchRow[idxGoal]) || 15 : 15;
+  const playoffGoal = (idxGoal !== -1 && Number(matchRow[idxGoal]))
+    ? Number(matchRow[idxGoal])
+    : (typeof getPlayoffGoalForTeam === 'function' ? getPlayoffGoalForTeam(canonicalTeam || division || teamCode) : 17);
   const playoffStatus = idxStatus !== -1 ? String(matchRow[idxStatus] || '').trim() : (totalPts >= playoffGoal ? 'Qualified' : `${playoffGoal - totalPts} pts needed`);
 
   const isAlreadyQualified = totalPts >= playoffGoal;

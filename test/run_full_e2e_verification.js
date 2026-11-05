@@ -18,10 +18,10 @@ const TEST_ROSTER = [
   { team: '12U - Boys - Isaiah Hicks', div: '12U - Boys', goal: 17 },
   { team: '12U - Girls - Saul Alvarez', div: '12U - Girls', goal: 17 },
   { team: '14U - Boys - Mina Abader', div: '14U - Boys', goal: 17 },
-  { team: '08U - Boys - Amanda Towers', div: '08U - Boys', goal: 17 },
-  { team: '08U - Girls - Crystal Van Maanen', div: '08U - Girls', goal: 17 },
-  { team: '06U - Boys - Ryan Fox', div: '06U - Boys', goal: 8 },
-  { team: '05U - Girls - Priscilla Alvardo', div: '05U - Girls', goal: 8 },
+  { team: '08U - Boys - Amanda Towers', div: '08U - Boys', goal: 15 },
+  { team: '08U - Girls - Crystal Van Maanen', div: '08U - Girls', goal: 15 },
+  { team: '06U - Boys - Ryan Fox', div: '06U - Boys', goal: 7 },
+  { team: '05U - Girls - Priscilla Alvardo', div: '05U - Girls', goal: 7 },
   { team: 'Playground - Playground', div: 'Playground', goal: 4 }
 ];
 

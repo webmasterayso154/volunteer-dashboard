@@ -52,9 +52,9 @@ function getBoardDashboardData() {
 
   const settings = (typeof getAdminConfigSettings === 'function') 
     ? getAdminConfigSettings() 
-    : { PlayoffThreshold: 15, RefMaxCap: 10, FieldMarshalCap: 2, FieldSetupCap: 1, PictureDayCap: 2 };
+    : { PlayoffThreshold: 17, RefMaxCap: 10, FieldMarshalCap: 2, FieldSetupCap: 5, PictureDayCap: 2 };
 
-  const playoffThreshold = Number(settings.PlayoffThreshold) || 15;
+  const playoffThreshold = Number(settings.PlayoffThreshold) || 17;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   const allTeams = [...MASTER_TEAMS];

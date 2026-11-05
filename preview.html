@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#081C40">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script src="./support.js?v=build_20261104_tier_v2"></script>
   <style>
     :root {
       --navy: #002D62;
@@ -536,7 +537,7 @@
 
     function renderRunwayCard(teamCode, stats) {
       const r = stats.proactiveRunway || {};
-      const goal = stats.playoffGoal || 15;
+      const goal = stats.playoffGoal || (typeof getPlayoffGoalForTeam === 'function' ? getPlayoffGoalForTeam(teamCode) : 17);
 
       document.getElementById('teamDisplayTitle').innerText = teamCode;
       document.getElementById('teamDisplayCoach').innerText = `Playoff Target: ${goal} Points`;
