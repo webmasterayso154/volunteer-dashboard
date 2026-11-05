@@ -38,7 +38,8 @@ const VOLUNTEER_POLICY = Object.freeze({
     SCHEDULE: 'Season_Master_Schedule',
     ADMIN: 'Admin_Config',
     SETTINGS: 'Settings',
-    DISPUTE_REPORT: 'Dispute_Audit_Report'
+    DISPUTE_REPORT: 'Dispute_Audit_Report',
+    FIELD_SETUP_AUDIT: 'Field_Setup_Audit'
   })
 });
 
@@ -97,6 +98,53 @@ function getLedgerGoalFormula(rowNumber) {
  */
 function getLedgerGapFormula(rowNumber) {
   return `=MAX(0, L${rowNumber} - O${rowNumber})`;
+}
+
+/**
+ * Dynamically generates the Google Sheets formula for Column F (Audit Result) in Field_Setup_Audit.
+ * Met obligations -> "Met All Obligations", incomplete -> "Incomplete / Missed".
+ * 0 obligations with check-ins -> "Volunteer Setup Completed", 0 check-ins -> "No Setup Required".
+ * @param {number} rowNumber Row index in Field_Setup_Audit
+ * @returns {string} Formula string
+ */
+function getFieldSetupAuditResultFormula(rowNumber) {
+  return `=IF(D${rowNumber}>0, IF(E${rowNumber}>=D${rowNumber}, "Met All Obligations", "Incomplete / Missed"), IF(E${rowNumber}>0, "Volunteer Setup Completed", "No Setup Required"))`;
+}
+
+/**
+ * Dynamically generates the Google Sheets formula for Column G (Audited Setup Points) in Field_Setup_Audit.
+ * Met obligations -> 5 pts, incomplete -> 0 pts.
+ * 0 obligations with check-ins -> MIN(5, E{r}), 0 check-ins -> 0 pts.
+ * @param {number} rowNumber Row index in Field_Setup_Audit
+ * @returns {string} Formula string
+ */
+function getFieldSetupAuditedPointsFormula(rowNumber) {
+  const cap = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS && VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP)
+    ? VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP
+    : 5;
+  return `=IF(D${rowNumber}>0, IF(E${rowNumber}>=D${rowNumber}, ${cap}, 0), MIN(${cap}, E${rowNumber}))`;
+}
+
+/**
+ * Dynamically generates the Google Sheets formula for Column F (Field Setup Points) in Season_Master_Ledger.
+ * Reads audited setup points from Field_Setup_Audit if present; falls back to check-in tally.
+ * @param {number} rowNumber Row index in Season_Master_Ledger
+ * @param {string} [checkinsTabName] Sheet tab name for Game Day Check-ins
+ * @param {string} [fieldSetupAuditTabName] Sheet tab name for Field_Setup_Audit
+ * @returns {string} Formula string
+ */
+function getLedgerSetupFormula(rowNumber, checkinsTabName, fieldSetupAuditTabName) {
+  const cap = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS && VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP)
+    ? VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP
+    : 5;
+  const ci = `'${(checkinsTabName || 'Game Day Check-ins').replace(/'/g, "''")}'`;
+  const fallback = `MIN(${cap}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${rowNumber}, ${ci}!$D:$D, "Field Set Up"))`;
+
+  if (fieldSetupAuditTabName) {
+    const fsa = `'${fieldSetupAuditTabName.replace(/'/g, "''")}'`;
+    return `=IFERROR(VLOOKUP($B${rowNumber}, ${fsa}!$B:$G, 6, FALSE), ${fallback})`;
+  }
+  return `=${fallback}`;
 }
 
 const ADMIN_CONFIG_SHEET = "Admin_Config";
@@ -295,6 +343,9 @@ if (typeof module !== 'undefined' && module.exports) {
     getPlayoffGoalForTeam,
     getLedgerGoalFormula,
     getLedgerGapFormula,
+    getFieldSetupAuditResultFormula,
+    getFieldSetupAuditedPointsFormula,
+    getLedgerSetupFormula,
     setupAdminConfigSheet,
     getAuthorizedBoardEmails,
     getAdminConfigSettings,

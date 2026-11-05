@@ -10,7 +10,15 @@ console.log('Testing SSOT Configuration & AuditEngine.js logic...\n');
 
 // 1. Verify AdminConfig.js SSOT Module
 const adminConfig = require('../apps-script/AdminConfig.js');
-const { VOLUNTEER_POLICY, getPlayoffGoalForTeam, getLedgerGoalFormula, getLedgerGapFormula } = adminConfig;
+const {
+  VOLUNTEER_POLICY,
+  getPlayoffGoalForTeam,
+  getLedgerGoalFormula,
+  getLedgerGapFormula,
+  getFieldSetupAuditResultFormula,
+  getFieldSetupAuditedPointsFormula,
+  getLedgerSetupFormula
+} = adminConfig;
 
 assert(VOLUNTEER_POLICY, 'VOLUNTEER_POLICY must exist');
 assert(Object.isFrozen(VOLUNTEER_POLICY), 'VOLUNTEER_POLICY must be frozen');
@@ -37,6 +45,7 @@ assert.strictEqual(VOLUNTEER_POLICY.AUDIT.MAX_SHIFTS_PER_CHALLENGE, 5, 'Max shif
 // Verify SHEETS
 assert.strictEqual(VOLUNTEER_POLICY.SHEETS.LEDGER, 'Season_Master_Ledger', 'LEDGER sheet name must be Season_Master_Ledger');
 assert.strictEqual(VOLUNTEER_POLICY.SHEETS.CHECKINS, 'Game Day Check-ins', 'CHECKINS sheet name must be Game Day Check-ins');
+assert.strictEqual(VOLUNTEER_POLICY.SHEETS.FIELD_SETUP_AUDIT, 'Field_Setup_Audit', 'FIELD_SETUP_AUDIT sheet name must be Field_Setup_Audit');
 
 console.log('✅ VOLUNTEER_POLICY SSOT constants verified.');
 
@@ -69,6 +78,35 @@ assert.strictEqual(
 const gapFormulaRow5 = getLedgerGapFormula(5);
 assert.strictEqual(gapFormulaRow5, '=MAX(0, L5 - O5)', 'Gap formula for row 5 must match dynamic L5-O5');
 
+// Field_Setup_Audit formula generators
+const fsaResultRow5 = getFieldSetupAuditResultFormula(5);
+assert.strictEqual(
+  fsaResultRow5,
+  '=IF(D5>0, IF(E5>=D5, "Met All Obligations", "Incomplete / Missed"), IF(E5>0, "Volunteer Setup Completed", "No Setup Required"))',
+  'Field Setup Audit Result formula for row 5 must match SSOT policy'
+);
+
+const fsaPointsRow5 = getFieldSetupAuditedPointsFormula(5);
+assert.strictEqual(
+  fsaPointsRow5,
+  '=IF(D5>0, IF(E5>=D5, 5, 0), MIN(5, E5))',
+  'Field Setup Audited Points formula for row 5 must match SSOT policy cap of 5'
+);
+
+const ledgerSetupWithFsa = getLedgerSetupFormula(5, 'Game Day Check-ins', 'Field_Setup_Audit');
+assert.strictEqual(
+  ledgerSetupWithFsa,
+  '=IFERROR(VLOOKUP($B5, \'Field_Setup_Audit\'!$B:$G, 6, FALSE), MIN(5, SUMIFS(\'Game Day Check-ins\'!$Y:$Y, \'Game Day Check-ins\'!$AA:$AA, $B5, \'Game Day Check-ins\'!$D:$D, "Field Set Up")))',
+  'Ledger Setup formula must link to Field_Setup_Audit Col G via VLOOKUP'
+);
+
+const ledgerSetupFallback = getLedgerSetupFormula(5, 'Game Day Check-ins', null);
+assert.strictEqual(
+  ledgerSetupFallback,
+  '=MIN(5, SUMIFS(\'Game Day Check-ins\'!$Y:$Y, \'Game Day Check-ins\'!$AA:$AA, $B5, \'Game Day Check-ins\'!$D:$D, "Field Set Up"))',
+  'Ledger Setup fallback formula must compute MIN(5, SUMIFS(...))'
+);
+
 console.log('✅ Dynamic spreadsheet formula generators verified.');
 
 // 4. Verify AuditEngine.js Structure and SSOT Integration
@@ -76,9 +114,12 @@ const auditEngineCode = fs.readFileSync(path.join(__dirname, '../apps-script/Aud
 assert(auditEngineCode.includes('function runAuditAndSyncLedger()'), 'runAuditAndSyncLedger function must exist');
 assert(auditEngineCode.includes('function repairLedgerAndLockBackfill()'), 'repairLedgerAndLockBackfill function must exist');
 assert(auditEngineCode.includes('function injectTraceableLedgerFormulas(checkinsTabName)'), 'injectTraceableLedgerFormulas function must exist');
+assert(auditEngineCode.includes('function syncFieldSetupAuditTab(ss)'), 'syncFieldSetupAuditTab function must exist');
 assert(auditEngineCode.includes('function injectFormulasIntoLedger_(sheet, startRow, endRow'), 'injectFormulasIntoLedger_ function must exist');
 assert(auditEngineCode.includes('getLedgerGoalFormula'), 'injectFormulasIntoLedger_ must invoke getLedgerGoalFormula');
 assert(auditEngineCode.includes('getLedgerGapFormula'), 'injectFormulasIntoLedger_ must invoke getLedgerGapFormula');
+assert(auditEngineCode.includes('getLedgerSetupFormula'), 'injectFormulasIntoLedger_ must invoke getLedgerSetupFormula');
+assert(auditEngineCode.includes('syncFieldSetupAuditTab(ss)'), 'repairLedgerAndLockBackfill must invoke syncFieldSetupAuditTab');
 assert(auditEngineCode.includes('VOLUNTEER_POLICY.SHEETS.LEDGER'), 'repairLedgerAndLockBackfill must reference VOLUNTEER_POLICY.SHEETS.LEDGER');
 assert(auditEngineCode.includes('Duplicate Submission (0)'), 'Duplicate Submission (0) status must be present');
 assert(auditEngineCode.includes('NOCRA - No Points'), 'NOCRA - No Points status must be present');
@@ -115,6 +156,58 @@ console.log('  ✅ 5U/6U teams clinch at 7 points verified.');
 console.log('  ✅ 8U teams clinch at 15 points verified.');
 console.log('  ✅ 10U-19U teams clinch at 17 points verified.');
 console.log('  ✅ Playground teams clinch at 4 points verified.');
+
+// 6. Test Field_Setup_Audit Decision Matrix
+console.log('\n▶ Testing Field Setup Audit Evaluation Matrix:');
+
+function evaluateFieldSetup(obligations, checkins, cap = 5) {
+  const result = obligations > 0
+    ? (checkins >= obligations ? "Met All Obligations" : "Incomplete / Missed")
+    : (checkins > 0 ? "Volunteer Setup Completed" : "No Setup Required");
+  const points = obligations > 0
+    ? (checkins >= obligations ? cap : 0)
+    : Math.min(cap, checkins);
+  return { result, points };
+}
+
+// Case 1: Team with 1+ obligations met
+const c1 = evaluateFieldSetup(1, 1);
+assert.strictEqual(c1.result, 'Met All Obligations');
+assert.strictEqual(c1.points, 5);
+
+// Case 2: Team with 1+ obligations missed
+const c2 = evaluateFieldSetup(1, 0);
+assert.strictEqual(c2.result, 'Incomplete / Missed');
+assert.strictEqual(c2.points, 0);
+
+// Case 3: Younger division (Playground/5U/6U) or non-opening team with 0 obligations and 1 checkin
+const c3 = evaluateFieldSetup(0, 1);
+assert.strictEqual(c3.result, 'Volunteer Setup Completed');
+assert.strictEqual(c3.points, 1, '1 recorded checkin must earn 1 point');
+
+// Case 4: Younger division team with 0 obligations and 2 checkins
+const c4 = evaluateFieldSetup(0, 2);
+assert.strictEqual(c4.result, 'Volunteer Setup Completed');
+assert.strictEqual(c4.points, 2, '2 recorded checkins must earn 2 points');
+
+// Case 5: Younger division team with 0 obligations and 5 checkins
+const c5 = evaluateFieldSetup(0, 5);
+assert.strictEqual(c5.result, 'Volunteer Setup Completed');
+assert.strictEqual(c5.points, 5, '5 recorded checkins must earn 5 points');
+
+// Case 6: Younger division team with 0 obligations and 6 checkins (cap at 5)
+const c6 = evaluateFieldSetup(0, 6);
+assert.strictEqual(c6.result, 'Volunteer Setup Completed');
+assert.strictEqual(c6.points, 5, 'Excess checkins must cap at 5 points');
+
+// Case 7: Team with 0 obligations and 0 checkins
+const c7 = evaluateFieldSetup(0, 0);
+assert.strictEqual(c7.result, 'No Setup Required');
+assert.strictEqual(c7.points, 0);
+
+console.log('  ✅ Teams with 1+ obligations verified (5 pts when met, 0 when missed).');
+console.log('  ✅ Younger division / non-opening teams with 0 obligations earn points up to 5 cap.');
+console.log('  ✅ Teams with 0 obligations and 0 check-ins correctly show No Setup Required (0 pts).');
 
 console.log('\n=============================================================');
 console.log('🎉 ALL AUDIT ENGINE & SSOT POLICY VERIFICATION TESTS PASSED!');

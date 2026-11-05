@@ -67,6 +67,11 @@ function repairLedgerAndLockBackfill() {
     ledgerSheet.getRange(2, 1, canonicalTeams.length, 3).setValues(canonicalTeams);
   }
 
+  // Sync Field_Setup_Audit tab if present or initialize it
+  if (typeof syncFieldSetupAuditTab === 'function') {
+    syncFieldSetupAuditTab(ss);
+  }
+
   // Re-run your formula injector if present in the project
   if (typeof injectTraceableLedgerFormulas === 'function') {
     injectTraceableLedgerFormulas();

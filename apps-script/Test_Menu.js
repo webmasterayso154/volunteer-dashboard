@@ -15,6 +15,7 @@ function onOpen() {
       .addItem('🔍 Run Proactive Points & Runway Verification', 'runWeeklyPointReconciliation')
       .addItem('📢 Generate Division Director Action Alerts', 'generateDivisionDirectorAlerts')
       .addItem('📊 Run Audit & Sync Ledger', 'runAuditAndSyncLedger')
+      .addItem('🥅 Sync Field Setup Audit Tab', 'syncFieldSetupAuditTab')
       .addSeparator()
       .addItem('🔄 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
       .addSeparator()

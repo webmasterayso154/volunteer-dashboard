@@ -308,6 +308,11 @@ function repairLedgerAndLockBackfill() {
     ledgerSheet.getRange(2, 1, canonicalTeams.length, 3).setValues(canonicalTeams);
   }
 
+  // Sync Field_Setup_Audit tab if present or initialize it
+  if (typeof syncFieldSetupAuditTab === 'function') {
+    syncFieldSetupAuditTab(ss);
+  }
+
   injectTraceableLedgerFormulas(checkinsSheet.getName());
   SpreadsheetApp.flush();
 }
@@ -342,10 +347,12 @@ function injectFormulasIntoLedger_(sheet, startRow, endRow, checkinsTabName) {
   const ss = sheet.getParent ? sheet.getParent() : SpreadsheetApp.getActiveSpreadsheet();
   const sheets = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.SHEETS)
     ? VOLUNTEER_POLICY.SHEETS
-    : { CHECKINS: 'Game Day Check-ins', AWARDS: 'Team_Awards', LEDGER: 'Season_Master_Ledger' };
+    : { CHECKINS: 'Game Day Check-ins', AWARDS: 'Team_Awards', LEDGER: 'Season_Master_Ledger', FIELD_SETUP_AUDIT: 'Field_Setup_Audit' };
   const tabName = checkinsTabName || (getGameDayCheckinsSheet(ss) || { getName: () => sheets.CHECKINS }).getName();
   const ci = `'${tabName.replace(/'/g, "''")}'`;
   const awardsTab = sheets.AWARDS || 'Team_Awards';
+  const fsaTabName = (sheets && sheets.FIELD_SETUP_AUDIT) ? sheets.FIELD_SETUP_AUDIT : 'Field_Setup_Audit';
+  const hasFsa = ss && typeof ss.getSheetByName === 'function' && Boolean(ss.getSheetByName(fsaTabName));
 
   const caps = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS)
     ? VOLUNTEER_POLICY.CATEGORY_CAPS
@@ -363,10 +370,16 @@ function injectFormulasIntoLedger_(sheet, startRow, endRow, checkinsTabName) {
       ? getLedgerGapFormula(r)
       : `=MAX(0, L${r} - O${r})`;
 
+    const setupFormula = (typeof getLedgerSetupFormula === 'function')
+      ? getLedgerSetupFormula(r, tabName, hasFsa ? fsaTabName : null)
+      : (hasFsa
+          ? `=IFERROR(VLOOKUP($B${r}, '${fsaTabName.replace(/'/g, "''")}'!$B:$G, 6, FALSE), MIN(${caps.FIELD_SETUP}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up")))`
+          : `=MIN(${caps.FIELD_SETUP}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up"))`);
+
     formulaRows.push([
       `=MIN(${caps.REFEREE}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Referee"))`, // Col D: Ref
       `=MIN(${caps.FIELD_MARSHAL}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Marshal"))`, // Col E: FM
-      `=MIN(${caps.FIELD_SETUP}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up"))`, // Col F: Setup
+      setupFormula, // Col F: Setup
       `=MIN(${caps.PICTURE_DAY}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "*Pic*") + SUMIF(${awardsTab}!$A:$A, $B${r}, ${awardsTab}!$D:$D))`, // Col G: Pic Day
       `=MIN(${caps.CERTIFIED_REF || 5}, SUMIF(${awardsTab}!$A:$A, $B${r}, ${awardsTab}!$B:$B))`, // Col H: Cert Ref Bonus
       `=MIN(${caps.MATCHTRAK_BONUS || 2}, SUMIF(${awardsTab}!$A:$A, $B${r}, ${awardsTab}!$C:$C))`, // Col I: MatchTrak Bonus
@@ -395,6 +408,116 @@ function injectFormulasIntoLedger_(sheet, startRow, endRow, checkinsTabName) {
   if (formulaRows.length > 0) {
     sheet.getRange(startRow, 4, formulaRows.length, 20).setValues(formulaRows);
   }
+}
+
+/**
+ * Synchronizes the 'Field_Setup_Audit' tab:
+ * - Preserves team roster and scheduled obligations (Col D).
+ * - Dynamically links check-ins recorded (Col E).
+ * - Injects SSOT-derived formulas for Audit Result (Col F) and Audited Setup Points (Col G).
+ *   Col F: =IF(D{r}>0, IF(E{r}>=D{r}, "Met All Obligations", "Incomplete / Missed"), IF(E{r}>0, "Volunteer Setup Completed", "No Setup Required"))
+ *   Col G: =IF(D{r}>0, IF(E{r}>=D{r}, 5, 0), MIN(5, E{r}))
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [ss] Optional active spreadsheet
+ * @returns {Object} Sync statistics
+ */
+function syncFieldSetupAuditTab(ss) {
+  const targetSs = ss || SpreadsheetApp.getActiveSpreadsheet();
+  if (!targetSs) return { status: 'no_spreadsheet' };
+
+  const sheets = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.SHEETS)
+    ? VOLUNTEER_POLICY.SHEETS
+    : { CHECKINS: 'Game Day Check-ins', LEDGER: 'Season_Master_Ledger', FIELD_SETUP_AUDIT: 'Field_Setup_Audit' };
+  const fsaTabName = (sheets && sheets.FIELD_SETUP_AUDIT) ? sheets.FIELD_SETUP_AUDIT : 'Field_Setup_Audit';
+  const ledgerTabName = (sheets && sheets.LEDGER) ? sheets.LEDGER : 'Season_Master_Ledger';
+  const checkinsSheet = getGameDayCheckinsSheet(targetSs);
+  const ciTabName = checkinsSheet ? checkinsSheet.getName() : (sheets.CHECKINS || 'Game Day Check-ins');
+  const ci = `'${ciTabName.replace(/'/g, "''")}'`;
+
+  let fsaSheet = targetSs.getSheetByName(fsaTabName);
+  const ledgerSheet = targetSs.getSheetByName(ledgerTabName);
+
+  if (!fsaSheet) {
+    if (typeof targetSs.insertSheet !== 'function') return { status: 'mock_no_insert' };
+    fsaSheet = targetSs.insertSheet(fsaTabName);
+    if (fsaSheet.setTabColor) fsaSheet.setTabColor('#34a853');
+  }
+
+  const lastRow = ledgerSheet ? ledgerSheet.getLastRow() : Math.max(fsaSheet.getLastRow(), 117);
+  if (lastRow < 2) return { status: 'empty_ledger' };
+  const numTeams = lastRow - 1;
+
+  // Header Row (Row 1)
+  const headers = [[
+    'Division',
+    'Team Code',
+    'Head Coach',
+    'First Game Setup Obligations (<= 11/01)',
+    'Field Setup Check-Ins Recorded',
+    'Audit Result',
+    'Audited Setup Points (5 or 0)'
+  ]];
+  fsaSheet.getRange(1, 1, 1, headers[0].length)
+    .setValues(headers)
+    .setFontWeight('bold')
+    .setBackground('#1a365d')
+    .setFontColor('#ffffff')
+    .setWrap(true)
+    .setVerticalAlignment('middle');
+
+  const setupCap = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS && VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP)
+    ? VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP
+    : 5;
+
+  const fsaRows = [];
+  for (let i = 0; i < numTeams; i++) {
+    const r = i + 2;
+    const fResult = (typeof getFieldSetupAuditResultFormula === 'function')
+      ? getFieldSetupAuditResultFormula(r)
+      : `=IF(D${r}>0, IF(E${r}>=D${r}, "Met All Obligations", "Incomplete / Missed"), IF(E${r}>0, "Volunteer Setup Completed", "No Setup Required"))`;
+
+    const fPoints = (typeof getFieldSetupAuditedPointsFormula === 'function')
+      ? getFieldSetupAuditedPointsFormula(r)
+      : `=IF(D${r}>0, IF(E${r}>=D${r}, ${setupCap}, 0), MIN(${setupCap}, E${r}))`;
+
+    // Preserve existing Col D obligations if already present in cell D{r}
+    let colDVal = 0;
+    try {
+      const cellD = fsaSheet.getRange(r, 4);
+      const formulaD = cellD.getFormula ? cellD.getFormula() : '';
+      const valD = cellD.getValue ? cellD.getValue() : '';
+      colDVal = formulaD || (valD !== '' ? valD : 0);
+    } catch (e) {}
+
+    // Check if Col E has an existing custom formula; otherwise use standard SUMIFS
+    let colEVal = `=MIN(${setupCap}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up"))`;
+    try {
+      const cellE = fsaSheet.getRange(r, 5);
+      const formulaE = cellE.getFormula ? cellE.getFormula() : '';
+      if (formulaE) colEVal = formulaE;
+    } catch (e) {}
+
+    fsaRows.push([
+      `='${ledgerTabName}'!A${r}`,
+      `='${ledgerTabName}'!B${r}`,
+      `='${ledgerTabName}'!C${r}`,
+      colDVal,
+      colEVal,
+      fResult,
+      fPoints
+    ]);
+  }
+
+  if (fsaRows.length > 0) {
+    fsaSheet.getRange(2, 1, fsaRows.length, headers[0].length).setValues(fsaRows);
+    if (fsaSheet.autoResizeColumns) {
+      try { fsaSheet.autoResizeColumns(1, headers[0].length); } catch (e) {}
+    }
+  }
+
+  return {
+    status: 'ok',
+    teamsAudited: fsaRows.length
+  };
 }
 
 /**
@@ -624,6 +747,7 @@ if (typeof module !== 'undefined' && module.exports) {
     repairLedgerAndLockBackfill,
     injectTraceableLedgerFormulas,
     injectFormulasIntoLedger_,
+    syncFieldSetupAuditTab,
     runAutomatedDisputeAndScheduleAudit,
     getDisputeAuditSummary_,
     extractDateOnlyKey_,
