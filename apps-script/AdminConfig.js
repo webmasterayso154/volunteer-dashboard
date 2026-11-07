@@ -10,7 +10,7 @@
 
 const VOLUNTEER_POLICY = Object.freeze({
   SEASON: 'Fall 2026',
-
+  
   // 1. Division Playoff / Cypress Cup Qualification Thresholds
   THRESHOLDS: {
     PLAYGROUND: 4,

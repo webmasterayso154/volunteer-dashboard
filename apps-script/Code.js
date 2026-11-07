@@ -92,31 +92,19 @@ function isLegacyTeamAwardLogRow_(row) {
  * Adds custom administrative menu on spreadsheet open.
  */
 function onOpen() {
-  try {
-    const ui = SpreadsheetApp.getUi();
-    ui.createMenu('⚽ AYSO 154 Board Tools')
-      .addItem('🔄 Run Full Audit & Sync Ledger', 'runAuditAndSyncLedger')
-      .addItem('🥅 Restore & Sync Field Setup Audit Tab', 'syncFieldSetupAuditTab')
-      .addItem('🔍 Run Proactive Points & Runway Verification', 'runWeeklyPointReconciliation')
-      .addItem('📢 Generate Division Director Action Alerts', 'generateDivisionDirectorAlerts')
-      .addItem('🕵️‍♂️ Audit Dispute Tickets & MatchTrak Cross-Check', 'runAutomatedDisputeAndScheduleAudit')
-      .addSeparator()
-      .addItem('📅 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
-      .addItem('🛠️ Repair Ledger Roster & Lock Legacy Backfill', 'repairLedgerAndLockBackfill')
-      .addItem('⏰ Enable Automated Form Submit & Hourly Triggers', 'installAutomatedAuditTriggers')
-      .addItem('🧹 Migrate Legacy Team_Awards Log Rows', 'migrateLegacyTeamAwardLogRows')
-      .addSeparator()
-      .addItem('🔍 Inspect Test Team Stats (Faheem Armanyous)', 'menuInspectTeam')
-      .addToUi();
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu('⚽ AYSO 154 Board Tools')
+    .addItem('🔄 Run Full Audit & Sync Ledger', 'runAuditAndSyncLedger')
+    .addItem('🕵️‍♂️ Audit Dispute Tickets & MatchTrak Cross-Check', 'runAutomatedDisputeAndScheduleAudit')
+    .addSeparator()
+    .addItem('📅 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
+    .addItem('🛠️ Repair Ledger Roster & Lock Legacy Backfill', 'repairLedgerAndLockBackfill')
+    .addItem('⏰ Enable Automated Hourly Audit Trigger', 'installAutomatedAuditTriggers')
+    .addItem('🧹 Migrate Legacy Team_Awards Log Rows', 'migrateLegacyTeamAwardLogRows')
+    .addToUi();
 
-    if (typeof addBoardAuditToolsMenu_ === 'function') {
-      addBoardAuditToolsMenu_();
-    }
-    if (typeof addDiagnosticsMenu_ === 'function') {
-      addDiagnosticsMenu_();
-    }
-  } catch (e) {
-    Logger.log('onOpen skipped in non-interactive context: ' + e.message);
+  if (typeof addDiagnosticsMenu_ === 'function') {
+    addDiagnosticsMenu_();
   }
 }
 
@@ -302,44 +290,19 @@ function buildFullDashboardPayload_(requestedTeam) {
   }
 
   // 2. Read all Game Day Check-ins and group by canonical team key
-  // Automatically audit any newly submitted / Pending rows so zero manual "push pending" action is ever required.
   const checkinsByTeam = {};
   if (checkinsSheet && checkinsSheet.getLastRow() > 1) {
-    let ciData = checkinsSheet.getDataRange().getValues();
-    let hasUnprocessedRows = false;
-    for (let i = 1; i < ciData.length; i++) {
-      const r = ciData[i];
-      const role = String(r[3] || '').trim();
-      const status = String(r[23] || '').trim();
-      const hasTeam = String(r[26] || '').trim() || String(r[27] || '').trim() || r.slice(13, 22).some(v => String(v || '').trim() !== '');
-      if (role && hasTeam && (!status || /^pending$/i.test(status))) {
-        hasUnprocessedRows = true;
-        break;
-      }
-    }
-    if (hasUnprocessedRows && typeof runAuditAndSyncLedger === 'function') {
-      try {
-        runAuditAndSyncLedger();
-        ciData = checkinsSheet.getDataRange().getValues();
-      } catch (autoAuditErr) {
-        Logger.log('Auto-audit during dashboard build skipped: ' + autoAuditErr.message);
-      }
-    }
-
+    const ciData = checkinsSheet.getDataRange().getValues();
     for (let i = 1; i < ciData.length; i++) {
       const row = ciData[i];
       const role = String(row[3] || '').trim(); // Col D: Volunteer Role
       const refPos = String(row[4] || '').trim(); // Col E: Referee Position
 
       // Skip NOCRA / USSF paid referee rows on public team logs
-      const rawAuditStatus = String(row[23] || '').trim(); // Col X
-      if (rawAuditStatus === 'NOCRA - No Points' || refPos.toUpperCase().includes('NOCRA')) {
+      const auditStatus = String(row[23] || '').trim(); // Col X
+      if (auditStatus === 'NOCRA - No Points' || refPos.toUpperCase().includes('NOCRA')) {
         continue;
       }
-      // Never withhold or gate check-ins behind "Pending" status
-      const auditStatus = (!rawAuditStatus || /^pending$/i.test(rawAuditStatus))
-        ? 'Verified (1)'
-        : rawAuditStatus;
 
       // Coalesce Team from Credited Team (Col AA, idx 26), Legacy Backfill (Col AB, idx 27), or Dropdowns (Cols N-V, idx 13-21)
       let rawTeam = String(row[26] || '').trim() || String(row[27] || '').trim();
@@ -362,9 +325,7 @@ function buildFullDashboardPayload_(requestedTeam) {
       const lastName = String(row[2] || '').trim();
       const volunteerName = formatPrivacyName_(firstName, lastName);
       const timestampStr = formatDateSafe_(row[0]);
-      const pointsAwarded = (!rawAuditStatus || /^pending$/i.test(rawAuditStatus))
-        ? (row[24] !== '' && row[24] !== undefined ? Number(row[24]) : 1)
-        : (Number(row[24]) || 0); // Col Y
+      const pointsAwarded = Number(row[24]) || 0; // Col Y
       const auditReason = String(row[25] || '').trim(); // Col Z
 
       // Extract location/field context for display note
@@ -376,7 +337,7 @@ function buildFullDashboardPayload_(requestedTeam) {
         volunteer: volunteerName,
         role: normalizeRoleLabel_(role),
         duty: normalizeRoleLabel_(role) + (fieldOrMatch ? ` (${fieldOrMatch})` : ''),
-        status: auditStatus || 'Recorded',
+       status: auditStatus || 'Recorded',
         points: pointsAwarded,
         reason: auditReason || fieldOrMatch,
         note: auditReason || fieldOrMatch,
