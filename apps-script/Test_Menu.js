@@ -12,15 +12,26 @@ function onOpen() {
   try {
     const ui = SpreadsheetApp.getUi();
     ui.createMenu('⚽ AYSO 154 Board Tools')
+      .addItem('🔄 Run Full Audit & Sync Ledger', 'runAuditAndSyncLedger')
+      .addItem('🥅 Restore & Sync Field Setup Audit Tab', 'syncFieldSetupAuditTab')
       .addItem('🔍 Run Proactive Points & Runway Verification', 'runWeeklyPointReconciliation')
       .addItem('📢 Generate Division Director Action Alerts', 'generateDivisionDirectorAlerts')
-      .addItem('📊 Run Audit & Sync Ledger', 'runAuditAndSyncLedger')
-      .addItem('🥅 Sync Field Setup Audit Tab', 'syncFieldSetupAuditTab')
+      .addItem('🕵️‍♂️ Audit Dispute Tickets & MatchTrak Cross-Check', 'runAutomatedDisputeAndScheduleAudit')
       .addSeparator()
-      .addItem('🔄 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
+      .addItem('📅 Sync Form Schedule Dropdowns', 'syncContainerFormSchedule')
+      .addItem('🛠️ Repair Ledger Roster & Lock Legacy Backfill', 'repairLedgerAndLockBackfill')
+      .addItem('⏰ Enable Automated Form Submit & Hourly Triggers', 'installAutomatedAuditTriggers')
+      .addItem('🧹 Migrate Legacy Team_Awards Log Rows', 'migrateLegacyTeamAwardLogRows')
       .addSeparator()
       .addItem('🔍 Inspect Test Team Stats (Faheem Armanyous)', 'menuInspectTeam')
       .addToUi();
+
+    if (typeof addBoardAuditToolsMenu_ === 'function') {
+      addBoardAuditToolsMenu_();
+    }
+    if (typeof addDiagnosticsMenu_ === 'function') {
+      addDiagnosticsMenu_();
+    }
   } catch (e) {
     Logger.log('onOpen skipped in non-interactive context: ' + e.message);
   }

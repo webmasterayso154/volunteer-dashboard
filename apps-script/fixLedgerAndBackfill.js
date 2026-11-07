@@ -42,6 +42,7 @@ function repairLedgerAndLockBackfill() {
   const canonicalTeams = [];
 
   for (let i = 1; i < awardsData.length; i++) {
+    if (typeof isLegacyTeamAwardLogRow_ === 'function' && isLegacyTeamAwardLogRow_(awardsData[i])) continue;
     const teamCode = String(awardsData[i][0] || '').trim();
     if (!teamCode) continue;
 

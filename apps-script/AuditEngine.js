@@ -373,7 +373,7 @@ function injectFormulasIntoLedger_(sheet, startRow, endRow, checkinsTabName) {
     const setupFormula = (typeof getLedgerSetupFormula === 'function')
       ? getLedgerSetupFormula(r, tabName, hasFsa ? fsaTabName : null)
       : (hasFsa
-          ? `=IFERROR(VLOOKUP($B${r}, '${fsaTabName.replace(/'/g, "''")}'!$B:$G, 6, FALSE), MIN(${caps.FIELD_SETUP}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up")))`
+          ? `=IFERROR(VLOOKUP($B${r}, '${fsaTabName.replace(/'/g, "''")}'!$A:$G, 7, FALSE), MIN(${caps.FIELD_SETUP}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up")))`
           : `=MIN(${caps.FIELD_SETUP}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up"))`);
 
     formulaRows.push([
@@ -411,12 +411,21 @@ function injectFormulasIntoLedger_(sheet, startRow, endRow, checkinsTabName) {
 }
 
 /**
- * Synchronizes the 'Field_Setup_Audit' tab:
- * - Preserves team roster and scheduled obligations (Col D).
- * - Dynamically links check-ins recorded (Col E).
- * - Injects SSOT-derived formulas for Audit Result (Col F) and Audited Setup Points (Col G).
- *   Col F: =IF(D{r}>0, IF(E{r}>=D{r}, "Met All Obligations", "Incomplete / Missed"), IF(E{r}>0, "Volunteer Setup Completed", "No Setup Required"))
- *   Col G: =IF(D{r}>0, IF(E{r}>=D{r}, 5, 0), MIN(5, E{r}))
+ * Synchronizes and protects the 'Field_Setup_Audit' tab:
+ * - Enforces standard column order:
+ *     Col A: Team Code
+ *     Col B: Head Coach
+ *     Col C: Division
+ *     Col D: First Game Setup Obligations (<= 11/01)
+ *     Col E: Field Setup Check-Ins Recorded
+ *     Col F: Audit Result
+ *     Col G: Audited Setup Points (5 or 0)
+ * - Does NOT wipe existing rows or overwrite Col D/E with static zeroes.
+ * - Restores Col A..C if previously swapped, and reconstructs Col D from Season_Master_Schedule
+ *   if Col D was previously wiped to zeroes.
+ * - Injects SSOT-derived formulas into Col F and Col G:
+ *     Col F: =IF(D{r}>0, IF(E{r}>=D{r}, "Met All Obligations", "Incomplete / Missed"), IF(E{r}>0, "Volunteer Setup Completed", "No Setup Required"))
+ *     Col G: =IF(D{r}>0, IF(E{r}>=D{r}, 5, 0), MIN(5, E{r}))
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [ss] Optional active spreadsheet
  * @returns {Object} Sync statistics
  */
@@ -446,11 +455,20 @@ function syncFieldSetupAuditTab(ss) {
   if (lastRow < 2) return { status: 'empty_ledger' };
   const numTeams = lastRow - 1;
 
-  // Header Row (Row 1)
+  // Read existing values & formulas BEFORE modifying anything
+  const existingLastRow = Math.max(1, fsaSheet.getLastRow());
+  const existingValues = existingLastRow >= 1
+    ? fsaSheet.getRange(1, 1, existingLastRow, 7).getValues()
+    : [];
+  const existingFormulas = (existingLastRow >= 1 && typeof fsaSheet.getRange(1, 1, existingLastRow, 7).getFormulas === 'function')
+    ? fsaSheet.getRange(1, 1, existingLastRow, 7).getFormulas()
+    : [];
+
+  // Standard Header Row (Row 1): Col A = Team Code, Col B = Head Coach, Col C = Division
   const headers = [[
-    'Division',
     'Team Code',
     'Head Coach',
+    'Division',
     'First Game Setup Obligations (<= 11/01)',
     'Field Setup Check-Ins Recorded',
     'Audit Result',
@@ -464,11 +482,104 @@ function syncFieldSetupAuditTab(ss) {
     .setWrap(true)
     .setVerticalAlignment('middle');
 
+  // Detect if Cols A..C are empty or were corrupted (e.g. Division in Col A instead of Team Code)
+  const headerA1 = existingValues.length > 0 ? String(existingValues[0][0] || '').trim() : '';
+  const sampleFormulaA2 = (existingFormulas.length > 1 && existingFormulas[1]) ? String(existingFormulas[1][0] || '') : '';
+  const sampleValA2 = (existingValues.length > 1 && existingValues[1]) ? String(existingValues[1][0] || '').trim() : '';
+  const sampleValB2 = (existingValues.length > 1 && existingValues[1]) ? String(existingValues[1][1] || '').trim() : '';
+  const colsAbcCorrupted = existingLastRow < 2 ||
+    /^division$/i.test(headerA1) ||
+    /!A2$/i.test(sampleFormulaA2) ||
+    (sampleValB2.split(' - ').length >= 3 && sampleValA2.split(' - ').length < 3);
+
+  if (colsAbcCorrupted) {
+    const abcRows = [];
+    for (let i = 0; i < numTeams; i++) {
+      const r = i + 2;
+      // Season_Master_Ledger has Col A = Division, Col B = Team Code, Col C = Head Coach
+      // Field_Setup_Audit standard has Col A = Team Code, Col B = Head Coach, Col C = Division
+      abcRows.push([
+        `='${ledgerTabName}'!B${r}`,
+        `='${ledgerTabName}'!C${r}`,
+        `='${ledgerTabName}'!A${r}`
+      ]);
+    }
+    if (abcRows.length > 0) {
+      fsaSheet.getRange(2, 1, abcRows.length, 3).setValues(abcRows);
+    }
+  }
+
+  // Inspect Col D (First Game Setup Obligations) to protect existing formulas/values
+  let hasAnyColDFormula = false;
+  let hasAnyNonZeroColD = false;
+  let hasSwappedColDRef = false;
+  for (let rIdx = 1; rIdx < existingValues.length; rIdx++) {
+    const fD = (existingFormulas[rIdx] && existingFormulas[rIdx][3]) ? String(existingFormulas[rIdx][3]) : '';
+    const vD = existingValues[rIdx] ? Number(existingValues[rIdx][3]) || 0 : 0;
+    if (fD) {
+      hasAnyColDFormula = true;
+      if (/\$B\d+/i.test(fD)) hasSwappedColDRef = true;
+    }
+    if (vD > 0) hasAnyNonZeroColD = true;
+  }
+
+  if (hasAnyColDFormula && hasSwappedColDRef) {
+    // Fix any formula in Col D that referenced $B{r} when Team Code was in Col B
+    const fixedColD = [];
+    for (let i = 0; i < numTeams; i++) {
+      const r = i + 2;
+      const fD = (existingFormulas[r - 1] && existingFormulas[r - 1][3]) ? String(existingFormulas[r - 1][3]) : '';
+      const vD = (existingValues[r - 1] && existingValues[r - 1][3] !== '') ? existingValues[r - 1][3] : 0;
+      fixedColD.push([fD ? fD.replace(/\$B(\d+)/g, '$$A$1') : vD]);
+    }
+    fsaSheet.getRange(2, 4, fixedColD.length, 1).setValues(fixedColD);
+  } else if (!hasAnyColDFormula && !hasAnyNonZeroColD) {
+    // Col D was wiped to static zeroes with no formula; reconstruct from Season_Master_Schedule
+    const obligationsMap = computeFirstGameSetupObligations_(targetSs);
+    if (obligationsMap && Object.keys(obligationsMap).length > 0 && ledgerSheet) {
+      const ledgerData = ledgerSheet.getRange(2, 1, numTeams, 3).getValues();
+      const restoredColD = [];
+      for (let i = 0; i < numTeams; i++) {
+        const tCode = String(ledgerData[i][1] || '').trim();
+        const cKey = canonicalComparisonKey_(tCode);
+        restoredColD.push([obligationsMap[cKey] || 0]);
+      }
+      fsaSheet.getRange(2, 4, restoredColD.length, 1).setValues(restoredColD);
+    }
+  }
+
+  // Inspect Col E (Field Setup Check-Ins Recorded): protect valid formulas/values, fix $B{r} -> $A{r} if needed
   const setupCap = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS && VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP)
     ? VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP
     : 5;
 
-  const fsaRows = [];
+  let needsColERepair = existingLastRow < 2;
+  for (let rIdx = 1; rIdx < existingValues.length; rIdx++) {
+    const fE = (existingFormulas[rIdx] && existingFormulas[rIdx][4]) ? String(existingFormulas[rIdx][4]) : '';
+    if (fE && /\$B\d+/i.test(fE)) {
+      needsColERepair = true;
+      break;
+    }
+  }
+
+  if (needsColERepair) {
+    const colERows = [];
+    for (let i = 0; i < numTeams; i++) {
+      const r = i + 2;
+      const existingFE = (existingFormulas[r - 1] && existingFormulas[r - 1][4]) ? String(existingFormulas[r - 1][4]) : '';
+      if (existingFE && /\$B\d+/i.test(existingFE)) {
+        colERows.push([existingFE.replace(/\$B(\d+)/g, '$$A$1')]);
+      } else if (existingFE) {
+        colERows.push([existingFE]);
+      } else {
+        colERows.push([`=SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $A${r}, ${ci}!$D:$D, "Field Set Up")`]);
+      }
+    }
+    fsaSheet.getRange(2, 5, colERows.length, 1).setValues(colERows);
+  }
+
+  // Inject dynamic SSOT formulas into Col F (Audit Result) and Col G (Audited Setup Points) ONLY
+  const fgFormulas = [];
   for (let i = 0; i < numTeams; i++) {
     const r = i + 2;
     const fResult = (typeof getFieldSetupAuditResultFormula === 'function')
@@ -479,36 +590,11 @@ function syncFieldSetupAuditTab(ss) {
       ? getFieldSetupAuditedPointsFormula(r)
       : `=IF(D${r}>0, IF(E${r}>=D${r}, ${setupCap}, 0), MIN(${setupCap}, E${r}))`;
 
-    // Preserve existing Col D obligations if already present in cell D{r}
-    let colDVal = 0;
-    try {
-      const cellD = fsaSheet.getRange(r, 4);
-      const formulaD = cellD.getFormula ? cellD.getFormula() : '';
-      const valD = cellD.getValue ? cellD.getValue() : '';
-      colDVal = formulaD || (valD !== '' ? valD : 0);
-    } catch (e) {}
-
-    // Check if Col E has an existing custom formula; otherwise use standard SUMIFS
-    let colEVal = `=MIN(${setupCap}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${r}, ${ci}!$D:$D, "Field Set Up"))`;
-    try {
-      const cellE = fsaSheet.getRange(r, 5);
-      const formulaE = cellE.getFormula ? cellE.getFormula() : '';
-      if (formulaE) colEVal = formulaE;
-    } catch (e) {}
-
-    fsaRows.push([
-      `='${ledgerTabName}'!A${r}`,
-      `='${ledgerTabName}'!B${r}`,
-      `='${ledgerTabName}'!C${r}`,
-      colDVal,
-      colEVal,
-      fResult,
-      fPoints
-    ]);
+    fgFormulas.push([fResult, fPoints]);
   }
 
-  if (fsaRows.length > 0) {
-    fsaSheet.getRange(2, 1, fsaRows.length, headers[0].length).setValues(fsaRows);
+  if (fgFormulas.length > 0) {
+    fsaSheet.getRange(2, 6, fgFormulas.length, 2).setValues(fgFormulas);
     if (fsaSheet.autoResizeColumns) {
       try { fsaSheet.autoResizeColumns(1, headers[0].length); } catch (e) {}
     }
@@ -516,8 +602,140 @@ function syncFieldSetupAuditTab(ss) {
 
   return {
     status: 'ok',
-    teamsAudited: fsaRows.length
+    teamsAudited: fgFormulas.length
   };
+}
+
+/**
+ * Reconstructs each team's First Game Setup Obligations (<= 11/01) from Season_Master_Schedule
+ * when Column D in Field_Setup_Audit has been wiped to zeroes.
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss
+ * @returns {Object.<string, number>} Map of canonicalComparisonKey_(teamCode) -> obligation count
+ */
+function computeFirstGameSetupObligations_(ss) {
+  const obligations = {};
+  if (!ss || typeof ss.getSheetByName !== 'function') return obligations;
+
+  const scheduleSheet = ss.getSheetByName('Season_Master_Schedule');
+  const awardsSheet = ss.getSheetByName('Team_Awards');
+  const ledgerSheet = ss.getSheetByName('Season_Master_Ledger');
+  if (!scheduleSheet || scheduleSheet.getLastRow() < 2) return obligations;
+
+  // Build canonical team lookup and Division+CoachLastName lookup
+  const canonicalLookup = {};
+  const coachLastLookup = {};
+  const sourceSheet = awardsSheet || ledgerSheet;
+  if (sourceSheet && sourceSheet.getLastRow() > 1) {
+    const tData = sourceSheet.getDataRange().getValues();
+    const isLedger = (sourceSheet === ledgerSheet);
+    for (let i = 1; i < tData.length; i++) {
+      if (!isLedger && typeof isLegacyTeamAwardLogRow_ === 'function' && isLegacyTeamAwardLogRow_(tData[i])) continue;
+      const teamCode = String(tData[i][isLedger ? 1 : 0] || '').trim();
+      if (!teamCode) continue;
+      const cKey = canonicalComparisonKey_(teamCode);
+      canonicalLookup[cKey] = teamCode;
+
+      const parts = teamCode.split(' - ');
+      if (parts.length >= 3) {
+        const divRaw = parts[0].trim().replace(/^0+/, '');
+        const gender = parts[1].trim().charAt(0).toUpperCase();
+        const coachWords = parts[2].trim().split(/\s+/);
+        const lastName = coachWords[coachWords.length - 1].toUpperCase();
+        coachLastLookup[`${gender}U${divRaw.replace('U', '')}_${lastName}`] = cKey;
+        coachLastLookup[`${gender}${divRaw}_${lastName}`] = cKey;
+      }
+    }
+  }
+
+  const schedData = scheduleSheet.getDataRange().getValues();
+  if (schedData.length < 2) return obligations;
+  const header = schedData[0].map(h => String(h || '').trim());
+  const idxDate = header.indexOf('Date') !== -1 ? header.indexOf('Date') : 1;
+  const idxTime = header.indexOf('Time') !== -1 ? header.indexOf('Time') : 2;
+  const idxDiv = header.indexOf('Division') !== -1 ? header.indexOf('Division') : 4;
+  const idxField = header.indexOf('Field') !== -1 ? header.indexOf('Field') : 8;
+  const idxHome = header.indexOf('Home Team') !== -1 ? header.indexOf('Home Team') : 10;
+  const idxCanceled = header.indexOf('Canceled');
+  const idxPostponed = header.indexOf('Postponed');
+
+  // Helper to resolve a raw schedule team string to canonical comparison key
+  function resolveHomeTeamKey(rawHome, rawDiv, row) {
+    // Check helper columns AR:AT (indices 43..45) first if present
+    for (let c = 43; c <= 45; c++) {
+      if (row.length > c && row[c]) {
+        const candKey = canonicalComparisonKey_(String(row[c]));
+        if (canonicalLookup[candKey]) return candKey;
+      }
+    }
+    const directKey = canonicalComparisonKey_(rawHome);
+    if (canonicalLookup[directKey]) return directKey;
+
+    const cleanHome = String(rawHome || '').trim().replace(/^E154-/i, '');
+    const hWords = cleanHome.split(/[\s\-]+/).filter(Boolean);
+    const lastWord = hWords.length > 0 ? hWords[hWords.length - 1].toUpperCase() : '';
+    const dNorm = String(rawDiv || '').trim().toUpperCase().replace(/^0+/, '');
+    if (lastWord && dNorm) {
+      if (coachLastLookup[`${dNorm}_${lastWord}`]) return coachLastLookup[`${dNorm}_${lastWord}`];
+      const m = dNorm.match(/^(\d+U)\s*-\s*([BG])/i);
+      if (m) {
+        const k1 = `${m[2].toUpperCase()}U${m[1].replace(/U/i, '')}_${lastWord}`;
+        if (coachLastLookup[k1]) return coachLastLookup[k1];
+      }
+    }
+    return '';
+  }
+
+  // Group valid games <= 2026-11-01 by (dateKey, fieldKey) and find earliest game on each field/day
+  const earliestByDateField = {};
+  for (let i = 1; i < schedData.length; i++) {
+    const r = schedData[i];
+    if (idxCanceled !== -1 && String(r[idxCanceled] || '').toUpperCase() === 'Y') continue;
+    if (idxPostponed !== -1 && String(r[idxPostponed] || '').toUpperCase() === 'Y') continue;
+
+    const dateKey = extractDateOnlyKey_(r[idxDate]);
+    if (!dateKey || dateKey > '2026-11-01' || dateKey < '2026-08-01') continue;
+
+    const rawField = String(r[idxField] || '').trim();
+    if (!rawField || /BYE/i.test(rawField)) continue;
+
+    const timeVal = r[idxTime];
+    let sortableTime = '99:99:99';
+    if (typeof normalizeTimeSortable === 'function') {
+      sortableTime = normalizeTimeSortable(timeVal);
+    } else {
+      const tStr = formatTimeSafe_(timeVal);
+      const m = String(tStr).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (m) {
+        let hh = parseInt(m[1], 10);
+        const mer = m[3] ? m[3].toUpperCase() : '';
+        if (mer === 'PM' && hh < 12) hh += 12;
+        if (mer === 'AM' && hh === 12) hh = 0;
+        sortableTime = ('0' + hh).slice(-2) + ':' + m[2] + ':00';
+      }
+    }
+
+    const fieldKey = `${dateKey}|${rawField.toUpperCase().replace(/\s+/g, ' ')}`;
+    if (!earliestByDateField[fieldKey] || sortableTime < earliestByDateField[fieldKey].sortableTime) {
+      earliestByDateField[fieldKey] = {
+        sortableTime: sortableTime,
+        row: r,
+        rawHome: String(r[idxHome] || '').trim(),
+        rawDiv: String(r[idxDiv] || '').trim()
+      };
+    }
+  }
+
+  Object.keys(earliestByDateField).forEach(fk => {
+    const item = earliestByDateField[fk];
+    const cKey = resolveHomeTeamKey(item.rawHome, item.rawDiv, item.row);
+    if (!cKey) return;
+    const canonicalTeam = canonicalLookup[cKey] || item.rawHome;
+    // Playground, 05U, and 06U do not have scheduled 5-pt opening field setup obligations
+    if (/playground|schoolyard|\b0?[56]u\b|\b[bg]u0?[56]\b/i.test(canonicalTeam)) return;
+    obligations[cKey] = (obligations[cKey] || 0) + 1;
+  });
+
+  return obligations;
 }
 
 /**
@@ -725,20 +943,39 @@ function extractLastNameTokens_(volStr, coachStr) {
 }
 
 /**
- * Optional 1-click installer to run `runAuditAndSyncLedger` automatically every hour on weekends.
+ * Automatic Form Submit Trigger Handler for Game Day Check-ins.
+ * Immediately audits new check-in rows and updates Season_Master_Ledger without manual intervention.
+ */
+function onFormSubmit(e) {
+  return runAuditAndSyncLedger();
+}
+
+/**
+ * Installs automated triggers (`onFormSubmit` for instant check-in processing and hourly backup)
+ * and removes any legacy manual-push triggers.
  */
 function installAutomatedAuditTriggers() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const triggers = ScriptApp.getProjectTriggers();
   triggers.forEach(t => {
-    if (t.getHandlerFunction() === 'runAuditAndSyncLedger') {
+    const fn = t.getHandlerFunction();
+    if (fn === 'runAuditAndSyncLedger' || fn === 'onFormSubmit' || fn === 'pushPendingSubmissionsOnly') {
       ScriptApp.deleteTrigger(t);
     }
   });
+  if (ss) {
+    ScriptApp.newTrigger('onFormSubmit')
+      .forSpreadsheet(ss)
+      .onFormSubmit()
+      .create();
+  }
   ScriptApp.newTrigger('runAuditAndSyncLedger')
     .timeBased()
     .everyHours(1)
     .create();
-  SpreadsheetApp.getActiveSpreadsheet().toast('✅ Automated Hourly Audit Trigger installed!', 'AYSO 154 Automation', 5);
+  if (ss && ss.toast) {
+    ss.toast('✅ Automated Form Submit & Hourly Audit Triggers installed!', 'AYSO 154 Automation', 5);
+  }
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -748,6 +985,9 @@ if (typeof module !== 'undefined' && module.exports) {
     injectTraceableLedgerFormulas,
     injectFormulasIntoLedger_,
     syncFieldSetupAuditTab,
+    computeFirstGameSetupObligations_,
+    onFormSubmit,
+    installAutomatedAuditTriggers,
     runAutomatedDisputeAndScheduleAudit,
     getDisputeAuditSummary_,
     extractDateOnlyKey_,

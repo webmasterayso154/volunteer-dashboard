@@ -1,355 +1,113 @@
 /**
  * ============================================================================
- * AYSO REGION 154 - MASTER VOLUNTEER POLICY & ADMIN CONFIGURATION (SSOT)
+ * AYSO REGION 154 - MASTER CONFIGURATION & SINGLE SOURCE OF TRUTH (SSOT)
  * ============================================================================
- * Single Source of Truth for all volunteer point rules, division qualification
- * thresholds, category caps, and Google Sheets formula generators.
+ * File: AdminConfig.js
+ * Version: 5.1.0-FIX-16U-COLLISION
+ * Author: AYSO 154 Webmaster
+ * ============================================================================
  */
 
 const VOLUNTEER_POLICY = Object.freeze({
-  THRESHOLDS: Object.freeze({
+  SEASON: 'Fall 2026',
+
+  // 1. Division Playoff / Cypress Cup Qualification Thresholds
+  THRESHOLDS: {
     PLAYGROUND: 4,
     U5_U6: 7,
     U8: 15,
     U10_U19: 17,
     DEFAULT: 17
-  }),
-  CATEGORY_CAPS: Object.freeze({
+  },
+
+  // 2. Maximum Credit Caps per Category
+  CATEGORY_CAPS: {
     FIELD_SETUP: 5,
     REFEREE: 10,
     FIELD_MARSHAL: 2,
     PICTURE_DAY: 2,
-    CERTIFIED_REF: 5,
-    MATCHTRAK_BONUS: 2,
     OTHER_ADJUSTMENTS: 5
-  }),
-  AUDIT: Object.freeze({
+  },
+
+  // 3. Post-Season Audit & Adjudication Rules
+  AUDIT: {
     POSTING_DELAY_HOURS: 48,
     LOOKBACK_DAYS: 14,
     MAX_SHIFTS_PER_CHALLENGE: 5
-  }),
-  SHEETS: Object.freeze({
+  },
+
+  // 4. Tab Identifiers
+  SHEETS: {
     LEDGER: 'Season_Master_Ledger',
     CHECKINS: 'Game Day Check-ins',
-    FALLBACK_CHECKINS: 'Form Responses 3',
-    LEGACY_CHECKINS: 'Form Responses 1',
-    DISPUTES: 'Form Responses 2',
+    FALLBACK_CHECKINS: 'Form Responses 1',
+    LEGACY_CHECKINS: 'Game Day Check-ins (Responses)',
     AWARDS: 'Team_Awards',
-    SCHEDULE: 'Season_Master_Schedule',
-    ADMIN: 'Admin_Config',
-    SETTINGS: 'Settings',
-    DISPUTE_REPORT: 'Dispute_Audit_Report',
-    FIELD_SETUP_AUDIT: 'Field_Setup_Audit'
-  })
+    SCHEDULE: 'Master_Schedule',
+    SEASON_SCHEDULE: 'Season_Master_Schedule',
+    ADMIN_CONFIG: 'Admin_Config',
+    SYNC_LOG: 'Schedule_Sync_Log',
+    AUDIT_RESPONSES: 'AYSO 154 - 2026 Playoff Audit Responses'
+  },
+
+  // 5. External Integrations
+  INTEGRATIONS: {
+    DRIVE_FOLDER_ID: '16p94d5o6ZZZdPVkjnd8MYcWbtXe5V8tv',
+    CHECKIN_FORM_ID: '1gIenxzkQeBGcbJZrt_ujp9WTfXg_1HUD_BgHDjLS3cI',
+    AUDIT_FORM_ID: '1HIQW67qTEQgv6BnBqUno6nodP7y77-RfCVSoeSr75rk',
+    TIMEZONE: 'America/Los_Angeles'
+  }
 });
 
 /**
- * Resolves the division playoff qualification goal for a given team code or division string.
- * @param {string} teamCodeOrDivision Team code or division string (e.g. '05U', '8U', '10U - Boys - Coach')
- * @returns {number} Required qualification points
+ * Returns the exact playoff goal.
+ * Evaluates 10U–19U FIRST to prevent "16U" from matching "6U".
  */
 function getPlayoffGoalForTeam(teamCodeOrDivision) {
-  if (!teamCodeOrDivision) return VOLUNTEER_POLICY.THRESHOLDS.DEFAULT;
-  const s = String(teamCodeOrDivision).trim().toUpperCase();
-  const t = VOLUNTEER_POLICY.THRESHOLDS;
+  const code = String(teamCodeOrDivision || '').trim().toUpperCase();
+  if (!code) return VOLUNTEER_POLICY.THRESHOLDS.DEFAULT;
 
-  if (/PLAYGROUND|SCHOOLYARD/i.test(s)) {
-    return t.PLAYGROUND;
-  }
-  // 5U & 6U: e.g. 05U, 5U, 06U, 6U, BU05, GU06, BU5, GU6, 5UB, 6UG, etc.
-  if (/(?:^|[^\d])0?[56]U\b/i.test(s) || /\b[BG]U0?[56]\b/i.test(s) || /-[056]U/i.test(s) || /\b0?[56]U[BG]\b/i.test(s)) {
-    return t.U5_U6;
-  }
-  // 8U: e.g. 08U, 8U, BU08, GU08, BU8, GU8, 8UB, 8UG, etc.
-  if (/(?:^|[^\d])0?8U\b/i.test(s) || /\b[BG]U0?8\b/i.test(s) || /-0?8U/i.test(s) || /\b0?8U[BG]\b/i.test(s)) {
-    return t.U8;
-  }
-  // 10U through 19U (10U, 12U, 14U, 16U, 19U)
-  if (/(?:^|[^\d])1[02469]U\b/i.test(s) || /\b[BG]U1[02469]\b/i.test(s) || /-1[02469]U/i.test(s) || /\b1[02469]U[BG]\b/i.test(s)) {
-    return t.U10_U19;
+  // 1. Playground / Schoolyard -> 4
+  if (code.indexOf('PLAYGROUND') !== -1 || code.indexOf('SCHOOLYARD') !== -1) {
+    return VOLUNTEER_POLICY.THRESHOLDS.PLAYGROUND;
   }
 
-  // Fallback regex matching general division pattern:
-  const match = s.match(/(?:U0?(\d+)|0?(\d+)U)/i);
-  if (match) {
-    const divNum = parseInt(match[1] || match[2], 10);
-    if (divNum === 5 || divNum === 6) return t.U5_U6;
-    if (divNum === 8) return t.U8;
-    if (divNum >= 10 && divNum <= 19) return t.U10_U19;
+  // 2. Competitive Divisions (9U through 19U) -> 17
+  if (/\b(09U|9U|9UX|10U|10UX|11UX|12U|12UX|13UX|14U|14UX|16U|19U)\b/i.test(code) || /^(09U|9U|10U|12U|14U|16U|19U|BU|GU)/i.test(code)) {
+    return VOLUNTEER_POLICY.THRESHOLDS.U10_U19;
   }
 
-  return t.DEFAULT;
+  // 3. 8U -> 15
+  if (/\b(08U|8U)\b/i.test(code) || /^(08U|8U)/i.test(code)) {
+    return VOLUNTEER_POLICY.THRESHOLDS.U8;
+  }
+
+  // 4. 5U & 6U -> 7 (Boundaries ensure 16U never triggers this)
+  if (/\b(05U|5U|06U|6U)\b/i.test(code) || /^(05U|5U|06U|6U)/i.test(code)) {
+    return VOLUNTEER_POLICY.THRESHOLDS.U5_U6;
+  }
+
+  return VOLUNTEER_POLICY.THRESHOLDS.DEFAULT;
 }
 
 /**
- * Dynamically generates the Google Sheets formula for Column L (Playoff Goal) using VOLUNTEER_POLICY.THRESHOLDS.
- * @param {number} rowNumber Row index in Season_Master_Ledger
- * @returns {string} Formula string
+ * Google Sheets dynamic formula for Column L in Season_Master_Ledger.
+ * Evaluates 16U / 10U-19U before testing for 6U.
  */
 function getLedgerGoalFormula(rowNumber) {
   const t = VOLUNTEER_POLICY.THRESHOLDS;
-  return `=IF(REGEXMATCH($A${rowNumber}, "Playground"), ${t.PLAYGROUND}, IF(REGEXMATCH($A${rowNumber}, "05U|5U|06U|6U"), ${t.U5_U6}, IF(REGEXMATCH($A${rowNumber}, "08U|8U"), ${t.U8}, ${t.U10_U19})))`;
+  return `=IF(REGEXMATCH($A${rowNumber}, "Playground|Schoolyard"), ${t.PLAYGROUND}, IF(REGEXMATCH($A${rowNumber}, "(09U|9U|10U|11U|12U|13U|14U|16U|19U)"), ${t.U10_U19}, IF(REGEXMATCH($A${rowNumber}, "(08U|8U)"), ${t.U8}, ${t.U5_U6})))`;
 }
 
-/**
- * Dynamically generates the Google Sheets formula for Column P (Gap to Playoff Goal with Full Setup).
- * @param {number} rowNumber Row index in Season_Master_Ledger
- * @returns {string} Formula string
- */
 function getLedgerGapFormula(rowNumber) {
   return `=MAX(0, L${rowNumber} - O${rowNumber})`;
 }
 
-/**
- * Dynamically generates the Google Sheets formula for Column F (Audit Result) in Field_Setup_Audit.
- * Met obligations -> "Met All Obligations", incomplete -> "Incomplete / Missed".
- * 0 obligations with check-ins -> "Volunteer Setup Completed", 0 check-ins -> "No Setup Required".
- * @param {number} rowNumber Row index in Field_Setup_Audit
- * @returns {string} Formula string
- */
-function getFieldSetupAuditResultFormula(rowNumber) {
-  return `=IF(D${rowNumber}>0, IF(E${rowNumber}>=D${rowNumber}, "Met All Obligations", "Incomplete / Missed"), IF(E${rowNumber}>0, "Volunteer Setup Completed", "No Setup Required"))`;
-}
-
-/**
- * Dynamically generates the Google Sheets formula for Column G (Audited Setup Points) in Field_Setup_Audit.
- * Met obligations -> 5 pts, incomplete -> 0 pts.
- * 0 obligations with check-ins -> MIN(5, E{r}), 0 check-ins -> 0 pts.
- * @param {number} rowNumber Row index in Field_Setup_Audit
- * @returns {string} Formula string
- */
-function getFieldSetupAuditedPointsFormula(rowNumber) {
-  const cap = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS && VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP)
-    ? VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP
-    : 5;
-  return `=IF(D${rowNumber}>0, IF(E${rowNumber}>=D${rowNumber}, ${cap}, 0), MIN(${cap}, E${rowNumber}))`;
-}
-
-/**
- * Dynamically generates the Google Sheets formula for Column F (Field Setup Points) in Season_Master_Ledger.
- * Reads audited setup points from Field_Setup_Audit if present; falls back to check-in tally.
- * @param {number} rowNumber Row index in Season_Master_Ledger
- * @param {string} [checkinsTabName] Sheet tab name for Game Day Check-ins
- * @param {string} [fieldSetupAuditTabName] Sheet tab name for Field_Setup_Audit
- * @returns {string} Formula string
- */
-function getLedgerSetupFormula(rowNumber, checkinsTabName, fieldSetupAuditTabName) {
-  const cap = (typeof VOLUNTEER_POLICY !== 'undefined' && VOLUNTEER_POLICY.CATEGORY_CAPS && VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP)
-    ? VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP
-    : 5;
-  const ci = `'${(checkinsTabName || 'Game Day Check-ins').replace(/'/g, "''")}'`;
-  const fallback = `MIN(${cap}, SUMIFS(${ci}!$Y:$Y, ${ci}!$AA:$AA, $B${rowNumber}, ${ci}!$D:$D, "Field Set Up"))`;
-
-  if (fieldSetupAuditTabName) {
-    const fsa = `'${fieldSetupAuditTabName.replace(/'/g, "''")}'`;
-    return `=IFERROR(VLOOKUP($B${rowNumber}, ${fsa}!$B:$G, 6, FALSE), ${fallback})`;
-  }
-  return `=${fallback}`;
-}
-
-const ADMIN_CONFIG_SHEET = "Admin_Config";
-var PRODUCTION_SHEET_ID = (typeof PRODUCTION_SHEET_ID !== 'undefined') ? PRODUCTION_SHEET_ID : "1RWPNUjVeRRcHiI18b8_IzLn1RzKHG3hLJvIbZjWq6Bc";
-var PRODUCTION_FORM_ID = (typeof PRODUCTION_FORM_ID !== 'undefined') ? PRODUCTION_FORM_ID : "1gIenxzkQeBGcbJZrt_ujp9WTfXg_1HUD_BgHDjLS3cI";
-
-/**
- * Run this function once from the Apps Script editor to build and format the sheet.
- */
-function setupAdminConfigSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(ADMIN_CONFIG_SHEET);
-
-  if (!sheet) {
-    sheet = ss.insertSheet(ADMIN_CONFIG_SHEET);
-  }
-
-  // Clear existing content and formatting
-  sheet.clear();
-  sheet.clearFormats();
-
-  // Set visual column widths
-  sheet.setColumnWidth(1, 240); // A: Allowlist Email
-  sheet.setColumnWidth(2, 170); // B: Name / Role
-  sheet.setColumnWidth(3, 35);  // C: Spacer
-  sheet.setColumnWidth(4, 180); // D: Setting Key
-  sheet.setColumnWidth(5, 120); // E: Setting Value
-  sheet.setColumnWidth(6, 35);  // F: Spacer
-  sheet.setColumnWidth(7, 140); // G: Supplemental Division
-  sheet.setColumnWidth(8, 170); // H: Supplemental Coach
-  sheet.setColumnWidth(9, 240); // I: Calculated Team Code
-
-  // Card Category Headers (Row 1)
-  sheet.getRange("A1:B1").merge().setValue("BOARD ACCESS ALLOWLIST");
-  sheet.getRange("D1:E1").merge().setValue("GLOBAL DASHBOARD SETTINGS");
-  sheet.getRange("G1:I1").merge().setValue("SUPPLEMENTAL ROSTER (LATE TEAMS)");
-
-  // Column Sub-headers (Row 2)
-  const headers = [
-    ["Email Address", "Name / Role", "", "Setting Key", "Current Value", "", "Division", "Coach Name", "Full Team Code (Auto)"]
-  ];
-  sheet.getRange("A2:I2").setValues(headers);
-
-  // Default Global Settings Data (Starting Row 3)
-  const defaultSettings = [
-    ["PlayoffThreshold", VOLUNTEER_POLICY.THRESHOLDS.DEFAULT],
-    ["RefMaxCap", VOLUNTEER_POLICY.CATEGORY_CAPS.REFEREE],
-    ["FieldMarshalCap", VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_MARSHAL],
-    ["FieldSetupCap", VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP],
-    ["PictureDayCap", VOLUNTEER_POLICY.CATEGORY_CAPS.PICTURE_DAY],
-    ["StandingsFrozen", false]
-  ];
-  sheet.getRange("D3:E8").setValues(defaultSettings);
-
-  // Set Checkbox Data Validation for "StandingsFrozen" (Cell E8)
-  const checkboxRule = SpreadsheetApp.newDataValidation().requireCheckbox().build();
-  sheet.getRange("E8").setDataValidation(checkboxRule);
-
-  // Pre-seed the Calculated Team Code formula down the Supplemental Roster column (Row 3 to 50)
-  sheet.getRange("I3:I50").setFormulaR1C1('=IF(RC[-2]="","", RC[-2] & " - " & RC[-1])');
-
-  // Styling: Category Headers (Row 1)
-  const categoryRanges = ["A1:B1", "D1:E1", "G1:I1"];
-  categoryRanges.forEach(ref => {
-    sheet.getRange(ref)
-      .setBackground("#0F2537") // Navy
-      .setFontColor("#FFFFFF")
-      .setFontWeight("bold")
-      .setHorizontalAlignment("center")
-      .setVerticalAlignment("middle");
-  });
-
-  // Styling: Column Headers (Row 2)
-  const headerRanges = ["A2:B2", "D2:E2", "G2:I2"];
-  headerRanges.forEach(ref => {
-    sheet.getRange(ref)
-      .setBackground("#E2E8F0") // Slate light
-      .setFontColor("#1E293B")
-      .setFontWeight("bold")
-      .setHorizontalAlignment("left")
-      .setVerticalAlignment("middle");
-  });
-
-  // Alignments & Clean Borders
-  sheet.getRange("A1:I50").setFontFamily("Arial").setFontSize(10);
-  sheet.getRange("A1:I2").setFontSize(10);
-  sheet.getRange("D3:D8").setFontWeight("bold").setFontColor("#334155");
-  sheet.getRange("E3:E7").setHorizontalAlignment("center");
-  sheet.getRange("I3:I50").setFontColor("#64748B"); // Gray tone for auto-generated codes
-
-  // Set row heights
-  sheet.setRowHeight(1, 28);
-  sheet.setRowHeight(2, 24);
-
-  SpreadsheetApp.flush();
-  Logger.log("✅ Admin_Config sheet initialized and styled successfully.");
-}
-
-/**
- * Reads all authorized emails from Column A.
- */
-function getAuthorizedBoardEmails() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(ADMIN_CONFIG_SHEET);
-  if (!sheet || sheet.getLastRow() < 3) return [];
-
-  const values = sheet.getRange(3, 1, sheet.getLastRow() - 2, 1).getValues();
-  return values
-    .map(row => String(row[0] || "").trim().toLowerCase())
-    .filter(email => email.length > 0 && email.indexOf("@") !== -1);
-}
-
-/**
- * Reads global key-value settings from Columns D and E.
- */
-function getAdminConfigSettings() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(ADMIN_CONFIG_SHEET);
-  const defaults = {
-    PlayoffThreshold: VOLUNTEER_POLICY.THRESHOLDS.DEFAULT,
-    RefMaxCap: VOLUNTEER_POLICY.CATEGORY_CAPS.REFEREE,
-    FieldMarshalCap: VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_MARSHAL,
-    FieldSetupCap: VOLUNTEER_POLICY.CATEGORY_CAPS.FIELD_SETUP,
-    PictureDayCap: VOLUNTEER_POLICY.CATEGORY_CAPS.PICTURE_DAY,
-    StandingsFrozen: false
-  };
-
-  if (!sheet || sheet.getLastRow() < 3) return defaults;
-
-  const data = sheet.getRange(3, 4, 6, 2).getValues();
-  const settings = {};
-
-  data.forEach(row => {
-    const key = String(row[0]).trim();
-    if (key) {
-      settings[key] = row[1];
-    }
-  });
-
-  return Object.assign(defaults, settings);
-}
-
-/**
- * Writes a single Global Dashboard Setting (Columns D/E) by key. Used to keep
- * control-panel writes and the Admin_Config sheet as one source of truth
- * instead of forking a second copy in the legacy Settings sheet.
- */
-function setAdminConfigSetting(key, value) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(ADMIN_CONFIG_SHEET);
-  if (!sheet) return false;
-
-  const lastRow = Math.max(sheet.getLastRow(), 8);
-  const keys = sheet.getRange(3, 4, lastRow - 2, 1).getValues();
-  for (let i = 0; i < keys.length; i++) {
-    if (String(keys[i][0] || '').trim() === key) {
-      sheet.getRange(3 + i, 5).setValue(value);
-      return true;
-    }
-  }
-  sheet.getRange(lastRow + 1, 4, 1, 2).setValues([[key, value]]);
-  return true;
-}
-
-/**
- * Reads late-added coaches from Columns G through I.
- */
-function getSupplementalTeams() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(ADMIN_CONFIG_SHEET);
-  if (!sheet || sheet.getLastRow() < 3) return [];
-
-  const values = sheet.getRange(3, 7, sheet.getLastRow() - 2, 3).getValues();
-  const teams = [];
-
-  values.forEach(row => {
-    const division = String(row[0] || "").trim();
-    const coach = String(row[1] || "").trim();
-    const fullCode = String(row[2] || "").trim();
-
-    if (division && coach) {
-      teams.push({
-        division: division,
-        coach: coach,
-        teamCode: fullCode || (division + " - " + coach)
-      });
-    }
-  });
-
-  return teams;
-}
-
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== 'undefined') {
   module.exports = {
     VOLUNTEER_POLICY,
     getPlayoffGoalForTeam,
     getLedgerGoalFormula,
-    getLedgerGapFormula,
-    getFieldSetupAuditResultFormula,
-    getFieldSetupAuditedPointsFormula,
-    getLedgerSetupFormula,
-    setupAdminConfigSheet,
-    getAuthorizedBoardEmails,
-    getAdminConfigSettings,
-    setAdminConfigSetting,
-    getSupplementalTeams
+    getLedgerGapFormula
   };
 }
