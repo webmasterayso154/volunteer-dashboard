@@ -96,8 +96,8 @@ assert.strictEqual(
 const ledgerSetupWithFsa = getLedgerSetupFormula(5, 'Game Day Check-ins', 'Field_Setup_Audit');
 assert.strictEqual(
   ledgerSetupWithFsa,
-  '=IFERROR(VLOOKUP($B5, \'Field_Setup_Audit\'!$B:$G, 6, FALSE), MIN(5, SUMIFS(\'Game Day Check-ins\'!$Y:$Y, \'Game Day Check-ins\'!$AA:$AA, $B5, \'Game Day Check-ins\'!$D:$D, "Field Set Up")))',
-  'Ledger Setup formula must link to Field_Setup_Audit Col G via VLOOKUP'
+  '=IFERROR(VLOOKUP($B5, \'Field_Setup_Audit\'!$A:$G, 7, FALSE), MIN(5, SUMIFS(\'Game Day Check-ins\'!$Y:$Y, \'Game Day Check-ins\'!$AA:$AA, $B5, \'Game Day Check-ins\'!$D:$D, "Field Set Up")))',
+  'Ledger Setup formula must link to Field_Setup_Audit Col A..G (Col 7) via VLOOKUP'
 );
 
 const ledgerSetupFallback = getLedgerSetupFormula(5, 'Game Day Check-ins', null);
@@ -124,8 +124,15 @@ assert(auditEngineCode.includes('VOLUNTEER_POLICY.SHEETS.LEDGER'), 'repairLedger
 assert(auditEngineCode.includes('Duplicate Submission (0)'), 'Duplicate Submission (0) status must be present');
 assert(auditEngineCode.includes('NOCRA - No Points'), 'NOCRA - No Points status must be present');
 assert(auditEngineCode.includes('Cap Reached'), 'Cap Reached status must be present');
+assert(auditEngineCode.includes('function onFormSubmit(e)'), 'onFormSubmit trigger handler must exist');
+assert(auditEngineCode.includes('.onFormSubmit()'), 'installAutomatedAuditTriggers must register onFormSubmit trigger');
+assert(!auditEngineCode.includes('function pushPendingSubmissionsOnly'), 'pushPendingSubmissionsOnly must not exist');
+assert(
+  auditEngineCode.includes("'Team Code',\n    'Head Coach',\n    'Division',\n    'First Game Setup Obligations (<= 11/01)',\n    'Field Setup Check-Ins Recorded',\n    'Audit Result',\n    'Audited Setup Points (5 or 0)'"),
+  'Field_Setup_Audit headers must enforce Col A = Team Code, Col B = Head Coach, Col C = Division'
+);
 
-console.log('✅ AuditEngine.js SSOT formula injection and audit rules verified.');
+console.log('✅ AuditEngine.js SSOT formula injection, Field_Setup_Audit protection, and auto-submit rules verified.');
 
 // 5. Test Division Tier Clinch Invariants
 console.log('\n▶ Testing Tiered Qualification Clinch Invariants:');
