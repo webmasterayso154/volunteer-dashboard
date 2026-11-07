@@ -4,14 +4,16 @@
   AYSO REGION 154 - VOLUNTEER STANDINGS DASHBOARD
   ============================================================================
   File: index.html
-  Version: build_20261103_v1
-  Last Updated: November 3, 2026
+  Version: build_20261107_v1
+  Last Updated: November 7, 2026
   Author: AYSO 154 Webmaster
   
   CHANGELOG:
-  - [2026-11-03] THRESHOLD UPDATE: Reduced competitive division playoff 
-    qualification requirement from 17 to 15 points.
-  - [2026-11-03] CACHE BUMP: Bumped APP_BUILD_ID to build_20261103_v1 to bust 
+  - [2026-11-07] FIELD MARSHAL CAP EXPANSION: Raised seasonal FM credit cap from
+    2 to 4 points per team following Regional Commissioner Cypress Cup bulletin.
+  - [2026-11-07] GUIDELINE SYNC: Aligned thresholds (5U/6U: 7, 8U: 15, 10U+: 17)
+    and documented Nov 21 & 22 Cypress Cup weekend points boost.
+  - [2026-11-07] CACHE BUMP: Bumped APP_BUILD_ID to build_20261107_v1 to bust
     stale client-side and CDN cached scripts.
   ============================================================================
 -->
@@ -24,10 +26,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      // Bump together with the ?v= query on the support.js <script> tag below —
-      // that query string is what actually forces mobile browsers/CDNs to fetch
-      // a new copy of the runtime instead of reusing a disk-cached one.
-      var APP_BUILD_ID = 'build_20261103_v1';
+      var APP_BUILD_ID = 'build_20261107_v1';
       var RELOAD_GUARD = 'ayso_reload_guard';
 
       try {
@@ -49,11 +48,6 @@
         });
       }
 
-      // The meta Cache-Control tags above are advisory only — mobile Safari/Chrome
-      // disk cache and the GitHub Pages/Fastly edge can still hand back a stale
-      // index.html on first load. Re-fetch this document bypassing cache and, if
-      // its build id disagrees with the one we just booted from, do a single
-      // self-healing reload. RELOAD_GUARD prevents that from looping.
       try {
         if (sessionStorage.getItem(RELOAD_GUARD)) {
           sessionStorage.removeItem(RELOAD_GUARD);
@@ -71,7 +65,6 @@
         }
       } catch (e) { }
 
-      // Intercept all network fetches and append anti-caching millisecond tokens
       var origFetch = window.fetch;
       if (origFetch) {
         window.fetch = function (input, init) {
@@ -92,7 +85,7 @@
       display: none;
     }
   </style>
-  <script src="./support.js?v=build_20261104_tier_v2"></script>
+  <script src="./support.js?v=build_20261107_v1"></script>
 </head>
 
 <body>
@@ -373,19 +366,19 @@
               style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (10U through 19U)</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Competitive divisions (10U through 19U) must earn a minimum of <strong>17 verified points</strong> to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Early Ref Scheduling Incentive (max 2), Field Marshal (max 2), Friday Setup (max 5), and Picture Day (max 2).</p>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Competitive divisions (10U through 19U) must earn a minimum of <strong>17 verified points</strong> to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Early Ref Scheduling Incentive (max 2), Field Marshal (up to 4 points with Cypress Cup boost), Friday Setup (max 5), and Picture Day (max 2).</p>
               </div>
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">08U (8U) Division</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 8U must earn a minimum of <strong>15 verified points</strong>. Points are earned through Referee assignments, Certified Ref Bonus, MatchTrak Bonus, and Saturday Field Setup.</p>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 8U must earn a minimum of <strong>15 verified points</strong>. Points are earned through Referee assignments, Certified Ref Bonus, MatchTrak Bonus, Saturday Field Setup, and Field Marshal shifts (up to 4 points).</p>
               </div>
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">05U &amp; 06U (5U &amp; 6U) Divisions</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 5U &amp; 6U must earn a minimum of <strong>7 verified points</strong>. Points are earned through Saturday morning setup/takedown (up to 5 points), Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points), and Picture Picnic Day (max 2 points).</p>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 5U &amp; 6U must earn a minimum of <strong>7 verified points</strong>. Points are earned through Saturday morning setup/takedown (up to 5 points), Field Marshal shifts (up to 4 points total for the season), and Picture Picnic Day (max 2 points).</p>
               </div>
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playground / Schoolyard Division</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 verified points (4 points possible). Points are earned through Field Marshal shifts during Weeks 4 &amp; 10 (max 2 points) and Picture Picnic Day shifts (max 2 points).</p>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 verified points (4 points possible). Points are earned through Field Marshal shifts (up to 4 points) and Picture Picnic Day shifts (max 2 points).</p>
               </div>
             </div>
           </sc-if>
@@ -404,7 +397,7 @@
   </x-dc>
 
   <script type="text/x-dc" data-dc-script
-    data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:15,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
+    data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:17,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
 const API_URL = 'https://script.google.com/macros/s/AKfycbzKCMar8YRfgDvGVHZEkljMtOqxL0OtIYXf1aZUG3xMZZS8mRBwFNFuvDW8JKGUAd1bsA/exec';
 const CACHE_DIR = 'ayso154_cached_directory';
 const CACHE_TIME = 'ayso154_cached_timestamp';
@@ -624,7 +617,6 @@ class Component extends DCLogic {
     const isU5U6 = combinedString.includes('05U') || combinedString.includes('06U') || /\b(5U|6U)\b/.test(combinedString);
     const isU8 = combinedString.includes('08U') || /\b8U\b/.test(combinedString);
     
-    // Set division-specific target goals
     let goal = (s.stats && s.stats.playoffGoal)
       ? s.stats.playoffGoal
       : (typeof getPlayoffGoalForTeam === 'function'
@@ -669,27 +661,26 @@ class Component extends DCLogic {
         : needed + ' more verified ' + (needed === 1 ? 'point' : 'points') + ' needed for playoff eligibility.';
     }
 
-    // Category configurations tailored to each division's real roles
+    // Category configurations tailored to each division's real roles (Field Marshal cap = 4)
     let activeCats = [];
     if (isPlayground) {
       activeCats = [
-        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10 + Cypress Cup)', cap: 4 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
         { key: 'Other Adjustments', label: 'Board Adjustments / Credits', cap: 5 }
       ];
     } else if (isU5U6) {
       activeCats = [
         { key: 'Saturday Field Setup', label: 'Saturday Field Setup / Takedown', cap: 5 },
-        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10)', cap: 2 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10 + Cypress Cup)', cap: 4 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
         { key: 'Other Adjustments', label: 'Board Adjustments / Credits', cap: 5 }
       ];
     } else if (isU8) {
-      // Force U8 to display Saturday Field Setup and Early Ref Scheduling Incentive
       activeCats = [
         { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
         { key: 'Early Ref Scheduling Incentive', label: 'Early Ref Scheduling Incentive', cap: 2 },
-        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 4 },
         { key: 'Saturday Field Setup', label: 'Saturday Field Setup', cap: 5 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
         { key: 'Certified Team Referees', label: 'Certified Team Referees', cap: 5 },
@@ -699,7 +690,7 @@ class Component extends DCLogic {
       activeCats = [
         { key: 'Referee Assignment', label: 'Referee (On-Field)', cap: 10 },
         { key: 'Early Ref Scheduling Incentive', label: 'Early Ref Scheduling Incentive', cap: 2 },
-        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 2 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 4 },
         { key: 'Friday Night Field Setup', label: 'Friday Night Setup', cap: 5 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
         { key: 'Certified Team Referees', label: 'Certified Team Referees', cap: 5 },
@@ -751,7 +742,6 @@ class Component extends DCLogic {
       pillFg,
       goalCaption,
       categories: activeCats.map(c => {
-        // Robust fallback mapping to align with Code.gs V4.5 JSON outputs
         let v = cats[c.key];
         if (v === undefined || v === 0) {
           if (c.key === 'Saturday Field Setup') {
@@ -763,54 +753,4 @@ class Component extends DCLogic {
           } else if (c.key === 'Early Ref Scheduling Incentive') {
             v = cats['Early Ref Scheduling Incentive'] || cats['MatchTrak Bonus'] || 0;
           } else if (c.key === 'Field Marshal Shift') {
-            v = cats['Field Marshal'] || cats['Field Marshal Shift'] || 0;
-          } else if (c.key === 'Picture Day') {
-            v = cats['Picture Picnic Day'] || cats['Picture Day'] || 0;
-          } else if (c.key === 'Certified Team Referees') {
-            v = cats['Certified Team Referees'] || cats['Certified Ref Bonus'] || 0;
-          } else if (c.key === 'Other Adjustments') {
-            v = cats['Administrative Adjustment'] || cats['Other Adjustments'] || cats['Other Adjustment'] || cats['adjustment'] || 0;
-          } else {
-            v = 0;
-          }
-        }
-        return { 
-          label: c.label, 
-          val: v, 
-          cap: c.cap, 
-          pct: Math.min(100, Math.round((v / c.cap) * 100)) + '%', 
-          color: v >= c.cap ? '#059669' : '#002D62' 
-        };
-      }),
-      showLog,
-      audit,
-      hasAudit: audit.length > 0,
-      noAudit: audit.length === 0,
-      auditCount: audit.length === 1 ? '1 record' : audit.length + ' records',
-      guidelinesOpen: s.guidelinesOpen,
-      guidelinesToggle: s.guidelinesOpen ? 'Hide' : 'Show',
-      onToggleGuidelines: () => this.setState(p => ({ guidelinesOpen: !p.guidelinesOpen })),
-      onChangeTeam: () => this.setState({ pickerOpen: true }),
-      onSync: () => {
-        if (this.state.teamCode) {
-          this.fetchStats(this.state.teamCode);
-        } else {
-          this.fetchDirectory();
-        }
-      },
-      onDivisionChange: (e) => this.setState({ division: e.target.value, teamCode: '', stats: null }),
-      onCoachChange: (e) => {
-        const code = e.target.value;
-        const t = (this.state.directory[this.state.division] || []).find(x => x.teamCode === code);
-        const label = t ? this.state.division + ' \u00B7 Coach ' + t.coach : '';
-        this.setState({ teamCode: code, teamLabel: label, pickerOpen: !code });
-        this.saveTeam(this.state.division, code, label);
-        this.fetchStats(code);
-      }
-    };
-  }
-}
-</script>
-</body>
-
-</html>
+            v = cats['Field Marshal'] || cats['Field Marshal
