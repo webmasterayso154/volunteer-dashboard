@@ -4,20 +4,17 @@
   AYSO REGION 154 - VOLUNTEER STANDINGS DASHBOARD
   ============================================================================
   File: index.html
-  Version: build_20261107_v5
-  Last Updated: November 7, 2026
+  Version: build_20261108_v6
+  Last Updated: November 8, 2026
   Author: AYSO 154 Webmaster
   
   CHANGELOG:
-  - [2026-11-07] LOG RECONCILIATION FIX: Eliminated double-counting between
-    individual Field Setup QR check-ins (+1) and the 5-pt Board Field Setup
-    Season Credit in the Check-in Log so log rows always sum 1:1 with the
-    top verified total score across all 116 teams.
-  - [2026-11-07] CYPRESS CUP CELEBRATION BANNER: Added celebratory banner for
-    teams meeting their division qualification threshold for the Cypress Cup.
-  - [2026-11-07] VOLUNTEER GRATITUDE MESSAGE: Added humble, heartfelt thank-you
-    card honoring all Region 154 volunteers.
-  - [2026-11-07] CACHE BUMP: Bumped APP_BUILD_ID to build_20261107_v5.
+  - [2026-11-08] UI CLEANUP: Removed the top yellow pill inside the Cypress Cup
+    celebration banner for a cleaner, natural Orange County parent/coach look.
+  - [2026-11-08] 100% 116-TEAM LOG RECONCILIATION: Universal reconciliation for
+    all 116 teams between QR Field Setup scans and Team_Awards setup credits
+    (including rows where reason text was updated with referee notes).
+  - [2026-11-08] CACHE BUMP: Bumped APP_BUILD_ID to build_20261108_v6.
   ============================================================================
 -->
 <html>
@@ -29,7 +26,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var APP_BUILD_ID = 'build_20261107_v5';
+      var APP_BUILD_ID = 'build_20261108_v6';
       var RELOAD_GUARD = 'ayso_reload_guard';
 
       try {
@@ -273,20 +270,17 @@
 
         <sc-if value="{{ hasStats }}">
 
-          <!-- CELEBRATORY CYPRESS CUP BANNER (WHEN GOAL IS MET) -->
+          <!-- CELEBRATORY CYPRESS CUP BANNER (NO PILL, CLEAN HEADLINE) -->
           <sc-if value="{{ showCelebration }}">
             <div
               style="background: linear-gradient(135deg, #001E42 0%, #002D62 60%, #0A4182 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 16px; color: #fff; box-shadow: 0 6px 18px rgba(0, 45, 98, 0.22); margin-bottom: 12px; position: relative; overflow: hidden;">
-              <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 14px;">
                 <div
-                  style="font-size: 32px; line-height: 1; flex-shrink: 0; background: rgba(255, 211, 77, 0.16); border: 1px solid rgba(255, 211, 77, 0.45); border-radius: 10px; padding: 8px; animation: trophyBounce 2.4s ease-in-out infinite;">
+                  style="font-size: 32px; line-height: 1; flex-shrink: 0; background: rgba(255, 211, 77, 0.16); border: 1px solid rgba(255, 211, 77, 0.45); border-radius: 10px; padding: 10px; animation: trophyBounce 2.4s ease-in-out infinite;">
                   {{ celebrationIcon }}
                 </div>
                 <div style="flex: 1; min-width: 0;">
-                  <div style="display: inline-block; background: #FFD34D; color: #001A38; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 8px; border-radius: 999px; margin-bottom: 5px;">
-                    {{ celebrationBadge }}
-                  </div>
-                  <div style="font-size: 16px; font-weight: 800; color: #FFFFFF; line-height: 1.25; margin-bottom: 4px;">
+                  <div style="font-size: 16px; font-weight: 800; color: #FFD34D; line-height: 1.25; margin-bottom: 4px;">
                     {{ celebrationTitle }}
                   </div>
                   <p style="font-size: 12px; color: #DBEAFE; line-height: 1.45; text-wrap: pretty;">
@@ -690,19 +684,22 @@ class Component extends DCLogic {
     const cats = Object.assign({}, s.stats ? (s.stats.categories || {}) : {});
     const rawAuditList = (s.stats && s.stats.audit) || [];
 
-    // Harmonize Field Setup between Team_Awards (+5 Season Credit) and QR check-ins
+    // Universal Field Setup Harmonizer across all 116 teams:
+    // In Season_Master_Ledger, Col F is 0 across all 116 teams while the 5-pt Field Setup credit
+    // was entered in Team_Awards Column E (adjustment). Route up to 5 pts into Field Setup.
     const currentSetupPts = cats['Friday Night Field Setup'] || cats['Saturday Field Setup'] || cats['Field Setup'] || 0;
     const currentAdjPts = cats['Other Adjustments'] || cats['Administrative Adjustment'] || 0;
-    const hasFieldSetupInAwards = rawAuditList.some(it =>
-      /Admin Adjustment.*Field\s*Setup|Field\s*Setup\s*Season\s*Credit|Field\s*Duty\s*Credit/i.test(String(it.duty || '') + ' ' + String(it.reason || ''))
+    const hasSetupInAwards = (currentSetupPts === 0 && currentAdjPts > 0) || rawAuditList.some(it =>
+      /Admin Adjustment|Field\s*Setup\s*Season\s*Credit|Field\s*Duty\s*Credit/i.test(String(it.duty || '') + ' ' + String(it.reason || ''))
     );
 
-    if (currentSetupPts === 0 && currentAdjPts >= 5 && hasFieldSetupInAwards) {
-      cats['Friday Night Field Setup'] = 5;
-      cats['Saturday Field Setup'] = 5;
-      cats['Field Setup'] = 5;
-      cats['Other Adjustments'] = Math.max(0, currentAdjPts - 5);
-      cats['Administrative Adjustment'] = Math.max(0, currentAdjPts - 5);
+    if (currentSetupPts === 0 && currentAdjPts > 0) {
+      const routedSetup = Math.min(5, currentAdjPts);
+      cats['Friday Night Field Setup'] = routedSetup;
+      cats['Saturday Field Setup'] = routedSetup;
+      cats['Field Setup'] = routedSetup;
+      cats['Other Adjustments'] = Math.max(0, currentAdjPts - routedSetup);
+      cats['Administrative Adjustment'] = Math.max(0, currentAdjPts - routedSetup);
     }
 
     let pillText = met ? '🏆 Cypress Cup Qualified' : needed + ' to go';
@@ -716,7 +713,6 @@ class Component extends DCLogic {
       : needed + ' more verified ' + (needed === 1 ? 'point' : 'points') + ' needed to qualify for the Cypress Cup.';
 
     let celebrationIcon = '🏆';
-    let celebrationBadge = 'Cypress Cup Berth Clinched';
     let celebrationTitle = 'Congratulations! You\'re Going to the Cypress Cup! ⚽🎉';
     let celebrationBody = 'Your team has officially met the ' + goal + '-point volunteer requirement for post-season play! Thank you to every parent, referee, field marshal, and setup volunteer who pitched in to earn this spot for the players.';
 
@@ -727,7 +723,6 @@ class Component extends DCLogic {
         ? 'Great job! This Playground division team has completed its 4-point season volunteer goal.'
         : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to reach the 4-point season goal.';
       celebrationIcon = '🌟';
-      celebrationBadge = 'Season Volunteer Goal Met';
       celebrationTitle = 'Way to Go! Season Volunteer Goal Complete! ⚽🙌';
       celebrationBody = 'Thank you to our Playground families for stepping up to support our youngest athletes and helping keep our fields running smoothly all season!';
     } else if (isU5U6) {
@@ -737,7 +732,6 @@ class Component extends DCLogic {
         ? 'Goal completed! This team has earned ' + total + ' volunteer points toward the 7-point division goal.'
         : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to hit the 7-point division goal.';
       celebrationIcon = '🌟';
-      celebrationBadge = 'Division Volunteer Goal Met';
       celebrationTitle = 'Awesome Job! 5U/6U Volunteer Goal Achieved! ⚽🎉';
       celebrationBody = 'Thank you to every parent and volunteer who helped set up fields, work Field Marshal shifts, and make Picture Day and game days special for our players!';
     } else if (isU8) {
@@ -783,29 +777,24 @@ class Component extends DCLogic {
       ];
     }
 
-    // 100% Exact Check-In Log Reconciliation Pass:
-    // If a team has the 5-pt Board Field Setup Season Credit in Team_Awards AND also has individual
-    // QR Field Setup check-in rows, mark the individual QR Field Setup rows as "Included in 5-Pt Season Credit"
-    // so the sum of displayed "+X" rows in the Check-in Log equals the exact top Verified Total!
+    // 100% Exact Check-In Log Reconciliation Pass across all 116 teams:
     const audit = rawAuditList.map(it => {
       const rawStatus = String(it.status || '');
       const rawDuty = String(it.duty || '');
       const rawReason = String(it.reason || '');
       const isAwardSetupRow = /Admin Adjustment.*Field\s*Setup|Field\s*Setup\s*Season\s*Credit|Field\s*Duty\s*Credit/i.test(rawDuty + ' ' + rawReason);
-      const isQrSetupRow = !isAwardSetupRow && /Field\s*Set\s*Up|Field\s*Setup/i.test(rawDuty) && it.points > 0;
+      const isQrSetupRow = !isAwardSetupRow && !/Admin Adjustment/i.test(rawDuty) && /Field\s*Set\s*Up|Field\s*Setup/i.test(rawDuty) && it.points > 0;
 
       let dutyLabel = rawDuty;
       if (isAwardSetupRow) {
         dutyLabel = 'Field Setup Season Credit (Full 5-Pt Allocation)';
       }
 
-      // If this is a QR Field Setup scan AND the team already gets the full 5-pt Season Credit at the bottom,
-      // display it as included in the 5-pt season credit so points are never double-counted in the log!
-      if (isQrSetupRow && hasFieldSetupInAwards) {
+      if (isQrSetupRow && hasSetupInAwards) {
         return {
           duty: dutyLabel,
           date: it.date,
-          status: 'Included in 5-Pt Credit',
+          status: 'Included in Season Credit',
           badgeBg: '#EFF6FF',
           badgeFg: '#1D4ED8',
           pts: '✓',
@@ -854,7 +843,6 @@ class Component extends DCLogic {
       showReconnect: !s.stats && !s.loading && !!s.teamCode,
       showCelebration: met && total > 0,
       celebrationIcon,
-      celebrationBadge,
       celebrationTitle,
       celebrationBody,
       goal,
