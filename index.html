@@ -4,15 +4,17 @@
   AYSO REGION 154 - VOLUNTEER STANDINGS DASHBOARD
   ============================================================================
   File: index.html
-  Version: build_20261107_v2
+  Version: build_20261107_v3
   Last Updated: November 7, 2026
   Author: AYSO 154 Webmaster
   
   CHANGELOG:
-  - [2026-11-07] FIELD MARSHAL CAP UPDATE: Increased seasonal Field Marshal
-    point cap from 2 to 4 points across all divisions.
-  - [2026-11-03] THRESHOLD UPDATE: Updated division playoff qualification
-    thresholds (5U/6U: 7 pts, 8U: 15 pts, 10U-19U: 17 pts).
+  - [2026-11-07] FIELD MARSHAL CAP EXPANSION: Raised seasonal FM credit cap from
+    2 to 4 points per team following Regional Commissioner Cypress Cup bulletin.
+  - [2026-11-07] GUIDELINE SYNC: Aligned thresholds (5U/6U: 7, 8U: 15, 10U+: 17)
+    and documented Nov 21 & 22 Cypress Cup weekend points boost.
+  - [2026-11-07] CACHE BUMP: Bumped APP_BUILD_ID to build_20261107_v3 to bust 
+    stale client-side and CDN cached scripts.
   ============================================================================
 -->
 <html>
@@ -24,7 +26,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var APP_BUILD_ID = 'build_20261107_v2';
+      var APP_BUILD_ID = 'build_20261107_v3';
       var RELOAD_GUARD = 'ayso_reload_guard';
 
       try {
@@ -83,7 +85,7 @@
       display: none;
     }
   </style>
-  <script src="./support.js?v=build_20261107_v2"></script>
+  <script src="./support.js?v=build_20261104_tier_v2"></script>
 </head>
 
 <body>
@@ -364,19 +366,19 @@
               style="padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #F3F4F6; padding-top: 14px;">
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Competitive Divisions (10U through 19U)</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Competitive divisions (10U through 19U) must earn a minimum of <strong>17 verified points</strong> to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Early Ref Scheduling Incentive (max 2), Field Marshal (max 4), Friday Setup (max 5), and Picture Day (max 2).</p>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Competitive divisions (10U through 19U) must earn a minimum of <strong>17 verified points</strong> to qualify for post-season play (Cypress Cup and Playoffs). Points are earned through Referee assignments (up to 10 on-field), Early Ref Scheduling Incentive (max 2), Field Marshal (up to 4 points with Cypress Cup boost), Friday Setup (max 5), and Picture Day (max 2).</p>
               </div>
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">08U (8U) Division</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 8U must earn a minimum of <strong>15 verified points</strong>. Points are earned through Referee assignments, Certified Ref Bonus, MatchTrak Bonus, Field Marshal (max 4), and Saturday Field Setup.</p>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 8U must earn a minimum of <strong>15 verified points</strong>. Points are earned through Referee assignments, Certified Ref Bonus, MatchTrak Bonus, Saturday Field Setup, and Field Marshal shifts (up to 4 points).</p>
               </div>
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">05U &amp; 06U (5U &amp; 6U) Divisions</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 5U &amp; 6U must earn a minimum of <strong>7 verified points</strong>. Points are earned through Saturday morning setup/takedown (up to 5 points), Field Marshal shifts (max 4 points), and Picture Picnic Day (max 2 points).</p>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Playoff Qualification Requirements: Teams in 5U &amp; 6U must earn a minimum of <strong>7 verified points</strong>. Points are earned through Saturday morning setup/takedown (up to 5 points), Field Marshal shifts (up to 4 points total for the season), and Picture Picnic Day (max 2 points).</p>
               </div>
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 3px;">Playground / Schoolyard Division</div>
-                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 verified points. Points are earned through Field Marshal shifts (max 4 points) and Picture Picnic Day shifts (max 2 points).</p>
+                <p style="font-size: 12px; color: #4B5563; line-height: 1.5; text-wrap: pretty;">Target is 4 verified points. Points are earned through Field Marshal shifts (up to 4 points) and Picture Picnic Day shifts (max 2 points).</p>
               </div>
             </div>
           </sc-if>
@@ -395,7 +397,7 @@
   </x-dc>
 
   <script type="text/x-dc" data-dc-script
-    data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:15,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
+    data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;pointsGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:17,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;section&quot;:&quot;Program rules&quot;},&quot;showCheckInLog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
 const API_URL = 'https://script.google.com/macros/s/AKfycbzKCMar8YRfgDvGVHZEkljMtOqxL0OtIYXf1aZUG3xMZZS8mRBwFNFuvDW8JKGUAd1bsA/exec';
 const CACHE_DIR = 'ayso154_cached_directory';
 const CACHE_TIME = 'ayso154_cached_timestamp';
@@ -615,6 +617,7 @@ class Component extends DCLogic {
     const isU5U6 = combinedString.includes('05U') || combinedString.includes('06U') || /\b(5U|6U)\b/.test(combinedString);
     const isU8 = combinedString.includes('08U') || /\b8U\b/.test(combinedString);
     
+    // Set division-specific target goals
     let goal = (s.stats && s.stats.playoffGoal)
       ? s.stats.playoffGoal
       : (typeof getPlayoffGoalForTeam === 'function'
@@ -648,7 +651,7 @@ class Component extends DCLogic {
         : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to reach the 4-point season goal.';
     } else if (isU5U6) {
       pillText = met ? 'Goal Achieved' : needed + ' to go';
-      goalSubtitle = 'of 7 target points';
+      goalSubtitle = 'of 7 target points (11 max)';
       goalCaption = met
         ? 'Goal completed! This team has earned ' + total + ' volunteer points toward the 7-point team goal.'
         : needed + ' more volunteer ' + (needed === 1 ? 'point' : 'points') + ' to hit the 7-point team goal.';
@@ -659,17 +662,18 @@ class Component extends DCLogic {
         : needed + ' more verified ' + (needed === 1 ? 'point' : 'points') + ' needed for playoff eligibility.';
     }
 
+    // Category configurations tailored to each division's real roles (Field Marshal cap = 4)
     let activeCats = [];
     if (isPlayground) {
       activeCats = [
-        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 4 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10 + Cypress Cup)', cap: 4 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
         { key: 'Other Adjustments', label: 'Board Adjustments / Credits', cap: 5 }
       ];
     } else if (isU5U6) {
       activeCats = [
         { key: 'Saturday Field Setup', label: 'Saturday Field Setup / Takedown', cap: 5 },
-        { key: 'Field Marshal Shift', label: 'Field Marshal', cap: 4 },
+        { key: 'Field Marshal Shift', label: 'Field Marshal (Weeks 4 & 10 + Cypress Cup)', cap: 4 },
         { key: 'Picture Day', label: 'Picture Picnic Day', cap: 2 },
         { key: 'Other Adjustments', label: 'Board Adjustments / Credits', cap: 5 }
       ];
