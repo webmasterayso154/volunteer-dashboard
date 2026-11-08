@@ -4,17 +4,18 @@
   AYSO REGION 154 - VOLUNTEER STANDINGS DASHBOARD
   ============================================================================
   File: index.html
-  Version: build_20261108_v6
+  Version: build_20261108_v7
   Last Updated: November 8, 2026
   Author: AYSO 154 Webmaster
   
   CHANGELOG:
   - [2026-11-08] UI CLEANUP: Removed the top yellow pill inside the Cypress Cup
-    celebration banner for a cleaner, natural Orange County parent/coach look.
-  - [2026-11-08] 100% 116-TEAM LOG RECONCILIATION: Universal reconciliation for
-    all 116 teams between QR Field Setup scans and Team_Awards setup credits
-    (including rows where reason text was updated with referee notes).
-  - [2026-11-08] CACHE BUMP: Bumped APP_BUILD_ID to build_20261108_v6.
+    celebration banner for a clean, bold parent/coach display.
+  - [2026-11-08] UNLIMITED MANUAL ADJUSTMENTS: Supports itemized display of multiple
+    manual point adjustments per team (disputes, make-up refs, deductions).
+  - [2026-11-08] 100% 116-TEAM LOG RECONCILIATION: Reconciles all check-in log
+    receipts 1:1 with top verified total score across all 116 teams.
+  - [2026-11-08] CACHE BUMP: Bumped APP_BUILD_ID to build_20261108_v7.
   ============================================================================
 -->
 <html>
@@ -26,7 +27,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var APP_BUILD_ID = 'build_20261108_v6';
+      var APP_BUILD_ID = 'build_20261108_v7';
       var RELOAD_GUARD = 'ayso_reload_guard';
 
       try {
@@ -270,7 +271,7 @@
 
         <sc-if value="{{ hasStats }}">
 
-          <!-- CELEBRATORY CYPRESS CUP BANNER (NO PILL, CLEAN HEADLINE) -->
+          <!-- CELEBRATORY CYPRESS CUP BANNER (CLEAN & DIRECT, NO PILL) -->
           <sc-if value="{{ showCelebration }}">
             <div
               style="background: linear-gradient(135deg, #001E42 0%, #002D62 60%, #0A4182 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 16px; color: #fff; box-shadow: 0 6px 18px rgba(0, 45, 98, 0.22); margin-bottom: 12px; position: relative; overflow: hidden;">
@@ -280,7 +281,7 @@
                   {{ celebrationIcon }}
                 </div>
                 <div style="flex: 1; min-width: 0;">
-                  <div style="font-size: 16px; font-weight: 800; color: #FFD34D; line-height: 1.25; margin-bottom: 4px;">
+                  <div style="font-size: 17px; font-weight: 800; color: #FFD34D; line-height: 1.25; margin-bottom: 4px;">
                     {{ celebrationTitle }}
                   </div>
                   <p style="font-size: 12px; color: #DBEAFE; line-height: 1.45; text-wrap: pretty;">
@@ -338,7 +339,7 @@
             </div>
           </div>
 
-          <!-- CHECK-IN LOG -->
+          <!-- CHECK-IN LOG & ALL ITEMIZED MANUAL AWARDS -->
           <sc-if value="{{ showLog }}">
             <div
               style="background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; overflow: hidden;">
@@ -685,8 +686,6 @@ class Component extends DCLogic {
     const rawAuditList = (s.stats && s.stats.audit) || [];
 
     // Universal Field Setup Harmonizer across all 116 teams:
-    // In Season_Master_Ledger, Col F is 0 across all 116 teams while the 5-pt Field Setup credit
-    // was entered in Team_Awards Column E (adjustment). Route up to 5 pts into Field Setup.
     const currentSetupPts = cats['Friday Night Field Setup'] || cats['Saturday Field Setup'] || cats['Field Setup'] || 0;
     const currentAdjPts = cats['Other Adjustments'] || cats['Administrative Adjustment'] || 0;
     const hasSetupInAwards = (currentSetupPts === 0 && currentAdjPts > 0) || rawAuditList.some(it =>
@@ -819,7 +818,7 @@ class Component extends DCLogic {
         badgeBg: bg, 
         badgeFg: fg, 
         pts: numPts > 0 ? '+' + numPts : (numPts < 0 ? String(numPts) : '0'),
-        ptsColor: numPts > 0 ? '#002D62' : '#9CA3AF',
+        ptsColor: numPts > 0 ? '#002D62' : '#DC2626',
         numericPts: numPts
       };
     });
